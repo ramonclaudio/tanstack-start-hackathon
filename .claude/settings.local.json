@@ -1,6 +1,14 @@
 {
   "permissions": {
-    "allow": ["Bash(git add:*)", "Bash(git commit:*)"],
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git filter-branch:*)",
+      "Bash(git log:*)",
+      "mcp__autumn-docs__SearchAutumn",
+      "Bash(bunx convex dev:*)",
+      "Bash(fd:*)"
+    ],
     "deny": [],
     "ask": []
   }

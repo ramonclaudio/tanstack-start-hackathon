@@ -33,6 +33,18 @@ export default function Header() {
                 Home
               </Link>
               <Link
+                to="/features"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Features
+              </Link>
+              <Link
+                to="/pricing"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Pricing
+              </Link>
+              <Link
                 to="/demo/start/server-funcs"
                 className="text-muted-foreground hover:text-foreground"
               >
@@ -92,6 +104,17 @@ export default function Header() {
                           </p>
                         </div>
                       </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/dashboard" className="cursor-pointer">
+                          Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/pricing" className="cursor-pointer">
+                          Pricing & Billing
+                        </Link>
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={async () => {
