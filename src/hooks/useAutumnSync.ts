@@ -14,16 +14,20 @@ import { useSession } from '@/lib/auth-client'
  * NOTE: This hook should only be called when a user is authenticated.
  */
 export function useAutumnSync() {
-  const { data: session } = useSession()
-  const { customer, isLoading, error } = useCustomer({ errorOnNotFound: false })
+  const { data: session, isPending: sessionPending } = useSession()
+  // Use consistent options to share the same query instance across the app
+  const { customer, isLoading, error, refetch } = useCustomer({
+    errorOnNotFound: false,
+  })
 
-  // The useCustomer hook automatically creates customers via the identify function
-  const isSynced = session?.user && customer ? true : false
+  // Identify will return null until a user exists; treat session-pending as syncing
+  const isSynced = Boolean(session?.user && customer)
 
   return {
-    isSyncing: isLoading,
+    isSyncing: sessionPending || isLoading,
     isSynced,
     error,
     customer,
+    refetch,
   }
 }

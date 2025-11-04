@@ -21,6 +21,7 @@ import { useNavigate } from '@tanstack/react-router'
  * ```
  */
 export function useFeatureAccess() {
+  // Always use a consistent subscription/query to avoid duplicate fetches
   const { customer, check, isLoading } = useCustomer({ errorOnNotFound: false })
   const navigate = useNavigate()
 
