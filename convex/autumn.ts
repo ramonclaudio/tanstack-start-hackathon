@@ -2,8 +2,15 @@ import { Autumn } from '@useautumn/convex'
 import { components } from './_generated/api'
 import { authComponent } from './auth'
 
+// Validate required environment variables
+if (!process.env.AUTUMN_SECRET_KEY) {
+  throw new Error(
+    'AUTUMN_SECRET_KEY is required. Get your key from https://app.useautumn.com/sandbox/dev',
+  )
+}
+
 export const autumn = new Autumn(components.autumn, {
-  secretKey: process.env.AUTUMN_SECRET_KEY ?? '',
+  secretKey: process.env.AUTUMN_SECRET_KEY,
   identify: async (ctx: any) => {
     try {
       const user = await authComponent.getAuthUser(ctx)

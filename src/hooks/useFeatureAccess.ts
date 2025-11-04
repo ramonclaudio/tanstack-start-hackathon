@@ -40,10 +40,12 @@ export function useFeatureAccess() {
     if (!customer) return false
 
     // Check product access
+    // Note: Don't check for 'active' status as product may be 'trialing'
+    // Autumn manages all valid states, so just check if product exists
     if (productId) {
       const products = customer.products
       if (products.length === 0) return false
-      return products.some((p) => p.id === productId && p.status === 'active')
+      return products.some((p) => p.id === productId)
     }
 
     // Check feature access

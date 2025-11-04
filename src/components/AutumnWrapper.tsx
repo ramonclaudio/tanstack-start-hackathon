@@ -3,6 +3,7 @@ import { AutumnProvider } from 'autumn-js/react'
 import { useConvex } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { useSession } from '@/lib/auth-client'
+import { AutumnErrorBoundary } from '@/components/AutumnErrorBoundary'
 
 export function AutumnWrapper({ children }: { children: React.ReactNode }) {
   const convex = useConvex()
@@ -15,9 +16,11 @@ export function AutumnWrapper({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AutumnProvider convex={convex} convexApi={(api as any).autumn}>
-      {children}
-    </AutumnProvider>
+    <AutumnErrorBoundary>
+      <AutumnProvider convex={convex} convexApi={(api as any).autumn}>
+        {children}
+      </AutumnProvider>
+    </AutumnErrorBoundary>
   )
 }
 
