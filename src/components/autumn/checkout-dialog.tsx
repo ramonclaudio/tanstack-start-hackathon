@@ -1,8 +1,9 @@
 'use client'
 import * as AccordionPrimitive from '@radix-ui/react-accordion'
 import React, { useEffect, useState } from 'react'
-import { useCustomer } from 'autumn-js/react'
+import { useAction } from 'convex/react'
 import { ArrowRight, ChevronDown, Loader2 } from 'lucide-react'
+import { api } from '../../../convex/_generated/api'
 import type { CheckoutParams, CheckoutResult, ProductItem } from 'autumn-js'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -46,8 +47,7 @@ const formatCurrency = ({
 }
 
 export default function CheckoutDialog(params: CheckoutDialogProps) {
-  // Use consistent options to avoid creating a distinct subscription
-  const { attach, refetch } = useCustomer({ errorOnNotFound: false })
+  const attachAndHydrate = useAction((api as any).checkout.attachAndHydrate)
   const [checkoutResult, setCheckoutResult] = useState<
     CheckoutResult | undefined
   >(params.checkoutResult)
@@ -94,15 +94,19 @@ export default function CheckoutDialog(params: CheckoutDialogProps) {
                 }
               })
 
-              await attach({
-                productId: checkoutResult.product.id,
-                ...(params.checkoutParams || {}),
-                options,
-              })
-              // Refetch customer data to update UI immediately
-              await refetch()
-              setOpen(false)
-              setLoading(false)
+              try {
+                await attachAndHydrate({
+                  productId: checkoutResult.product.id,
+                  ...(params.checkoutParams || {}),
+                  options,
+                } as any)
+                // Parent will trigger refresh via onClose callback
+              } catch (e) {
+                console.error('Attach failed', e)
+              } finally {
+                setOpen(false)
+                setLoading(false)
+              }
             }}
             disabled={loading}
             className="min-w-16 flex items-center gap-2"
@@ -311,7 +315,7 @@ const PrepaidItem = ({
   const [quantityInput, setQuantityInput] = useState<string>(
     (quantity / billingUnits).toString(),
   )
-  const { checkout } = useCustomer()
+  const prepare = useAction((api as any).checkout.prepare)
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
   const scenario = checkoutResult.product.scenario
@@ -333,16 +337,10 @@ const PrepaidItem = ({
         quantity: Number(quantityInput) * billingUnits,
       })
 
-      const { data, error } = await checkout({
+      const data: any = await prepare({
         productId: checkoutResult.product.id,
-        options: newOptions,
-        dialog: CheckoutDialog,
-      })
-
-      if (error) {
-        console.error(error)
-        return
-      }
+        options: newOptions as any,
+      } as any)
       setCheckoutResult(data)
     } catch (error) {
       console.error(error)
@@ -386,7 +384,7 @@ const PrepaidItem = ({
             <div className="flex justify-between items-end">
               <div className="flex gap-2 items-center">
                 <Input
-                  className="h-7 w-16 focus:!ring-2"
+                  className="h-7 w-16 focus:ring-2!"
                   value={quantityInput}
                   onChange={(e) => setQuantityInput(e.target.value)}
                 />
@@ -398,11 +396,11 @@ const PrepaidItem = ({
 
               <Button
                 onClick={handleSave}
-                className="w-14 !h-7 text-sm items-center bg-white text-foreground shadow-sm border border-zinc-200 hover:bg-zinc-100"
+                className="w-14 h-7! text-sm items-center bg-white text-foreground shadow-sm border border-zinc-200 hover:bg-zinc-100"
                 disabled={loading}
               >
                 {loading ? (
-                  <Loader2 className="text-muted-foreground animate-spin !w-4 !h-4" />
+                  <Loader2 className="text-muted-foreground animate-spin w-4! h-4!" />
                 ) : (
                   'Save'
                 )}
@@ -460,7 +458,7 @@ export const PricingDialogButton = ({
       className={cn(className, 'shadow-sm shadow-stone-400')}
     >
       {children}
-      <ArrowRight className="!h-3" />
+      <ArrowRight className="h-3!" />
     </Button>
   )
 }
