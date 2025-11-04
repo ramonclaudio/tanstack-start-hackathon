@@ -12,6 +12,7 @@ import type * as auth from '../auth.js'
 import type * as autumn from '../autumn.js'
 import type * as customers from '../customers.js'
 import type * as demos from '../demos.js'
+import type * as features from '../features.js'
 import type * as http from '../http.js'
 import type * as tasks from '../tasks.js'
 
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   autumn: typeof autumn
   customers: typeof customers
   demos: typeof demos
+  features: typeof features
   http: typeof http
   tasks: typeof tasks
 }>
