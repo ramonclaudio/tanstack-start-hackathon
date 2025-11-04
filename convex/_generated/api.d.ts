@@ -11,11 +11,13 @@
 import type * as auth from '../auth.js'
 import type * as autumn from '../autumn.js'
 import type * as billing from '../billing.js'
+import type * as checkout from '../checkout.js'
 import type * as customers from '../customers.js'
 import type * as dashboard from '../dashboard.js'
 import type * as demos from '../demos.js'
 import type * as features from '../features.js'
 import type * as http from '../http.js'
+import type * as pricing from '../pricing.js'
 import type * as tasks from '../tasks.js'
 
 import type {
@@ -36,11 +38,13 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth
   autumn: typeof autumn
   billing: typeof billing
+  checkout: typeof checkout
   customers: typeof customers
   dashboard: typeof dashboard
   demos: typeof demos
   features: typeof features
   http: typeof http
+  pricing: typeof pricing
   tasks: typeof tasks
 }>
 declare const fullApiWithMounts: typeof fullApi
