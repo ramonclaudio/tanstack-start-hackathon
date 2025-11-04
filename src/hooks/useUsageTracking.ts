@@ -121,7 +121,7 @@ export function useUsageTracking() {
  *
  * const handleUseFeature = async () => {
  *   const result = await checkThenTrack({
- *     featureId: 'ai_credits',
+ *     featureId: 'credits',
  *     requiredBalance: 10,
  *     operation: async () => {
  *       // Your operation here

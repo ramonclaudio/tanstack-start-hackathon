@@ -11,10 +11,10 @@ import { useNavigate } from '@tanstack/react-router'
  * const hasProPlan = hasAccess({ productId: 'pro_plan' })
  *
  * // Check feature access locally
- * const hasAiCredits = hasAccess({ featureId: 'ai_credits', requiredBalance: 10 })
+ * const hasCredits = hasAccess({ featureId: 'credits', requiredBalance: 10 })
  *
  * // Check access with API call (gets latest state from Autumn)
- * const result = await checkFeature({ featureId: 'ai_credits', requiredBalance: 1 })
+ * const result = await checkFeature({ featureId: 'credits', requiredBalance: 1 })
  * if (result.data.allowed) {
  *   // User has access - perform action
  * }

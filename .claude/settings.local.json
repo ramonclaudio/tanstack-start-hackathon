@@ -7,7 +7,16 @@
       "Bash(git log:*)",
       "mcp__autumn-docs__SearchAutumn",
       "Bash(bunx convex dev:*)",
-      "Bash(fd:*)"
+      "Bash(fd:*)",
+      "Bash(bun run format:*)",
+      "Bash(bun run typecheck:*)",
+      "Bash(bun run check:*)",
+      "mcp__better-auth__search",
+      "mcp__convex__envList",
+      "mcp__convex__runOneoffQuery",
+      "Bash(git checkout:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr merge:*)"
     ],
     "deny": [],
     "ask": []

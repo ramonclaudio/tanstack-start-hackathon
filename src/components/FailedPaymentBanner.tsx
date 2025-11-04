@@ -36,7 +36,7 @@ export function FailedPaymentBanner({
   return (
     <Card className="border-destructive/50 bg-destructive/10 relative">
       <div className="flex items-start gap-4 p-4">
-        <AlertTriangle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+        <AlertTriangle className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
         <div className="flex-1 space-y-2">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -52,7 +52,7 @@ export function FailedPaymentBanner({
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 flex-shrink-0"
+              className="h-6 w-6 shrink-0"
               onClick={() => setDismissed(true)}
             >
               <X className="h-4 w-4" />

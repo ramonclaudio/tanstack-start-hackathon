@@ -1,12 +1,15 @@
 import React, { createContext, useContext, useState } from 'react'
 
-import { useCustomer, usePricingTable } from 'autumn-js/react'
+import { usePricingTable } from 'autumn-js/react'
 import { Loader2, Mail } from 'lucide-react'
-import { useNavigate } from '@tanstack/react-router'
+// import { useNavigate } from '@tanstack/react-router'
+import { useAction } from 'convex/react'
+import { api } from '../../../convex/_generated/api'
 import type { ProductDetails } from 'autumn-js/react'
 import type { Product, ProductItem } from 'autumn-js'
 import { cn } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import CheckoutDialog from '@/components/autumn/checkout-dialog'
 import { getPricingTableContent } from '@/lib/autumn/pricing-table-content'
@@ -14,20 +17,72 @@ import { useSession } from '@/lib/auth-client'
 
 export default function PricingTable({
   productDetails,
+  products: productsProp,
+  customer,
+  loading = false,
+  onPlanChanged,
 }: {
   productDetails?: Array<ProductDetails>
+  products?: Array<Product>
+  customer?: any
+  loading?: boolean
+  onPlanChanged?: () => Promise<void> | void
 }) {
   const { data: session } = useSession()
-  const navigate = useNavigate()
-  const { customer, checkout } = useCustomer({ errorOnNotFound: false })
+  // const navigate = useNavigate() // not needed for unauthenticated redirect
+  const prepareCheckout = useAction((api as any).checkout.prepare)
 
   const [isAnnual, setIsAnnual] = useState(false)
-  const { products, isLoading, error } = usePricingTable({ productDetails })
+  // Dialog state must be declared before any early returns to keep hook order stable
+  const [open, setOpen] = useState(false)
+  const [checkoutResult, setCheckoutResult] = useState<any>(null)
+
+  const hook = usePricingTable({ productDetails })
+  const products = productsProp ? productsProp : hook.products
+  const isLoading = productsProp ? !!loading : hook.isLoading
+  const error = hook.error
 
   if (isLoading) {
+    const countFromProps = Array.isArray(productsProp)
+      ? productsProp.filter((p) => !p.is_add_on).length || productsProp.length
+      : 0
+    const countFromHook = Array.isArray((hook as any).products)
+      ? (hook as any).products.filter((p: any) => !p.is_add_on).length || (hook as any).products.length
+      : 0
+    const skeletonCount = Math.max(countFromProps || countFromHook || 3, 1)
+
     return (
-      <div className="w-full h-full flex justify-center items-center min-h-[300px]">
-        <Loader2 className="w-6 h-6 text-zinc-400 animate-spin" />
+      <div className={cn('flex items-center flex-col w-full')}>
+        <div
+          className={cn(
+            'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))] w-full gap-2',
+          )}
+        >
+          {Array.from({ length: skeletonCount }).map((_, i) => (
+            <div
+              key={i}
+              className="w-full h-full py-6 border rounded-lg shadow-sm max-w-xl"
+            >
+              <div className="flex flex-col h-full">
+                <div className="pb-4 px-6">
+                  <Skeleton className="h-6 w-40 mb-2" />
+                  <Skeleton className="h-4 w-56" />
+                </div>
+                <div className="mb-4 border-y bg-secondary/40 h-16 flex items-center px-6">
+                  <Skeleton className="h-5 w-32" />
+                </div>
+                <div className="px-6 mb-6 space-y-2">
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-4 w-64" />
+                  <Skeleton className="h-4 w-40" />
+                </div>
+                <div className="px-6 mt-auto">
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
@@ -48,9 +103,15 @@ export default function PricingTable({
     )
   }
 
+  const safeProducts = Array.isArray(products) ? products : []
+  // Exclude add-on products, but if that would hide everything, fall back to showing all
+  const filtered = safeProducts.filter((p) => !p.is_add_on)
+  const displayProducts = filtered.length > 0 ? filtered : safeProducts
   const intervals = Array.from(
     new Set(
-      products?.map((p) => p.properties.interval_group).filter((i) => !!i),
+      displayProducts
+        .map((p) => p.properties.interval_group)
+        .filter((i) => !!i),
     ),
   )
 
@@ -92,32 +153,40 @@ export default function PricingTable({
   }
 
   const handlePricingCardClick = async (product: Product) => {
-    // If user is authenticated and we have a customer, proceed with checkout
-    if (session?.user && customer) {
-      await checkout({
-        productId: product.id,
-        dialog: CheckoutDialog,
-      })
-    } else if (session?.user && !customer) {
-      // User is authenticated but customer not yet created
-      // This shouldn't happen with AutumnWrapper, but handle gracefully
-      console.error('Customer not found for authenticated user')
-    } else {
-      // User is not authenticated, redirect to sign up
-      navigate({ to: '/auth/sign-up' })
+    if (!session?.user) {
+      // Avoid strict search typing on navigate by using location
+      window.location.assign('/auth/sign-up')
+      return
+    }
+    try {
+      const res = await prepareCheckout({ productId: product.id } as any)
+      if (res) {
+        setCheckoutResult(res)
+        setOpen(true)
+      }
+    } catch (e) {
+      console.error('Failed to prepare checkout', e)
     }
   }
 
+  // Derive per-product status from provided customer snapshot
+  const productStatus = new Map<string, string | undefined>(
+    (Array.isArray(customer?.products)
+      ? (customer!.products as Array<any>)
+      : []
+    ).map((p: any) => [p.id, p.status]),
+  )
+
   return (
     <div className={cn('root')}>
-      {products && (
+      {displayProducts.length > 0 && (
         <PricingTableContainer
-          products={products}
+          products={displayProducts}
           isAnnualToggle={isAnnual}
           setIsAnnualToggle={setIsAnnual}
           multiInterval={multiInterval}
         >
-          {products
+          {displayProducts
             .filter(intervalFilter)
             .sort(sortProducts)
             .map((product, index) => {
@@ -132,15 +201,20 @@ export default function PricingTable({
                 )
               }
 
+              const status = productStatus.get(product.id)
+              const isActiveOrTrial =
+                status === 'active' || status === 'trialing'
+              const isScheduled = status === 'scheduled'
+
               return (
                 <PricingCard
                   key={index}
                   productId={product.id}
                   buttonProps={{
-                    disabled:
-                      (product.scenario === 'active' &&
-                        !product.properties.updateable) ||
-                      product.scenario === 'scheduled',
+                    disabled: session?.user
+                      ? (isActiveOrTrial && !product.properties.updateable) ||
+                        isScheduled
+                      : false,
 
                     onClick: async () => {
                       await handlePricingCardClick(product)
@@ -151,6 +225,16 @@ export default function PricingTable({
             })}
         </PricingTableContainer>
       )}
+      {open && checkoutResult && (
+        <CheckoutDialog
+          open={open}
+          setOpen={(o) => {
+            setOpen(o)
+            if (!o && onPlanChanged) onPlanChanged()
+          }}
+          checkoutResult={checkoutResult}
+        />
+      )}
     </div>
   )
 }
@@ -160,6 +244,7 @@ const PricingTableContext = createContext<{
   setIsAnnualToggle: (isAnnual: boolean) => void
   products: Array<Product>
   showFeatures: boolean
+  isAuthenticated: boolean
 } | null>(null)
 
 export const usePricingTableContext = (componentName: string) => {
@@ -198,12 +283,20 @@ export const PricingTableContainer = ({
   }
 
   const hasRecommended = products.some((p) => p.display?.recommend_text)
+  const { data: session } = useSession()
+  const isAuthenticated = !!session?.user
   return (
     <PricingTableContext.Provider
-      value={{ isAnnualToggle, setIsAnnualToggle, products, showFeatures }}
+      value={{
+        isAnnualToggle,
+        setIsAnnualToggle,
+        products,
+        showFeatures,
+        isAuthenticated,
+      }}
     >
       <div
-        className={cn('flex items-center flex-col', hasRecommended && '!py-10')}
+        className={cn('flex items-center flex-col', hasRecommended && 'py-10!')}
       >
         {multiInterval && (
           <div
@@ -243,7 +336,8 @@ export const PricingCard = ({
   className,
   buttonProps,
 }: PricingCardProps) => {
-  const { products, showFeatures } = usePricingTableContext('PricingCard')
+  const { products, showFeatures, isAuthenticated } =
+    usePricingTableContext('PricingCard')
 
   const product = products.find((p) => p.id === productId)
 
@@ -253,7 +347,9 @@ export const PricingCard = ({
 
   const { name, display: productDisplay } = product
 
-  const { buttonText } = getPricingTableContent(product)
+  const { buttonText } = isAuthenticated
+    ? getPricingTableContent(product)
+    : { buttonText: <p>Get Started</p> }
 
   const isRecommended = productDisplay?.recommend_text ? true : false
   const mainPriceDisplay = product.properties.is_free
@@ -266,9 +362,52 @@ export const PricingCard = ({
         secondary_text: undefined,
       })
 
-  const featureItems = product.properties.is_free
+  // Base list of feature items shown under the price
+  const itemsBase = product.properties.is_free
     ? product.items
     : product.items.slice(1)
+
+  // Extract a credit summary (e.g., "50 credits / month") and remove that item from the list to avoid duplication
+  const creditItem = itemsBase.find(
+    (it) =>
+      typeof it.included_usage !== 'undefined' &&
+      (it.interval === 'day' ||
+        it.interval === 'week' ||
+        it.interval === 'month' ||
+        it.interval === 'year' ||
+        it.interval === 'quarter' ||
+        it.interval === 'semi_annual'),
+  )
+  const featureItems = itemsBase.filter((it) => it !== creditItem)
+
+  const formatInterval = (interval?: string) => {
+    switch (interval) {
+      case 'day':
+        return 'day'
+      case 'week':
+        return 'week'
+      case 'month':
+        return 'month'
+      case 'quarter':
+        return 'quarter'
+      case 'semi_annual':
+        return 'half-year'
+      case 'year':
+        return 'year'
+      default:
+        return undefined
+    }
+  }
+
+  const creditSummary = (() => {
+    if (!creditItem) return null
+    const units = creditItem.included_usage as any
+    const intervalLabel = formatInterval(creditItem.interval as any)
+    if (!intervalLabel) return null
+    if (units === 'inf') return 'Unlimited credits / ' + intervalLabel
+    if (typeof units === 'number') return `${units} credits / ${intervalLabel}`
+    return null
+  })()
 
   return (
     <div
@@ -284,7 +423,7 @@ export const PricingCard = ({
       )}
       <div
         className={cn(
-          'flex flex-col h-full flex-grow',
+          'flex flex-col h-full grow',
           isRecommended && 'lg:translate-y-6',
         )}
       >
@@ -301,7 +440,7 @@ export const PricingCard = ({
               )}
             </div>
             <div className="mb-2">
-              <h3 className="font-semibold h-16 flex px-6 items-center border-y mb-4 bg-secondary/40">
+              <h3 className="font-semibold h-16 flex px-6 items-center border-y mb-2 bg-secondary/40">
                 <div className="line-clamp-2">
                   {mainPriceDisplay.primary_text}{' '}
                   {mainPriceDisplay.secondary_text && (
@@ -313,11 +452,14 @@ export const PricingCard = ({
               </h3>
             </div>
           </div>
-          {showFeatures && featureItems.length > 0 && (
-            <div className="flex-grow px-6 mb-6">
+          {showFeatures && (featureItems.length > 0 || !!creditSummary) && (
+            <div className="grow px-6 mb-6">
               <PricingFeatureList
                 items={featureItems}
                 everythingFrom={product.display?.everything_from}
+                extraBullets={
+                  creditSummary ? [`Includes ${creditSummary}`] : undefined
+                }
               />
             </div>
           )}
@@ -339,14 +481,16 @@ export const PricingCard = ({
 export const PricingFeatureList = ({
   items,
   everythingFrom,
+  extraBullets,
   className,
 }: {
   items: Array<ProductItem>
   everythingFrom?: string
+  extraBullets?: Array<string>
   className?: string
 }) => {
   return (
-    <div className={cn('flex-grow', className)}>
+    <div className={cn('grow', className)}>
       {everythingFrom && (
         <p className="text-sm mb-4">Everything from {everythingFrom}, plus:</p>
       )}
@@ -363,6 +507,13 @@ export const PricingFeatureList = ({
                   {item.display.secondary_text}
                 </span>
               )}
+            </div>
+          </div>
+        ))}
+        {extraBullets?.map((text, i) => (
+          <div key={`extra-${i}`} className="flex items-start gap-2 text-sm">
+            <div className="flex flex-col">
+              <span>{text}</span>
             </div>
           </div>
         ))}
@@ -448,7 +599,11 @@ export const AnnualSwitch = ({
 
 export const RecommendedBadge = ({ recommended }: { recommended: string }) => {
   return (
-    <div className="bg-secondary absolute border text-muted-foreground text-sm font-medium lg:rounded-full px-3 lg:py-0.5 lg:top-4 lg:right-4 top-[-1px] right-[-1px] rounded-bl-lg">
+    <div
+      className="bg-secondary absolute border text-muted-foreground text-sm font-medium lg:rounded-full px-3 lg:py-0.5 lg:top-4 lg:right-4       {recommended}
+      {recommended}
+ rounded-bl-lg"
+    >
       {recommended}
     </div>
   )
@@ -500,7 +655,7 @@ const EnterprisePricingCard = ({
       )}
       <div
         className={cn(
-          'flex flex-col h-full flex-grow',
+          'flex flex-col h-full grow',
           isRecommended && 'lg:translate-y-6',
         )}
       >
@@ -530,7 +685,7 @@ const EnterprisePricingCard = ({
             </div>
           </div>
           {featureItems.length > 0 && (
-            <div className="flex-grow px-6 mb-6">
+            <div className="grow px-6 mb-6">
               <PricingFeatureList
                 items={featureItems}
                 everythingFrom={product.display?.everything_from}
