@@ -1,5 +1,8 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { ArrowRight, Check, Loader2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useAction } from 'convex/react'
+import { api } from '../../convex/_generated/api'
 import PricingTable from '@/components/autumn/pricing-table'
 import { useSession } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
@@ -16,6 +19,24 @@ export const Route = createFileRoute('/pricing')({
 
 function PricingPage() {
   const { data: session, isPending } = useSession()
+  const getPricing = useAction((api as any).pricing.get)
+  const [products, setProducts] = useState<Array<any>>([])
+  const [customer, setCustomer] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const res = await getPricing({})
+        setProducts(res?.products ?? [])
+        setCustomer(res?.customer ?? null)
+      } catch (e) {
+        console.error('Failed to load pricing', e)
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [getPricing, !!session?.user])
 
   if (isPending) {
     return (
@@ -41,7 +62,20 @@ function PricingPage() {
 
         {/* Pricing Table */}
         <div className="mb-12">
-          <PricingTable />
+          <PricingTable
+            products={products}
+            customer={customer}
+            loading={loading}
+            onPlanChanged={async () => {
+              try {
+                const res = await getPricing({})
+                setProducts(res?.products ?? [])
+                setCustomer(res?.customer ?? null)
+              } catch (e) {
+                console.error('Failed to refresh pricing after plan change', e)
+              }
+            }}
+          />
         </div>
 
         {/* Sign in CTA for unauthenticated users */}
@@ -57,13 +91,13 @@ function PricingPage() {
               </p>
               <div className="flex gap-3 justify-center">
                 <Button asChild>
-                  <Link to="/auth/sign-up">
+                  <a href="/auth/sign-up">
                     Get Started
                     <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
+                  </a>
                 </Button>
                 <Button variant="outline" asChild>
-                  <Link to="/auth/sign-in">Sign In</Link>
+                  <a href="/auth/sign-in">Sign In</a>
                 </Button>
               </div>
             </div>

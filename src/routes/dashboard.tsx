@@ -334,9 +334,9 @@ function AiCreditsCard({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5" />
-            AI Credits
+            Credits
           </CardTitle>
-          <CardDescription>Your current AI credit balance</CardDescription>
+          <CardDescription>Your current credit balance</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -356,9 +356,9 @@ function AiCreditsCard({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5" />
-            AI Credits
+            Credits
           </CardTitle>
-          <CardDescription>Your current AI credit balance</CardDescription>
+          <CardDescription>Your current credit balance</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-sm text-muted-foreground">
@@ -369,8 +369,8 @@ function AiCreditsCard({
     )
   }
 
-  // Get AI credits feature - handle case where features might be undefined
-  const aiCreditsFeature = customer?.features?.['ai_credits']
+  // Get credits feature - handle case where features might be undefined
+  const aiCreditsFeature = customer?.features?.['credits']
 
   // Check if feature exists at runtime (TypeScript types may not reflect actual data)
 
@@ -380,13 +380,13 @@ function AiCreditsCard({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5" />
-            AI Credits
+            Credits
           </CardTitle>
-          <CardDescription>Your current AI credit balance</CardDescription>
+          <CardDescription>Your current credit balance</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-sm text-muted-foreground">
-            No AI credits feature configured for your account.
+            No credits feature configured for your account.
           </div>
           <Button variant="outline" className="w-full mt-4" asChild>
             <Link to="/pricing">View Plans</Link>
@@ -404,9 +404,9 @@ function AiCreditsCard({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Zap className="h-5 w-5" />
-          AI Credits
+          Credits
         </CardTitle>
-        <CardDescription>Your current AI credit balance</CardDescription>
+        <CardDescription>Your current credit balance</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
@@ -424,8 +424,8 @@ function AiCreditsCard({
             <div className="flex items-start gap-2 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
               <div className="text-xs text-amber-700 dark:text-amber-400">
                 {balance === 0
-                  ? 'You have run out of AI credits. Upgrade your plan to continue using AI features.'
-                  : 'Running low on credits. Consider upgrading your plan for more AI credits.'}
+                  ? 'You have run out of credits. Upgrade your plan to continue using features.'
+                  : 'Running low on credits. Consider upgrading your plan for more credits.'}
               </div>
             </div>
           </>

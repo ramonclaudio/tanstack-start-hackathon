@@ -1,9 +1,8 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { authClient, useSession } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
 import {
   Card,
   CardContent,
@@ -17,12 +16,19 @@ export const Route = createFileRoute('/auth/sign-in')({
 })
 
 function SignIn() {
-  const { isPending } = useSession()
+  const { data: session, isPending } = useSession()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+
+  // If already signed in (or once session resolves), redirect to dashboard
+  useEffect(() => {
+    if (!isPending && session?.user) {
+      navigate({ to: '/dashboard' })
+    }
+  }, [isPending, session?.user, navigate])
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,25 +73,7 @@ function SignIn() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
       <Card className="w-full max-w-md">
-        {isPending ? (
-          <>
-            <CardHeader className="space-y-1">
-              <Skeleton className="h-8 w-24" />
-              <Skeleton className="h-5 w-80" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-4">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <Skeleton className="h-px w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-5 w-48 mx-auto" />
-            </CardContent>
-          </>
-        ) : (
-          <>
+        <>
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl font-bold">Sign In</CardTitle>
               <CardDescription>
@@ -101,7 +89,7 @@ function SignIn() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    disabled={isLoading}
+                    disabled={isLoading || isPending}
                   />
                 </div>
                 <div className="space-y-2">
@@ -111,12 +99,12 @@ function SignIn() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    disabled={isLoading}
+                    disabled={isLoading || isPending}
                   />
                 </div>
                 {error && <div className="text-sm text-red-500">{error}</div>}
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Signing in...' : 'Sign In'}
+                <Button type="submit" className="w-full" disabled={isLoading || isPending}>
+                  {isLoading || isPending ? 'Signing in...' : 'Sign In'}
                 </Button>
               </form>
 
@@ -136,7 +124,7 @@ function SignIn() {
                 variant="outline"
                 className="w-full"
                 onClick={handleGitHubSignIn}
-                disabled={isLoading}
+                disabled={isLoading || isPending}
               >
                 <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                   <path
@@ -159,7 +147,6 @@ function SignIn() {
               </div>
             </CardContent>
           </>
-        )}
       </Card>
     </div>
   )
