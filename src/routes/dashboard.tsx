@@ -1,6 +1,6 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useEffect, useRef } from 'react'
-import { useCustomer } from 'autumn-js/react'
+import { useEffect, useState } from 'react'
+import { useAction } from 'convex/react'
 import {
   ArrowRight,
   CreditCard,
@@ -9,7 +9,8 @@ import {
   TrendingUp,
   Zap,
 } from 'lucide-react'
-import { useSession } from '@/lib/auth-client'
+import { api } from '../../convex/_generated/api'
+// Session handled via aggregated loader
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -23,66 +24,76 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { FailedPaymentBanner } from '@/components/FailedPaymentBanner'
+import { useSession } from '@/lib/auth-client'
 
 export const Route = createFileRoute('/dashboard')({
   component: Dashboard,
 })
 
 function Dashboard() {
-  const { data: session, isPending: sessionPending } = useSession()
   const navigate = useNavigate()
+  const getDashboard = useAction((api as any).dashboard.get)
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const { data: session, isPending: sessionPending } = useSession()
 
-  // Redirect to sign-in if not authenticated (use useEffect to avoid state update during render)
   useEffect(() => {
-    if (!sessionPending && !session?.user) {
+    // Wait for auth to resolve to avoid false unauthenticated redirects on refresh
+    if (sessionPending) return
+
+    if (!session?.user) {
       navigate({ to: '/auth/sign-in' })
+      return
     }
-  }, [sessionPending, session?.user, navigate])
 
-  // Show loading during session check
-  if (sessionPending) {
+    ;(async () => {
+      try {
+        const res = await getDashboard({})
+        setData(res)
+      } catch (e) {
+        console.error('Failed to load dashboard data', e)
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [getDashboard, navigate, session?.user, sessionPending])
+
+  if (sessionPending || loading || !data) {
     return <DashboardSkeleton />
   }
 
-  // Don't render dashboard content if there's no user
-  if (!session?.user) {
-    return <DashboardSkeleton />
-  }
-
-  // Only fetch customer data after session is confirmed
-  // Use user.id as key to force remount when user changes
-  return <AuthenticatedDashboard key={session.user.id} user={session.user} />
+  const normalizedCustomer = data.customer?.customer ?? data.customer
+  return (
+    <AuthenticatedDashboard
+      key={data.user.id}
+      user={data.user}
+      customer={normalizedCustomer}
+    />
+  )
 }
 
-function AuthenticatedDashboard({ user }: { user: any }) {
-  // Only mount this component once the parent confirmed a valid session.
-  // Use consistent options to avoid duplicate queries on reload.
-  const {
-    customer,
-    isLoading: customerLoading,
-    error: customerError,
-    openBillingPortal,
-    refetch,
-  } = useCustomer({ errorOnNotFound: false })
-
-  // Ensure a fresh fetch after auth is ready (handles refresh-time identify race)
-  const retryRef = useRef(0)
-  useEffect(() => {
-    retryRef.current = 0
-    void refetch()
-  }, [user.id, refetch])
-
-  // If the first identify returned null due to timing, retry once or twice
-  useEffect(() => {
-    if (!customer && !customerLoading && retryRef.current < 4) {
-      const delay = Math.min(1000, 250 * Math.pow(2, retryRef.current))
-      const t = setTimeout(() => {
-        retryRef.current += 1
-        void refetch()
-      }, delay)
-      return () => clearTimeout(t)
+function AuthenticatedDashboard({
+  user,
+  customer,
+}: {
+  user: any
+  customer: any
+}) {
+  const openPortal = useAction((api as any).billing.openPortal)
+  const openBillingPortal = async ({
+    returnUrl,
+  }: { returnUrl?: string } = {}) => {
+    try {
+      const res = await openPortal({
+        returnUrl: returnUrl || window.location.href,
+      } as any)
+      if (res?.url) {
+        window.location.href = res.url as string
+      }
+    } catch (e) {
+      console.error('Failed to open billing portal:', e)
     }
-  }, [customer, customerLoading, refetch])
+  }
 
   return (
     <div className="flex flex-1 flex-col px-6 py-8 max-w-6xl mx-auto w-full">
@@ -144,8 +155,8 @@ function AuthenticatedDashboard({ user }: { user: any }) {
         {/* Autumn Customer Card */}
         <AutumnCustomerCard
           customer={customer}
-          isLoading={customerLoading}
-          error={customerError}
+          isLoading={false}
+          error={null}
           openBillingPortal={openBillingPortal}
         />
 
@@ -172,14 +183,10 @@ function AuthenticatedDashboard({ user }: { user: any }) {
         </Card>
 
         {/* AI Credits Card */}
-        <AiCreditsCard
-          customer={customer}
-          isLoading={customerLoading}
-          error={customerError}
-        />
+        <AiCreditsCard customer={customer} isLoading={false} error={null} />
 
         {/* Usage Statistics Card */}
-        <UsageStatsCard customer={customer} isLoading={customerLoading} />
+        <UsageStatsCard customer={customer} isLoading={false} />
       </div>
     </div>
   )
