@@ -6,6 +6,7 @@ import {
   createRootRouteWithContext,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+import { AutumnWrapper } from '../components/AutumnWrapper'
 
 import Footer from '../components/Footer'
 import Header from '../components/Header'
@@ -51,22 +52,24 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="flex flex-col h-screen">
         <ThemeProvider>
-          <Header />
-          <main className="flex-1 flex flex-col overflow-y-auto py-6">
-            {children}
-          </main>
-          <Footer />
-          <TanStackDevtools
-            config={{
-              position: 'bottom-left',
-            }}
-            plugins={[
-              {
-                name: 'Tanstack Router',
-                render: <TanStackRouterDevtoolsPanel />,
-              },
-            ]}
-          />
+          <AutumnWrapper>
+            <Header />
+            <main className="flex-1 flex flex-col overflow-y-auto py-6">
+              {children}
+            </main>
+            <Footer />
+            <TanStackDevtools
+              config={{
+                position: 'bottom-left',
+              }}
+              plugins={[
+                {
+                  name: 'Tanstack Router',
+                  render: <TanStackRouterDevtoolsPanel />,
+                },
+              ]}
+            />
+          </AutumnWrapper>
         </ThemeProvider>
         <Scripts />
       </body>

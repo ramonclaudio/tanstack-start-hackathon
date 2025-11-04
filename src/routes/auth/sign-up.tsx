@@ -14,11 +14,17 @@ import {
 
 export const Route = createFileRoute('/auth/sign-up')({
   component: SignUp,
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      redirect: (search.redirect as string) || '/dashboard',
+    }
+  },
 })
 
 function SignUp() {
   const { isPending } = useSession()
   const navigate = useNavigate()
+  const { redirect } = Route.useSearch()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -39,8 +45,8 @@ function SignUp() {
         },
         {
           onSuccess: () => {
-            // Navigate to home - session will be refetched automatically
-            navigate({ to: '/' })
+            // Navigate to the redirect URL or dashboard
+            navigate({ to: redirect })
           },
         },
       )
