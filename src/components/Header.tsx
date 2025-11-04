@@ -32,12 +32,7 @@ export default function Header() {
               <Link to="/" className="hover:text-foreground/80">
                 Home
               </Link>
-              <Link
-                to="/features"
-                className="text-muted-foreground hover:text-foreground"
-              >
-                Features
-              </Link>
+              {/* Features page removed */}
               <Link
                 to="/pricing"
                 className="text-muted-foreground hover:text-foreground"
