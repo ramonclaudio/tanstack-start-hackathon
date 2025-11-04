@@ -14,17 +14,11 @@ import {
 
 export const Route = createFileRoute('/auth/sign-in')({
   component: SignIn,
-  validateSearch: (search: Record<string, unknown>) => {
-    return {
-      redirect: (search.redirect as string) || '/dashboard',
-    }
-  },
 })
 
 function SignIn() {
   const { isPending } = useSession()
   const navigate = useNavigate()
-  const { redirect } = Route.useSearch()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -43,8 +37,8 @@ function SignIn() {
         },
         {
           onSuccess: () => {
-            // Navigate to the redirect URL or dashboard
-            navigate({ to: redirect })
+            // Navigate to dashboard after sign in
+            navigate({ to: '/dashboard' })
           },
         },
       )

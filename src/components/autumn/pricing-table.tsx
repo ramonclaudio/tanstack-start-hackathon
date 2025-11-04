@@ -259,8 +259,12 @@ export const PricingCard = ({
   const mainPriceDisplay = product.properties.is_free
     ? {
         primary_text: 'Free',
+        secondary_text: undefined,
       }
-    : product.items[0].display
+    : (product.items[0]?.display ?? {
+        primary_text: '',
+        secondary_text: undefined,
+      })
 
   const featureItems = product.properties.is_free
     ? product.items
@@ -464,8 +468,12 @@ const EnterprisePricingCard = ({
   const mainPriceDisplay = product.properties.is_free
     ? {
         primary_text: 'Free',
+        secondary_text: undefined,
       }
-    : product.items[0].display
+    : (product.items[0]?.display ?? {
+        primary_text: '',
+        secondary_text: undefined,
+      })
 
   const featureItems = product.properties.is_free
     ? product.items

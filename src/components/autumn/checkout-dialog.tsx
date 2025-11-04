@@ -46,7 +46,8 @@ const formatCurrency = ({
 }
 
 export default function CheckoutDialog(params: CheckoutDialogProps) {
-  const { attach } = useCustomer()
+  // Use consistent options to avoid creating a distinct subscription
+  const { attach, refetch } = useCustomer({ errorOnNotFound: false })
   const [checkoutResult, setCheckoutResult] = useState<
     CheckoutResult | undefined
   >(params.checkoutResult)
@@ -98,6 +99,8 @@ export default function CheckoutDialog(params: CheckoutDialogProps) {
                 ...(params.checkoutParams || {}),
                 options,
               })
+              // Refetch customer data to update UI immediately
+              await refetch()
               setOpen(false)
               setLoading(false)
             }}

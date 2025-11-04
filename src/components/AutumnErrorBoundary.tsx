@@ -1,7 +1,8 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react'
+import { Component } from 'react'
+import { AlertCircle } from 'lucide-react'
+import type { ErrorInfo, ReactNode } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { AlertCircle } from 'lucide-react'
 
 interface Props {
   children: ReactNode

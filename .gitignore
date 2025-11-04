@@ -45,3 +45,5 @@ coverage
 certificates
 todos.json
 dev
+.claude
+CLAUDE.md
