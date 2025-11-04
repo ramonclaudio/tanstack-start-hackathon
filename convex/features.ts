@@ -10,7 +10,7 @@ import { autumn } from './autumn'
  * @example
  * ```ts
  * const result = await ctx.runAction(api.features.checkFeatureAccess, {
- *   featureId: 'ai_credits',
+ *   featureId: 'credits',
  *   requiredBalance: 10
  * })
  * if (!result.allowed) {
@@ -59,7 +59,7 @@ export const checkFeatureAccess = action({
  * ```ts
  * // After generating AI content
  * await ctx.runAction(api.features.trackUsage, {
- *   featureId: 'ai_credits',
+ *   featureId: 'credits',
  *   value: 10
  * })
  * ```
@@ -105,7 +105,7 @@ export const trackUsage = action({
  * @example
  * ```ts
  * const result = await ctx.runAction(api.features.checkAndTrack, {
- *   featureId: 'ai_credits',
+ *   featureId: 'credits',
  *   requiredBalance: 10,
  *   trackValue: 10
  * })
@@ -175,7 +175,7 @@ export const checkAndTrack = action({
  * ```ts
  * // If AI generation fails after tracking
  * await ctx.runAction(api.features.refundUsage, {
- *   featureId: 'ai_credits',
+ *   featureId: 'credits',
  *   value: 10
  * })
  * ```
