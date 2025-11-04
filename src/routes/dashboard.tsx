@@ -1,10 +1,5 @@
-import {
-  Link,
-  createFileRoute,
-  redirect,
-  useNavigate,
-} from '@tanstack/react-router'
-import { useEffect } from 'react'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useEffect, useRef } from 'react'
 import { useCustomer } from 'autumn-js/react'
 import {
   ArrowRight,
@@ -14,7 +9,7 @@ import {
   TrendingUp,
   Zap,
 } from 'lucide-react'
-import { authClient, useSession } from '@/lib/auth-client'
+import { useSession } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -27,6 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { FailedPaymentBanner } from '@/components/FailedPaymentBanner'
 
 export const Route = createFileRoute('/dashboard')({
   component: Dashboard,
@@ -59,21 +55,34 @@ function Dashboard() {
 }
 
 function AuthenticatedDashboard({ user }: { user: any }) {
-  // Fetch customer data once at parent level to avoid multiple calls
-  // Use errorOnNotFound: false to handle initial null state gracefully
+  // Only mount this component once the parent confirmed a valid session.
+  // Use consistent options to avoid duplicate queries on reload.
   const {
     customer,
     isLoading: customerLoading,
     error: customerError,
     openBillingPortal,
+    refetch,
   } = useCustomer({ errorOnNotFound: false })
 
-  // Show loading skeleton until customer data exists
-  // This handles the case where isLoading is false but customer is still null
-  // because Convex hasn't validated the session yet
-  if (!customer && !customerError) {
-    return <DashboardSkeleton />
-  }
+  // Ensure a fresh fetch after auth is ready (handles refresh-time identify race)
+  const retryRef = useRef(0)
+  useEffect(() => {
+    retryRef.current = 0
+    void refetch()
+  }, [user.id, refetch])
+
+  // If the first identify returned null due to timing, retry once or twice
+  useEffect(() => {
+    if (!customer && !customerLoading && retryRef.current < 4) {
+      const delay = Math.min(1000, 250 * Math.pow(2, retryRef.current))
+      const t = setTimeout(() => {
+        retryRef.current += 1
+        void refetch()
+      }, delay)
+      return () => clearTimeout(t)
+    }
+  }, [customer, customerLoading, refetch])
 
   return (
     <div className="flex flex-1 flex-col px-6 py-8 max-w-6xl mx-auto w-full">
@@ -82,6 +91,14 @@ function AuthenticatedDashboard({ user }: { user: any }) {
         <p className="text-muted-foreground">
           Welcome back, {user.name || 'User'}!
         </p>
+      </div>
+
+      {/* Failed Payment Banner */}
+      <div className="mb-6">
+        <FailedPaymentBanner
+          customer={customer}
+          openBillingPortal={openBillingPortal}
+        />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -98,7 +115,7 @@ function AuthenticatedDashboard({ user }: { user: any }) {
                   {user.name
                     ? user.name
                         .split(' ')
-                        .map((n) => n[0])
+                        .map((n: string) => n[0])
                         .join('')
                         .toUpperCase()
                     : 'U'}
@@ -253,9 +270,10 @@ function UsageStatsCard({
         <CardDescription>Track your feature usage</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        {featureEntries.map(([featureId, feature]) => {
+        {featureEntries.map(([featureId, feature]: [string, any]) => {
           const isUnlimited = feature.unlimited ?? false
           const balance = feature.balance ?? 0
+          const included = feature.included_usage ?? 0
 
           // Format feature name
           const featureName = featureId
@@ -276,7 +294,12 @@ function UsageStatsCard({
                   <div
                     className="h-full bg-primary transition-all"
                     style={{
-                      width: `${Math.min((balance / 1000) * 100, 100)}%`,
+                      // Show remaining percentage relative to included usage if available
+                      width: `${
+                        included > 0
+                          ? Math.min((balance / included) * 100, 100)
+                          : 0
+                      }%`,
                     }}
                   />
                 </div>
@@ -298,7 +321,7 @@ function AiCreditsCard({
   isLoading: boolean
   error: any
 }) {
-  if (isLoading || (!customer && !error)) {
+  if (isLoading) {
     return (
       <Card>
         <CardHeader>
@@ -402,8 +425,8 @@ function AiCreditsCard({
         )}
 
         <Button variant="outline" className="w-full" asChild>
-          <Link to="/features">
-            View Features
+          <Link to="/pricing">
+            View Plans
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
@@ -421,9 +444,12 @@ function AutumnCustomerCard({
   customer: any
   isLoading: boolean
   error: any
-  openBillingPortal: any
+  openBillingPortal: (params?: {
+    returnUrl?: string
+    openInNewTab?: boolean
+  }) => any
 }) {
-  if (isLoading || (!customer && !error)) {
+  if (isLoading) {
     return (
       <Card>
         <CardHeader>
@@ -474,20 +500,12 @@ function AutumnCustomerCard({
 
   // Get the active product
   const activeProduct = customer?.products
-    ? customer.products.find((p) => p.status === 'active')
+    ? customer.products.find((p: any) => p.status === 'active')
     : undefined
   const hasActiveSubscription = !!activeProduct
   const productName = activeProduct?.name || 'Free Plan'
 
-  const handleBillingPortal = async () => {
-    try {
-      await openBillingPortal({
-        returnUrl: window.location.href,
-      })
-    } catch (err) {
-      console.error('Failed to open billing portal:', err)
-    }
-  }
+  // Billing portal handler removed - now using BillingPortalButton component
 
   return (
     <Card>
@@ -553,7 +571,13 @@ function AutumnCustomerCard({
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={handleBillingPortal}
+                onClick={async () => {
+                  try {
+                    await openBillingPortal({ returnUrl: window.location.href })
+                  } catch (err) {
+                    console.error('Failed to open billing portal:', err)
+                  }
+                }}
               >
                 <Settings className="mr-2 h-4 w-4" />
                 Manage Billing
@@ -578,6 +602,8 @@ function AutumnCustomerCard({
     </Card>
   )
 }
+
+// Compact card skeleton (removed from usage to simplify loading state)
 
 function DashboardSkeleton() {
   return (
