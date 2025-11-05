@@ -2,7 +2,8 @@ import { httpRouter } from 'convex/server'
 import { authComponent, createAuth } from './auth'
 import { api } from './_generated/api'
 import { httpAction } from './_generated/server'
-import { WebhookPayload } from './schemas'
+import { CustomerSchema, WebhookPayload } from './schemas'
+import type { z } from 'zod'
 
 const http = httpRouter()
 
@@ -39,7 +40,11 @@ http.route({
         (data.customer as { id?: string } | undefined)?.id ||
         (data.data?.customer as { id?: string } | undefined)?.id
 
-      const customer = data.customer ?? data.data?.customer ?? null
+      const customerRaw = data.customer ?? data.data?.customer ?? null
+      const parsedC = CustomerSchema.safeParse(customerRaw)
+      const customer: z.infer<typeof CustomerSchema> | null = parsedC.success
+        ? parsedC.data
+        : null
 
       if (userId) {
         await ctx.runMutation(api.snapshots.upsert, {

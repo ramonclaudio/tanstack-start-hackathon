@@ -3,6 +3,7 @@ import { authComponent } from './auth'
 import { api } from './_generated/api'
 import { autumn } from './autumn'
 import { CustomerSchema, PricingDTO } from './schemas'
+import type { z } from 'zod'
 
 export const get = action({
   args: {},
@@ -19,13 +20,9 @@ export const get = action({
     const productsRes = (await autumn.products.list(ctx)) as
       | { data?: unknown }
       | unknown
-    let productsRaw: unknown = productsRes
-    if (typeof productsRes === 'object') {
-      const r = productsRes as Record<string, unknown>
-      productsRaw = Object.prototype.hasOwnProperty.call(r, 'data')
-        ? (r as { data?: unknown }).data
-        : productsRes
-    }
+    let productsRaw: unknown = (await import('./utils')).unwrap<unknown>(
+      productsRes as any,
+    )
     productsRaw = productsRaw ?? []
     let productsArray: Array<unknown> = []
     if (Array.isArray(productsRaw)) {
@@ -46,7 +43,7 @@ export const get = action({
       : productsArray
 
     // Optionally fetch customer snapshot when authenticated
-    let customer: unknown = null
+    let customer: z.infer<typeof CustomerSchema> | null = null
     if (authenticated) {
       try {
         const res = await autumn.customers.get(ctx, {
@@ -58,16 +55,10 @@ export const get = action({
             'payment_method',
           ] as const,
         })
-        let raw: unknown = res
-        if (typeof res === 'object') {
-          const r = res as Record<string, unknown>
-          raw = Object.prototype.hasOwnProperty.call(r, 'data')
-            ? (r as { data?: unknown }).data
-            : res
-        }
+        let raw: unknown = (await import('./utils')).unwrap<unknown>(res as any)
         raw = raw ?? null
         const parsed = CustomerSchema.safeParse(raw)
-        customer = parsed.success ? parsed.data : raw
+        customer = parsed.success ? parsed.data : null
       } catch {
         try {
           const created = await autumn.customers.create(ctx, {
@@ -80,16 +71,12 @@ export const get = action({
             ] as const,
             errorOnNotFound: false,
           })
-          let raw: unknown = created
-          if (typeof created === 'object') {
-            const r = created as Record<string, unknown>
-            raw = Object.prototype.hasOwnProperty.call(r, 'data')
-              ? (r as { data?: unknown }).data
-              : created
-          }
+          let raw: unknown = (await import('./utils')).unwrap<unknown>(
+            created as any,
+          )
           raw = raw ?? null
           const parsed = CustomerSchema.safeParse(raw)
-          customer = parsed.success ? parsed.data : raw
+          customer = parsed.success ? parsed.data : null
         } catch {
           customer = null
         }

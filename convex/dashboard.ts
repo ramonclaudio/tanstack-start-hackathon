@@ -3,6 +3,7 @@ import { api } from './_generated/api'
 import { authComponent } from './auth'
 import { autumn } from './autumn'
 import { CustomerSchema, DashboardDTO } from './schemas'
+import type { z } from 'zod'
 
 export const get = action({
   args: {},
@@ -19,7 +20,7 @@ export const get = action({
       }
 
       // Fetch consolidated Autumn customer state (features, products, usage)
-      let customerData: unknown = null
+      let customerData: z.infer<typeof CustomerSchema> | null = null
       try {
         const result = await autumn.customers.get(ctx, {
           expand: [
@@ -30,16 +31,12 @@ export const get = action({
             'payment_method',
           ] as const,
         })
-        let data: unknown = result
-        if (typeof result === 'object') {
-          const r = result as Record<string, unknown>
-          data = Object.prototype.hasOwnProperty.call(r, 'data')
-            ? (r as { data?: unknown }).data
-            : result
-        }
+        let data: unknown = (await import('./utils')).unwrap<unknown>(
+          result as any,
+        )
         data = data ?? null
         const parsed = CustomerSchema.safeParse(data)
-        customerData = parsed.success ? parsed.data : data
+        customerData = parsed.success ? parsed.data : null
       } catch (e) {
         // If not found or identify race, create silently and retry once
         try {
@@ -53,16 +50,12 @@ export const get = action({
             ] as const,
             errorOnNotFound: false,
           })
-          let createdData: unknown = created
-          if (typeof created === 'object') {
-            const r = created as Record<string, unknown>
-            createdData = Object.prototype.hasOwnProperty.call(r, 'data')
-              ? (r as { data?: unknown }).data
-              : created
-          }
+          let createdData: unknown = (await import('./utils')).unwrap<unknown>(
+            created as any,
+          )
           createdData = createdData ?? null
           const parsed = CustomerSchema.safeParse(createdData)
-          customerData = parsed.success ? parsed.data : createdData
+          customerData = parsed.success ? parsed.data : null
         } catch {
           customerData = null
         }
@@ -70,11 +63,13 @@ export const get = action({
 
       // Upsert realtime snapshot for this user
       try {
-        await ctx.runMutation(api.snapshots.upsert, {
-          userId: customerId,
-          customerId,
-          customer: customerData,
-        })
+        if (customerData) {
+          await ctx.runMutation(api.snapshots.upsert, {
+            userId: customerId,
+            customerId,
+            customer: customerData,
+          })
+        }
       } catch {}
 
       const dto = {
