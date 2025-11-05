@@ -1,15 +1,11 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 import { ArrowRight, Check, Loader2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
 import { useAction } from 'convex/react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '../../convex/_generated/api'
-import type {
-  CustomerSchema as CustomerSchemaValue,
-  ProductSchema as ProductSchemaValue,
-} from '../../convex/schemas'
+import { CustomerSchema, ProductsQueryResponse } from '../../convex/schemas'
 import PricingTable from '@/components/autumn/pricing-table'
 import { useSession } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
@@ -32,38 +28,22 @@ function PricingPage() {
   const { data: session, isPending } = useSession()
   const navigate = useNavigate()
   const search = Route.useSearch()
-  const getPricing = useAction(api.pricing.get)
-  const [products, setProducts] = useState<
-    Array<z.infer<typeof ProductSchemaValue>>
-  >([])
-  const [customer, setCustomer] = useState<z.infer<
-    typeof CustomerSchemaValue
-  > | null>(null)
-  const [loading, setLoading] = useState(true)
-  const snapshot = useSuspenseQuery(convexQuery(api.snapshots.get, {})) as {
-    customer?: z.infer<typeof CustomerSchemaValue> | null
-  } | null
+  const refreshProducts = useAction(api.products.refresh)
 
-  useEffect(() => {
-    ;(async () => {
-      try {
-        const res = await getPricing({})
-        const payload = res as {
-          success?: boolean
-          data?: {
-            products: Array<z.infer<typeof ProductSchemaValue>>
-            customer: z.infer<typeof CustomerSchemaValue> | null
-          }
-        }
-        setProducts(payload.data?.products ?? [])
-        setCustomer(payload.data?.customer ?? null)
-      } catch (e) {
-        console.error('Failed to load pricing', e)
-      } finally {
-        setLoading(false)
-      }
-    })()
-  }, [getPricing, !!session?.user])
+  const snapshot = useSuspenseQuery(convexQuery(api.snapshots.get, {}))
+  const productsDoc = useSuspenseQuery(
+    convexQuery(api.products.get, { key: 'default' }),
+  )
+
+  // Parse with proper schemas for type safety
+  const productsResponse = ProductsQueryResponse.parse(productsDoc.data)
+  const products = productsResponse.products
+  const customer =
+    snapshot.data &&
+    typeof snapshot.data === 'object' &&
+    'customer' in snapshot.data
+      ? CustomerSchema.nullable().parse(snapshot.data.customer)
+      : null
 
   if (isPending) {
     return (
@@ -91,8 +71,8 @@ function PricingPage() {
         <div className="mb-12">
           <PricingTable
             products={products}
-            customer={snapshot?.customer ?? customer}
-            loading={loading}
+            customer={customer}
+            loading={false}
             initialInterval={search.interval}
             selectedPlan={search.plan}
             onIntervalChange={(interval) =>
@@ -111,16 +91,7 @@ function PricingPage() {
             }
             onPlanChanged={async () => {
               try {
-                const res = await getPricing({})
-                const payload = res as {
-                  success?: boolean
-                  data?: {
-                    products: Array<z.infer<typeof ProductSchemaValue>>
-                    customer: z.infer<typeof CustomerSchemaValue> | null
-                  }
-                }
-                setProducts(payload.data?.products ?? [])
-                setCustomer(payload.data?.customer ?? null)
+                await refreshProducts({ key: 'default' })
               } catch (e) {
                 console.error('Failed to refresh pricing after plan change', e)
               }
