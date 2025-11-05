@@ -1,20 +1,15 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
-import { ArrowRight, Check, Loader2 } from 'lucide-react'
-import { useAction } from 'convex/react'
-import { useSuspenseQuery } from '@tanstack/react-query'
-import { convexQuery } from '@convex-dev/react-query'
-import { api } from '../../convex/_generated/api'
-import { CustomerSchema, ProductsQueryResponse } from '../../convex/schemas'
-import PricingTable from '@/components/autumn/pricing-table'
+import { Check } from 'lucide-react'
+import PricingTable from '@/components/pricing/PricingTable'
 import { useSession } from '@/lib/auth-client'
-import { Button } from '@/components/ui/button'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export const Route = createFileRoute('/pricing')({
   validateSearch: z.object({
@@ -28,29 +23,12 @@ function PricingPage() {
   const { data: session, isPending } = useSession()
   const navigate = useNavigate()
   const search = Route.useSearch()
-  const refreshProducts = useAction(api.products.refresh)
 
-  const snapshot = useSuspenseQuery(convexQuery(api.snapshots.get, {}))
-  const productsDoc = useSuspenseQuery(
-    convexQuery(api.products.get, { key: 'default' }),
-  )
-
-  // Parse with proper schemas for type safety
-  const productsResponse = ProductsQueryResponse.parse(productsDoc.data)
-  const products = productsResponse.products
-  const customer =
-    snapshot.data &&
-    typeof snapshot.data === 'object' &&
-    'customer' in snapshot.data
-      ? CustomerSchema.nullable().parse(snapshot.data.customer)
-      : null
+  // Products and customer are loaded by the PricingTable component
+  // using Autumn's hooks internally
 
   if (isPending) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center px-6">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
-    )
+    return <PricingPageSkeleton />
   }
 
   return (
@@ -70,9 +48,6 @@ function PricingPage() {
         {/* Pricing Table */}
         <div className="mb-12">
           <PricingTable
-            products={products}
-            customer={customer}
-            loading={false}
             initialInterval={search.interval}
             selectedPlan={search.plan}
             onIntervalChange={(interval) =>
@@ -89,41 +64,11 @@ function PricingPage() {
                 replace: true,
               })
             }
-            onPlanChanged={async () => {
-              try {
-                await refreshProducts({ key: 'default' })
-              } catch (e) {
-                console.error('Failed to refresh pricing after plan change', e)
-              }
+            onPlanChanged={() => {
+              // Autumn handles data refresh automatically
             }}
           />
         </div>
-
-        {/* Sign in CTA for unauthenticated users */}
-        {!session?.user && (
-          <div className="my-12 max-w-2xl mx-auto">
-            <div className="border rounded-lg p-8 text-center bg-secondary/30">
-              <h3 className="text-xl font-semibold mb-3">
-                Ready to get started?
-              </h3>
-              <p className="text-muted-foreground mb-6">
-                Sign in or create an account to subscribe to a plan and unlock
-                all features.
-              </p>
-              <div className="flex gap-3 justify-center">
-                <Button asChild>
-                  <a href="/auth/sign-up">
-                    Get Started
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </a>
-                </Button>
-                <Button variant="outline" asChild>
-                  <a href="/auth/sign-in">Sign In</a>
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Features Comparison */}
         <div className="mt-16 max-w-4xl mx-auto">
@@ -264,6 +209,63 @@ function PricingPage() {
               support@example.com
             </a>
           </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PricingPageSkeleton() {
+  return (
+    <div className="flex flex-1 flex-col px-6 py-12">
+      <div className="mx-auto max-w-7xl w-full">
+        {/* Header Section - Skeleton */}
+        <div className="text-center mb-12">
+          <Skeleton className="h-10 w-96 mx-auto mb-4" />
+          <Skeleton className="h-6 w-[500px] mx-auto" />
+        </div>
+
+        {/* Pricing Table - PricingTable component has its own skeleton */}
+        <div className="mb-12">
+          <PricingTable loading={true} />
+        </div>
+
+        {/* Why Choose Us Section - Skeleton */}
+        <div className="mt-16 max-w-4xl mx-auto">
+          <Skeleton className="h-8 w-48 mx-auto mb-8" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="border rounded-lg p-6 bg-card">
+                <Skeleton className="w-12 h-12 rounded-full mb-4" />
+                <Skeleton className="h-6 w-32 mb-2" />
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* FAQ Section - Skeleton */}
+        <div className="mt-16 max-w-3xl mx-auto">
+          <Skeleton className="h-8 w-64 mx-auto mb-8" />
+          <div className="space-y-2">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div
+                key={i}
+                className="border rounded-lg px-4 py-4 flex items-center justify-between"
+              >
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-4" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* CTA Section - Skeleton */}
+        <div className="mt-16 text-center border-t pt-12">
+          <Skeleton className="h-5 w-64 mx-auto mb-4" />
+          <Skeleton className="h-4 w-80 mx-auto" />
         </div>
       </div>
     </div>

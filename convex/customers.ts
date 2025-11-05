@@ -25,6 +25,13 @@ export const getUserForAutumn = query({
         },
       }
     } catch (error) {
+      const msg =
+        error && typeof error === 'object' && 'message' in error
+          ? String((error as { message?: unknown }).message)
+          : String(error)
+      if (msg !== 'Unauthenticated') {
+        console.error('customers.getUserForAutumn failed', error)
+      }
       return { authenticated: false }
     }
   },
@@ -46,6 +53,13 @@ export const getCurrentCustomer = query({
       // This query is mainly for server-side access if needed
       return { customerId }
     } catch (error) {
+      const msg =
+        error && typeof error === 'object' && 'message' in error
+          ? String((error as { message?: unknown }).message)
+          : String(error)
+      if (msg !== 'Unauthenticated') {
+        console.error('customers.getCurrentCustomer failed', error)
+      }
       return null
     }
   },

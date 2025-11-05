@@ -3,6 +3,8 @@ import { QueryClient } from '@tanstack/react-query'
 import { routerWithQueryClient } from '@tanstack/react-router-with-query'
 import { ConvexQueryClient } from '@convex-dev/react-query'
 import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react'
+import { AutumnProvider } from 'autumn-js/react'
+import { api } from '../convex/_generated/api'
 import { routeTree } from './routeTree.gen'
 import { authClient } from './lib/auth-client'
 
@@ -18,8 +20,12 @@ export function getRouter() {
       queries: {
         queryKeyHashFn: convexQueryClient.hashFn(),
         queryFn: convexQueryClient.queryFn(),
-        staleTime: 30_000, // cache fresh for 30s to reduce refetch churn
+        // Convex data is never stale - updates pushed via WebSocket
+        // refetch options are ignored since queries are always up to date
         refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        // Subscriptions stay active for 5 mins after unmount by default (gcTime)
+        // Override per query if needed with { gcTime: 10000 }
       },
     },
   })
@@ -36,7 +42,12 @@ export function getRouter() {
           client={convexQueryClient.convexClient}
           authClient={authClient}
         >
-          {children}
+          <AutumnProvider
+            convex={convexQueryClient.convexClient}
+            convexApi={(api as any).autumn}
+          >
+            {children}
+          </AutumnProvider>
         </ConvexBetterAuthProvider>
       ),
     }),

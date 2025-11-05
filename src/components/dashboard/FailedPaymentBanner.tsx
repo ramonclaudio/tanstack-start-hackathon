@@ -1,8 +1,6 @@
 import { AlertTriangle, CreditCard, X } from 'lucide-react'
 import { useState } from 'react'
 import type { Customer as AutumnCustomer } from 'autumn-js'
-import type { z } from 'zod'
-import type { CustomerSchema } from '../../convex/schemas'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 
@@ -14,7 +12,7 @@ export function FailedPaymentBanner({
   customer,
   openBillingPortal,
 }: {
-  customer?: z.infer<typeof CustomerSchema> | AutumnCustomer | null
+  customer?: AutumnCustomer | null
   openBillingPortal: (params?: {
     returnUrl?: string
     openInNewTab?: boolean
@@ -25,7 +23,9 @@ export function FailedPaymentBanner({
   if (!customer || dismissed) return null
 
   // Check if any product has a past_due status
-  const failedPayment = customer.products.find((p) => p.status === 'past_due')
+  const failedPayment = customer.products
+    ? customer.products.find((p: any) => p.status === 'past_due')
+    : undefined
 
   if (!failedPayment) return null
 
@@ -46,7 +46,8 @@ export function FailedPaymentBanner({
                 Payment Failed
               </h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Your payment for <strong>{failedPayment.name}</strong> has
+                Your payment for{' '}
+                <strong>{failedPayment.name || 'your subscription'}</strong> has
                 failed. Please update your payment method to avoid service
                 interruption.
               </p>

@@ -16,7 +16,20 @@
       "mcp__convex__runOneoffQuery",
       "Bash(git checkout:*)",
       "Bash(gh pr create:*)",
-      "Bash(gh pr merge:*)"
+      "Bash(gh pr merge:*)",
+      "mcp__convex__tables",
+      "mcp__convex__status",
+      "mcp__convex__functionSpec",
+      "mcp__convex__data",
+      "Bash(find:*)",
+      "Bash(cloc:*)",
+      "Bash(cat:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "WebSearch",
+      "WebFetch(domain:convex-better-auth.netlify.app)",
+      "Bash(bun pm:*)",
+      "Bash(eza:*)"
     ],
     "deny": [],
     "ask": []

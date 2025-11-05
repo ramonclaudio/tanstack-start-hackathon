@@ -76,7 +76,7 @@ function Home() {
                 </p>
               ) : (
                 <ul className="space-y-2">
-                  {tasks.map((t) => (
+                  {tasks.map((t: any) => (
                     <li
                       key={t._id}
                       className="border rounded-lg p-4 bg-card text-card-foreground flex items-center justify-between gap-4"

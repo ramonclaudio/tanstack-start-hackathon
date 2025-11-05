@@ -47,7 +47,7 @@ function Home() {
                 </p>
               ) : (
                 <ul className="space-y-2">
-                  {demos.map((item) => (
+                  {demos.map((item: any) => (
                     <li
                       key={item._id}
                       className="border rounded-lg p-4 bg-card text-card-foreground"
