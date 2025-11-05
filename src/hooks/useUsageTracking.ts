@@ -43,11 +43,14 @@ export function useUsageTracking() {
     setError(null)
 
     try {
-      const key =
-        idempotencyKey ||
-        (typeof crypto !== 'undefined' && 'randomUUID' in crypto
-          ? (crypto as any).randomUUID()
-          : `idemp_${Date.now()}_${Math.random().toString(36).slice(2)}`)
+      let key = idempotencyKey
+      if (!key) {
+        try {
+          key = globalThis.crypto.randomUUID()
+        } catch {
+          key = `idemp_${Date.now()}_${Math.random().toString(36).slice(2)}`
+        }
+      }
       // Track the usage
       await track({
         featureId,
@@ -60,8 +63,11 @@ export function useUsageTracking() {
       await refetch()
 
       return { success: true }
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to track usage'
+    } catch (err: unknown) {
+      const errorMessage =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: unknown }).message)
+          : 'Failed to track usage'
       setError(errorMessage)
       console.error('Usage tracking failed:', err)
       return { success: false, error: errorMessage }
@@ -98,8 +104,11 @@ export function useUsageTracking() {
       await refetch()
 
       return { success: true }
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to refund usage'
+    } catch (err: unknown) {
+      const errorMessage =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: unknown }).message)
+          : 'Failed to refund usage'
       setError(errorMessage)
       console.error('Usage refund failed:', err)
       return { success: false, error: errorMessage }
@@ -209,8 +218,11 @@ export function useCheckThenTrack() {
         allowed: true,
         data: operationResult,
       }
-    } catch (err: any) {
-      const errorMessage = err.message || 'Operation failed'
+    } catch (err: unknown) {
+      const errorMessage =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: unknown }).message)
+          : 'Operation failed'
       setError(errorMessage)
       console.error('Check-then-track failed:', err)
       return {

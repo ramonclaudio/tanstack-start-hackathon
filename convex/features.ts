@@ -39,12 +39,15 @@ export const checkFeatureAccess = action({
         data: result.data,
         error: null,
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Feature access check failed:', error)
       return {
         success: false,
         data: null,
-        error: error.message || 'Failed to check feature access',
+        error:
+          error && typeof error === 'object' && 'message' in error
+            ? String((error as { message?: unknown }).message)
+            : 'Failed to check feature access',
       }
     }
   },
@@ -85,12 +88,15 @@ export const trackUsage = action({
         data: result.data,
         error: null,
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Usage tracking failed:', error)
       return {
         success: false,
         data: null,
-        error: error.message || 'Failed to track usage',
+        error:
+          error && typeof error === 'object' && 'message' in error
+            ? String((error as { message?: unknown }).message)
+            : 'Failed to track usage',
       }
     }
   },
@@ -155,13 +161,16 @@ export const checkAndTrack = action({
         },
         error: null,
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Check and track failed:', error)
       return {
         success: false,
         allowed: false,
         data: null,
-        error: error.message || 'Operation failed',
+        error:
+          error && typeof error === 'object' && 'message' in error
+            ? String((error as { message?: unknown }).message)
+            : 'Operation failed',
       }
     }
   },
@@ -197,12 +206,15 @@ export const refundUsage = action({
         data: result.data,
         error: null,
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Usage refund failed:', error)
       return {
         success: false,
         data: null,
-        error: error.message || 'Failed to refund usage',
+        error:
+          error && typeof error === 'object' && 'message' in error
+            ? String((error as { message?: unknown }).message)
+            : 'Failed to refund usage',
       }
     }
   },

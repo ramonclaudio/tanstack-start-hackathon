@@ -15,8 +15,12 @@ export class AppErrorBoundary extends Component<Props> {
   }
 
   override render() {
-    const error = this.props.error as any
-    const message = error?.message || 'Something went wrong.'
+    const err = this.props.error
+    const message =
+      err && typeof err === 'object' && 'message' in err
+        ? String((err as { message?: unknown }).message) ||
+          'Something went wrong.'
+        : 'Something went wrong.'
     return (
       <div className="px-6 py-8 w-full flex justify-center">
         <Card className="border-destructive/50 bg-destructive/5 max-w-2xl w-full">

@@ -6,7 +6,7 @@ import { Loader2, Mail } from 'lucide-react'
 import { useAction } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import type { ProductDetails } from 'autumn-js/react'
-import type { Product, ProductItem } from 'autumn-js'
+import type { CheckoutResult, Product, ProductItem } from 'autumn-js'
 import { cn } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -14,6 +14,42 @@ import { Button } from '@/components/ui/button'
 import CheckoutDialog from '@/components/autumn/checkout-dialog'
 import { getPricingTableContent } from '@/lib/autumn/pricing-table-content'
 import { useSession } from '@/lib/auth-client'
+
+// Minimal product shape compatible with our backend schema and autumn-js
+type ProductItemLike = {
+  included_usage?: number | 'inf'
+  interval?:
+    | 'minute'
+    | 'hour'
+    | 'day'
+    | 'week'
+    | 'month'
+    | 'quarter'
+    | 'semi_annual'
+    | 'year'
+  display?: { primary_text?: string; secondary_text?: string }
+}
+
+type ProductLike = {
+  id: string
+  name?: string
+  is_add_on: boolean
+  items: Array<ProductItem | ProductItemLike>
+  properties: {
+    is_free: boolean
+    is_one_off: boolean
+    updateable?: boolean
+    interval_group?: string | null
+  }
+  display?: {
+    name?: string
+    description?: string
+    button_text?: string
+    recommend_text?: string
+    everything_from?: string
+  }
+  scenario?: string
+}
 
 export default function PricingTable({
   productDetails,
@@ -27,8 +63,8 @@ export default function PricingTable({
   onPlanChanged,
 }: {
   productDetails?: Array<ProductDetails>
-  products?: Array<Product>
-  customer?: any
+  products?: Array<Product | ProductLike>
+  customer?: { products?: Array<{ id: string; status?: string }> } | null
   loading?: boolean
   initialInterval?: 'month' | 'year'
   selectedPlan?: string
@@ -38,7 +74,7 @@ export default function PricingTable({
 }) {
   const { data: session } = useSession()
   // const navigate = useNavigate() // not needed for unauthenticated redirect
-  const prepareCheckout = useAction((api as any).checkout.prepare)
+  const prepareCheckout = useAction(api.checkout.prepare)
 
   const [isAnnual, setIsAnnual] = useState(initialInterval === 'year')
   React.useEffect(() => {
@@ -46,10 +82,14 @@ export default function PricingTable({
   }, [initialInterval])
   // Dialog state must be declared before any early returns to keep hook order stable
   const [open, setOpen] = useState(false)
-  const [checkoutResult, setCheckoutResult] = useState<any>(null)
+  const [checkoutResult, setCheckoutResult] = useState<CheckoutResult | null>(
+    null,
+  )
 
   const hook = usePricingTable({ productDetails })
-  const products = productsProp ? productsProp : hook.products
+  const products = (productsProp ? productsProp : hook.products) as Array<
+    Product | ProductLike
+  >
   const isLoading = productsProp ? !!loading : hook.isLoading
   const error = hook.error
 
@@ -57,11 +97,7 @@ export default function PricingTable({
     const countFromProps = Array.isArray(productsProp)
       ? productsProp.filter((p) => !p.is_add_on).length || productsProp.length
       : 0
-    const countFromHook = Array.isArray((hook as any).products)
-      ? (hook as any).products.filter((p: any) => !p.is_add_on).length ||
-        (hook as any).products.length
-      : 0
-    const skeletonCount = Math.max(countFromProps || countFromHook || 3, 1)
+    const skeletonCount = Math.max(countFromProps || 3, 1)
 
     return (
       <div className={cn('flex items-center flex-col w-full')}>
@@ -129,7 +165,7 @@ export default function PricingTable({
 
   const multiInterval = intervals.length > 1
 
-  const intervalFilter = (product: Product) => {
+  const intervalFilter = (product: Product | ProductLike) => {
     if (!product.properties.interval_group) {
       return true
     }
@@ -146,7 +182,7 @@ export default function PricingTable({
   }
 
   // Sort products in order: Free, Starter, Pro, Enterprise
-  const sortProducts = (a: Product, b: Product) => {
+  const sortProducts = (a: Product | ProductLike, b: Product | ProductLike) => {
     const order = ['free_plan', 'starter_plan', 'pro_plan', 'enterprise_plan']
     const aIndex = order.indexOf(a.id)
     const bIndex = order.indexOf(b.id)
@@ -164,16 +200,17 @@ export default function PricingTable({
     return 0
   }
 
-  const handlePricingCardClick = async (product: Product) => {
+  const handlePricingCardClick = async (product: Product | ProductLike) => {
     if (!session?.user) {
       // Avoid strict search typing on navigate by using location
       window.location.assign('/auth/sign-up')
       return
     }
     try {
-      const res = await prepareCheckout({ productId: product.id } as any)
-      const payload: any = res
-      if (payload?.success && payload.data) {
+      const res = await prepareCheckout({ productId: product.id })
+      const payload: { success?: boolean; data?: CheckoutResult | null } =
+        res as { success?: boolean; data?: CheckoutResult | null }
+      if (payload.success && payload.data) {
         setCheckoutResult(payload.data)
         setOpen(true)
       }
@@ -183,11 +220,14 @@ export default function PricingTable({
   }
 
   // Derive per-product status from provided customer snapshot
+  type CustProd = { id: string; status?: string }
+  const custProducts: Array<CustProd> = Array.isArray(customer?.products)
+    ? (customer.products as Array<unknown>).filter(
+        (p): p is CustProd => !!p && typeof p === 'object' && 'id' in p,
+      )
+    : []
   const productStatus = new Map<string, string | undefined>(
-    (Array.isArray(customer?.products)
-      ? (customer!.products as Array<any>)
-      : []
-    ).map((p: any) => [p.id, p.status]),
+    custProducts.map((p) => [p.id, p.status]),
   )
 
   return (
@@ -260,7 +300,7 @@ export default function PricingTable({
 const PricingTableContext = createContext<{
   isAnnualToggle: boolean
   setIsAnnualToggle: (isAnnual: boolean) => void
-  products: Array<Product>
+  products: Array<Product | ProductLike>
   showFeatures: boolean
   isAuthenticated: boolean
 } | null>(null)
@@ -286,7 +326,7 @@ export const PricingTableContainer = ({
   onIntervalToggle,
 }: {
   children?: React.ReactNode
-  products?: Array<Product>
+  products?: Array<Product | ProductLike>
   showFeatures?: boolean
   className?: string
   isAnnualToggle: boolean
@@ -424,8 +464,8 @@ export const PricingCard = ({
 
   const creditSummary = (() => {
     if (!creditItem) return null
-    const units = creditItem.included_usage as any
-    const intervalLabel = formatInterval(creditItem.interval as any)
+    const units = creditItem.included_usage
+    const intervalLabel = formatInterval(creditItem.interval)
     if (!intervalLabel) return null
     if (units === 'inf') return 'Unlimited credits / ' + intervalLabel
     if (typeof units === 'number') return `${units} credits / ${intervalLabel}`
@@ -507,7 +547,7 @@ export const PricingFeatureList = ({
   extraBullets,
   className,
 }: {
-  items: Array<ProductItem>
+  items: Array<ProductItem | ProductItemLike>
   everythingFrom?: string
   extraBullets?: Array<string>
   className?: string
@@ -622,11 +662,7 @@ export const AnnualSwitch = ({
 
 export const RecommendedBadge = ({ recommended }: { recommended: string }) => {
   return (
-    <div
-      className="bg-secondary absolute border text-muted-foreground text-sm font-medium lg:rounded-full px-3 lg:py-0.5 lg:top-4 lg:right-4       {recommended}
-      {recommended}
- rounded-bl-lg"
-    >
+    <div className="bg-secondary absolute border text-muted-foreground text-sm font-medium lg:rounded-full px-3 lg:py-0.5 lg:top-4 lg:right-4 rounded-bl-lg">
       {recommended}
     </div>
   )
@@ -637,7 +673,7 @@ const EnterprisePricingCard = ({
   product,
   isAuthenticated,
 }: {
-  product: Product
+  product: Product | ProductLike
   isAuthenticated: boolean
 }) => {
   const { name, display: productDisplay } = product

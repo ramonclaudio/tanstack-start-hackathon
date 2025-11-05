@@ -1,5 +1,7 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { convexQuery } from '@convex-dev/react-query'
 import { useAction } from 'convex/react'
 import {
   ArrowRight,
@@ -9,9 +11,10 @@ import {
   TrendingUp,
   Zap,
 } from 'lucide-react'
-import { useSuspenseQuery } from '@tanstack/react-query'
-import { convexQuery } from '@convex-dev/react-query'
 import { api } from '../../convex/_generated/api'
+import { CustomerSchema } from '../../convex/schemas'
+import type { CustomerFeatureSchema, DashboardDTO } from '../../convex/schemas'
+import type { z } from 'zod'
 // Session handled via aggregated loader
 import { Button } from '@/components/ui/button'
 import {
@@ -34,13 +37,13 @@ export const Route = createFileRoute('/dashboard')({
 
 function Dashboard() {
   const navigate = useNavigate()
-  const getDashboard = useAction((api as any).dashboard.get)
-  const [data, setData] = useState<any>(null)
+  const getDashboard = useAction(api.dashboard.get)
+  const [data, setData] = useState<z.infer<typeof DashboardDTO> | null>(null)
   const [loading, setLoading] = useState(true)
   const { data: session, isPending: sessionPending } = useSession()
-  const snapshot = useSuspenseQuery(
-    convexQuery((api as any).snapshots.get, {}),
-  ) as any
+  const snapshot = useSuspenseQuery(convexQuery(api.snapshots.get, {})) as {
+    customer?: z.infer<typeof CustomerSchema> | null
+  } | null
 
   useEffect(() => {
     // Wait for auth to resolve to avoid false unauthenticated redirects on refresh
@@ -54,12 +57,19 @@ function Dashboard() {
     ;(async () => {
       try {
         const res = await getDashboard({})
-        const payload: any = res
-        if (payload?.success && payload.data?.authenticated === false) {
+        const payload = res as {
+          success?: boolean
+          data?: z.infer<typeof DashboardDTO>
+        }
+        if (
+          payload.success &&
+          payload.data &&
+          payload.data.authenticated === false
+        ) {
           navigate({ to: '/auth/sign-in' })
           return
         }
-        setData(payload?.data || null)
+        setData(payload.data || null)
       } catch (e) {
         console.error('Failed to load dashboard data', e)
       } finally {
@@ -68,13 +78,17 @@ function Dashboard() {
     })()
   }, [getDashboard, navigate, session?.user, sessionPending])
 
-  if (sessionPending || loading || !data) {
+  if (sessionPending || loading || !data || !data.user) {
     return <DashboardSkeleton />
   }
 
-  const normalizedCustomer = data.customer?.customer ?? data.customer
+  const normalizedCustomer = data.customer
   const customerFromSnapshot = snapshot?.customer ?? null
-  const customerForUI = customerFromSnapshot || normalizedCustomer
+  const parsedSnap = CustomerSchema.safeParse(customerFromSnapshot)
+  const parsedNorm = CustomerSchema.safeParse(normalizedCustomer)
+  const customerForUI: z.infer<typeof CustomerSchema> | null =
+    (parsedSnap.success ? parsedSnap.data : null) ||
+    (parsedNorm.success ? parsedNorm.data : null)
   return (
     <AuthenticatedDashboard
       key={data.user.id}
@@ -88,21 +102,21 @@ function AuthenticatedDashboard({
   user,
   customer,
 }: {
-  user: any
-  customer: any
+  user: NonNullable<z.infer<typeof DashboardDTO>['user']>
+  customer: z.infer<typeof CustomerSchema> | null | undefined
 }) {
-  const openPortal = useAction((api as any).billing.openPortal)
+  const openPortal = useAction(api.billing.openPortal)
   const openBillingPortal = async ({
     returnUrl,
   }: { returnUrl?: string } = {}) => {
     try {
       const res = await openPortal({
         returnUrl: returnUrl || window.location.href,
-      } as any)
-      const payload: any = res
-      const url = payload?.data?.url
-      if (payload?.success && url) {
-        window.location.href = url as string
+      })
+      const payload = res as { success?: boolean; data?: { url?: string } }
+      const url = payload.data?.url
+      if (payload.success && url) {
+        window.location.href = url
       }
     } catch (e) {
       console.error('Failed to open billing portal:', e)
@@ -135,7 +149,10 @@ function AuthenticatedDashboard({
           <CardContent>
             <div className="flex items-start gap-4">
               <Avatar className="h-16 w-16">
-                <AvatarImage src={user.image || undefined} alt={user.name} />
+                <AvatarImage
+                  src={user.image || undefined}
+                  alt={user.name ?? ''}
+                />
                 <AvatarFallback>
                   {user.name
                     ? user.name
@@ -210,7 +227,7 @@ function UsageStatsCard({
   customer,
   isLoading,
 }: {
-  customer: any
+  customer: z.infer<typeof CustomerSchema> | null | undefined
   isLoading: boolean
 }) {
   if (isLoading || !customer) {
@@ -234,39 +251,8 @@ function UsageStatsCard({
     )
   }
 
-  // This check is now redundant since we check above, but keeping for type safety
-  if (!customer) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Usage Statistics</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-sm text-muted-foreground">
-            Sign in to view your usage statistics.
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
   // Get all features - handle case where features might be undefined
-  const features = customer?.features
-  if (!features) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Usage Statistics</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-sm text-muted-foreground">
-            No usage features available.
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
+  const features = customer.features
   const featureEntries = Object.entries(features)
 
   if (featureEntries.length === 0) {
@@ -291,43 +277,48 @@ function UsageStatsCard({
         <CardDescription>Track your feature usage</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        {featureEntries.map(([featureId, feature]: [string, any]) => {
-          const isUnlimited = feature.unlimited ?? false
-          const balance = feature.balance ?? 0
-          const included = feature.included_usage ?? 0
+        {featureEntries.map(
+          ([featureId, feature]: [
+            string,
+            z.infer<typeof CustomerFeatureSchema>,
+          ]) => {
+            const isUnlimited = feature.unlimited ?? false
+            const balance = feature.balance ?? 0
+            const included = feature.included_usage
 
-          // Format feature name
-          const featureName = featureId
-            .split('_')
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ')
+            // Format feature name
+            const featureName = featureId
+              .split('_')
+              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ')
 
-          return (
-            <div key={featureId}>
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-sm font-medium">{featureName}</div>
-                <div className="text-sm text-muted-foreground">
-                  {isUnlimited ? '∞' : balance.toLocaleString()}
+            return (
+              <div key={featureId}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-sm font-medium">{featureName}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {isUnlimited ? '∞' : balance.toLocaleString()}
+                  </div>
                 </div>
+                {!isUnlimited && (
+                  <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all"
+                      style={{
+                        // Show remaining percentage relative to included usage if available
+                        width: `${
+                          typeof included === 'number' && included > 0
+                            ? Math.min((balance / included) * 100, 100)
+                            : 0
+                        }%`,
+                      }}
+                    />
+                  </div>
+                )}
               </div>
-              {!isUnlimited && (
-                <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary transition-all"
-                    style={{
-                      // Show remaining percentage relative to included usage if available
-                      width: `${
-                        included > 0
-                          ? Math.min((balance / included) * 100, 100)
-                          : 0
-                      }%`,
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          )
-        })}
+            )
+          },
+        )}
       </CardContent>
     </Card>
   )
@@ -338,9 +329,9 @@ function AiCreditsCard({
   isLoading,
   error,
 }: {
-  customer: any
+  customer: z.infer<typeof CustomerSchema> | null | undefined
   isLoading: boolean
-  error: any
+  error: unknown
 }) {
   if (isLoading) {
     return (
@@ -384,11 +375,19 @@ function AiCreditsCard({
   }
 
   // Get credits feature - handle case where features might be undefined
-  const aiCreditsFeature = customer?.features?.['credits']
+  const hasCredits = Object.prototype.hasOwnProperty.call(
+    customer.features,
+    'credits',
+  )
+  const aiCreditsFeature = hasCredits ? customer.features['credits'] : undefined
 
   // Check if feature exists at runtime (TypeScript types may not reflect actual data)
 
-  if (!aiCreditsFeature || typeof aiCreditsFeature !== 'object') {
+  if (
+    !hasCredits ||
+    !aiCreditsFeature ||
+    typeof aiCreditsFeature !== 'object'
+  ) {
     return (
       <Card>
         <CardHeader>
@@ -462,13 +461,13 @@ function AutumnCustomerCard({
   error,
   openBillingPortal,
 }: {
-  customer: any
+  customer: z.infer<typeof CustomerSchema> | null | undefined
   isLoading: boolean
-  error: any
+  error: unknown
   openBillingPortal: (params?: {
     returnUrl?: string
     openInNewTab?: boolean
-  }) => any
+  }) => Promise<void> | void
 }) {
   if (isLoading) {
     return (
@@ -522,13 +521,17 @@ function AutumnCustomerCard({
   // Get the active product
   const activeProduct = customer?.products
     ? customer.products.find(
-        (p: any) => p.status === 'active' || p.status === 'trialing',
+        (p) => p.status === 'active' || p.status === 'trialing',
       )
     : undefined
   const hasActiveSubscription = !!activeProduct
   const productNameBase = activeProduct?.name || 'Free Plan'
   const productGroup = activeProduct?.group ? ` • ${activeProduct.group}` : ''
   const productName = `${productNameBase}${productGroup}`
+  const nextBillingEpochSec = Number(
+    (activeProduct as { current_period_end?: number | string } | undefined)
+      ?.current_period_end ?? 0,
+  )
 
   // Billing portal handler removed - now using BillingPortalButton component
 
@@ -559,7 +562,7 @@ function AutumnCustomerCard({
           )}
         </div>
 
-        {activeProduct?.current_period_end && (
+        {Number.isFinite(nextBillingEpochSec) && nextBillingEpochSec > 0 && (
           <>
             <Separator />
             <div className="flex items-center gap-2">
@@ -569,13 +572,14 @@ function AutumnCustomerCard({
                   Next Billing Date
                 </div>
                 <div className="text-sm font-medium">
-                  {new Date(
-                    activeProduct.current_period_end * 1000,
-                  ).toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
+                  {new Date(nextBillingEpochSec * 1000).toLocaleDateString(
+                    'en-US',
+                    {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    },
+                  )}
                 </div>
               </div>
             </div>

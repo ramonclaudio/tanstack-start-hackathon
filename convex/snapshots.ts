@@ -1,3 +1,4 @@
+import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { authComponent } from './auth'
 
@@ -7,7 +8,8 @@ export const get = query({
   handler: async (ctx) => {
     try {
       const user = await authComponent.getAuthUser(ctx)
-      const userId = (user as any).userId || (user as any)._id
+      const u = user as { userId?: string; _id?: string }
+      const userId = u.userId || u._id
       if (!userId) return null
 
       const doc = await ctx.db
@@ -23,10 +25,11 @@ export const get = query({
 
 export const upsert = mutation({
   args: {
-    // loose typing without schema; keep args flexible
-  } as any,
-  // Expect args: { userId: string, customerId: string, customer: any, updatedAt?: number }
-  handler: async (ctx, args: any) => {
+    userId: v.string(),
+    customerId: v.optional(v.string()),
+    customer: v.optional(v.any()),
+  },
+  handler: async (ctx, args) => {
     const { userId, customerId, customer } = args
     if (!userId) return null
     const existing = await ctx.db
@@ -36,7 +39,7 @@ export const upsert = mutation({
     const payload = {
       userId,
       customerId: customerId || userId,
-      customer: customer || null,
+      customer: customer && typeof customer === 'object' ? customer : null,
       updatedAt: Date.now(),
     }
     if (existing) {

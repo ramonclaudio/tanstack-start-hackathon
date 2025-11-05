@@ -1,7 +1,14 @@
 import type { Product } from 'autumn-js'
 
-export const getPricingTableContent = (product: Product) => {
-  const { scenario, free_trial: _free_trial, properties } = product
+type ProductContentLike = {
+  scenario?: string
+  properties: { is_one_off: boolean; updateable?: boolean; has_trial?: boolean }
+}
+
+export const getPricingTableContent = (
+  product: Product | ProductContentLike,
+) => {
+  const { scenario, properties } = product
   const { is_one_off, updateable, has_trial } = properties
 
   if (has_trial) {

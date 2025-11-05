@@ -1,6 +1,8 @@
 import { AlertTriangle, CreditCard, X } from 'lucide-react'
 import { useState } from 'react'
-import type { Customer } from 'autumn-js'
+import type { Customer as AutumnCustomer } from 'autumn-js'
+import type { z } from 'zod'
+import type { CustomerSchema } from '../../convex/schemas'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 
@@ -12,11 +14,11 @@ export function FailedPaymentBanner({
   customer,
   openBillingPortal,
 }: {
-  customer?: Customer | null
+  customer?: z.infer<typeof CustomerSchema> | AutumnCustomer | null
   openBillingPortal: (params?: {
     returnUrl?: string
     openInNewTab?: boolean
-  }) => any
+  }) => Promise<void> | void
 }) {
   const [dismissed, setDismissed] = useState(false)
 
