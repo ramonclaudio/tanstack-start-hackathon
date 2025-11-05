@@ -6,12 +6,11 @@ import {
   createRootRouteWithContext,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { AutumnWrapper } from '../components/AutumnWrapper'
 import { AppErrorBoundary } from '../components/AppErrorBoundary'
 
 import Footer from '../components/Footer'
 import Header from '../components/Header'
-import { ThemeProvider } from '../components/theme-provider'
+import { ThemeProvider } from '../components/ThemeProvider'
 import { Button } from '../components/ui/button'
 
 import appCss from '../styles.css?url'
@@ -54,7 +53,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="flex flex-col h-screen">
         <ThemeProvider>
-          <AutumnWrapper>
+          <AppErrorBoundary>
             <Header />
             <main className="flex-1 flex flex-col overflow-y-auto py-6">
               {children}
@@ -71,7 +70,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 ]}
               />
             )}
-          </AutumnWrapper>
+          </AppErrorBoundary>
         </ThemeProvider>
         <Scripts />
       </body>
