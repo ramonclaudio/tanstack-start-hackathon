@@ -47,7 +47,7 @@ const formatCurrency = ({
 }
 
 export default function CheckoutDialog(params: CheckoutDialogProps) {
-  const attachAndHydrate = useAction((api as any).checkout.attachAndHydrate)
+  const attachAndHydrate = useAction(api.checkout.attachAndHydrate)
   const [checkoutResult, setCheckoutResult] = useState<
     CheckoutResult | undefined
   >(params.checkoutResult)
@@ -99,9 +99,8 @@ export default function CheckoutDialog(params: CheckoutDialogProps) {
                   productId: checkoutResult.product.id,
                   ...(params.checkoutParams || {}),
                   options,
-                } as any)
-                const payload: any = res
-                if (!payload?.success) {
+                })
+                if (!(res as { success?: boolean }).success) {
                   console.error('Attach failed')
                 }
                 // Parent will trigger refresh via onClose callback
@@ -319,7 +318,7 @@ const PrepaidItem = ({
   const [quantityInput, setQuantityInput] = useState<string>(
     (quantity / billingUnits).toString(),
   )
-  const prepare = useAction((api as any).checkout.prepare)
+  const prepare = useAction(api.checkout.prepare)
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
   const scenario = checkoutResult.product.scenario
@@ -341,11 +340,14 @@ const PrepaidItem = ({
         quantity: Number(quantityInput) * billingUnits,
       })
 
-      const data: any = await prepare({
+      const result = await prepare({
         productId: checkoutResult.product.id,
-        options: newOptions as any,
-      } as any)
-      setCheckoutResult(data)
+        options: newOptions,
+      })
+      const next =
+        (result as { data?: CheckoutResult }).data ??
+        (result as unknown as CheckoutResult)
+      setCheckoutResult(next)
     } catch (error) {
       console.error(error)
     } finally {

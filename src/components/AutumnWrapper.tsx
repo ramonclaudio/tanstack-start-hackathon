@@ -11,7 +11,7 @@ export function AutumnWrapper({ children }: { children: React.ReactNode }) {
   // Components should handle loading states internally using useCustomer({ errorOnNotFound: false })
   return (
     <AutumnErrorBoundary>
-      <AutumnProvider convex={convex} convexApi={(api as any).autumn}>
+      <AutumnProvider convex={convex} convexApi={api.autumn}>
         {children}
       </AutumnProvider>
     </AutumnErrorBoundary>
