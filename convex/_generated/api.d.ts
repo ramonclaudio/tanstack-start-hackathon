@@ -11,6 +11,7 @@
 import type * as actionResult from '../actionResult.js'
 import type * as auth from '../auth.js'
 import type * as autumn from '../autumn.js'
+import type * as autumnHelpers from '../autumnHelpers.js'
 import type * as billing from '../billing.js'
 import type * as checkout from '../checkout.js'
 import type * as customers from '../customers.js'
@@ -20,6 +21,7 @@ import type * as features from '../features.js'
 import type * as http from '../http.js'
 import type * as pricing from '../pricing.js'
 import type * as productCache from '../productCache.js'
+import type * as products from '../products.js'
 import type * as schemas from '../schemas.js'
 import type * as snapshots from '../snapshots.js'
 import type * as tasks from '../tasks.js'
@@ -44,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   actionResult: typeof actionResult
   auth: typeof auth
   autumn: typeof autumn
+  autumnHelpers: typeof autumnHelpers
   billing: typeof billing
   checkout: typeof checkout
   customers: typeof customers
@@ -53,6 +56,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http
   pricing: typeof pricing
   productCache: typeof productCache
+  products: typeof products
   schemas: typeof schemas
   snapshots: typeof snapshots
   tasks: typeof tasks
