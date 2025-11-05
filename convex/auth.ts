@@ -6,7 +6,10 @@ import { query } from './_generated/server'
 import type { DataModel } from './_generated/dataModel'
 import type { GenericCtx } from '@convex-dev/better-auth'
 
-const siteUrl = process.env.SITE_URL!
+const siteUrl = process.env.SITE_URL
+if (!siteUrl) {
+  console.warn('SITE_URL is not set; falling back to http://localhost:3000')
+}
 
 // The component client has methods needed for integrating Convex with Better Auth,
 // as well as helper methods for general use.
@@ -22,7 +25,7 @@ export const createAuth = (
     logger: {
       disabled: optionsOnly,
     },
-    baseURL: siteUrl,
+    baseURL: siteUrl || 'http://localhost:3000',
     database: authComponent.adapter(ctx),
     // Configure simple, non-verified email/password to get started
     emailAndPassword: {
