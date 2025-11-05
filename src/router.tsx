@@ -7,11 +7,11 @@ import { routeTree } from './routeTree.gen'
 import { authClient } from './lib/auth-client'
 
 export function getRouter() {
-  const CONVEX_URL = (import.meta as any).env.VITE_CONVEX_URL!
+  const CONVEX_URL = import.meta.env.VITE_CONVEX_URL
   if (!CONVEX_URL) {
     console.error('missing envar VITE_CONVEX_URL')
   }
-  const convexQueryClient = new ConvexQueryClient(CONVEX_URL)
+  const convexQueryClient = new ConvexQueryClient(CONVEX_URL || '')
 
   const queryClient: QueryClient = new QueryClient({
     defaultOptions: {

@@ -4,6 +4,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
 import { X } from 'lucide-react'
 import { api } from '../../convex/_generated/api'
+import type { Id } from '../../convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -29,8 +30,8 @@ function Home() {
   }, [addTask, todo])
 
   const handleRemove = useCallback(
-    async (id: string) => {
-      await removeTask({ id: id as any })
+    async (id: Id<'tasks'>) => {
+      await removeTask({ id })
     },
     [removeTask],
   )

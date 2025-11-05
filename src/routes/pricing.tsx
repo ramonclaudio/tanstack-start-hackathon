@@ -6,6 +6,10 @@ import { useAction } from 'convex/react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '../../convex/_generated/api'
+import type {
+  CustomerSchema as CustomerSchemaValue,
+  ProductSchema as ProductSchemaValue,
+} from '../../convex/schemas'
 import PricingTable from '@/components/autumn/pricing-table'
 import { useSession } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
@@ -28,21 +32,31 @@ function PricingPage() {
   const { data: session, isPending } = useSession()
   const navigate = useNavigate()
   const search = Route.useSearch()
-  const getPricing = useAction((api as any).pricing.get)
-  const [products, setProducts] = useState<Array<any>>([])
-  const [customer, setCustomer] = useState<any>(null)
+  const getPricing = useAction(api.pricing.get)
+  const [products, setProducts] = useState<
+    Array<z.infer<typeof ProductSchemaValue>>
+  >([])
+  const [customer, setCustomer] = useState<z.infer<
+    typeof CustomerSchemaValue
+  > | null>(null)
   const [loading, setLoading] = useState(true)
-  const snapshot = useSuspenseQuery(
-    convexQuery((api as any).snapshots.get, {}),
-  ) as any
+  const snapshot = useSuspenseQuery(convexQuery(api.snapshots.get, {})) as {
+    customer?: z.infer<typeof CustomerSchemaValue> | null
+  } | null
 
   useEffect(() => {
     ;(async () => {
       try {
         const res = await getPricing({})
-        const payload: any = res
-        setProducts(payload?.data?.products ?? [])
-        setCustomer(payload?.data?.customer ?? null)
+        const payload = res as {
+          success?: boolean
+          data?: {
+            products: Array<z.infer<typeof ProductSchemaValue>>
+            customer: z.infer<typeof CustomerSchemaValue> | null
+          }
+        }
+        setProducts(payload.data?.products ?? [])
+        setCustomer(payload.data?.customer ?? null)
       } catch (e) {
         console.error('Failed to load pricing', e)
       } finally {
@@ -84,23 +98,29 @@ function PricingPage() {
             onIntervalChange={(interval) =>
               navigate({
                 to: '/pricing',
-                search: (s: any) => ({ ...s, interval }),
+                search: (s) => ({ ...s, interval }),
                 replace: true,
               })
             }
             onSelectPlan={(planId) =>
               navigate({
                 to: '/pricing',
-                search: (s: any) => ({ ...s, plan: planId }),
+                search: (s) => ({ ...s, plan: planId }),
                 replace: true,
               })
             }
             onPlanChanged={async () => {
               try {
                 const res = await getPricing({})
-                const payload: any = res
-                setProducts(payload?.data?.products ?? [])
-                setCustomer(payload?.data?.customer ?? null)
+                const payload = res as {
+                  success?: boolean
+                  data?: {
+                    products: Array<z.infer<typeof ProductSchemaValue>>
+                    customer: z.infer<typeof CustomerSchemaValue> | null
+                  }
+                }
+                setProducts(payload.data?.products ?? [])
+                setCustomer(payload.data?.customer ?? null)
               } catch (e) {
                 console.error('Failed to refresh pricing after plan change', e)
               }
