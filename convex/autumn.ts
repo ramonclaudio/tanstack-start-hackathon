@@ -1,6 +1,8 @@
 import { Autumn } from '@useautumn/convex'
 import { components } from './_generated/api'
 import { authComponent } from './auth'
+import type { GenericCtx } from '@convex-dev/better-auth'
+import type { DataModel } from './_generated/dataModel'
 
 // Validate required environment variables
 if (!process.env.AUTUMN_SECRET_KEY) {
@@ -11,7 +13,7 @@ if (!process.env.AUTUMN_SECRET_KEY) {
 
 export const autumn = new Autumn(components.autumn, {
   secretKey: process.env.AUTUMN_SECRET_KEY,
-  identify: async (ctx: any) => {
+  identify: async (ctx: GenericCtx<DataModel>) => {
     try {
       const user = await authComponent.getAuthUser(ctx)
 

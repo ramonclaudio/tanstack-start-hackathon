@@ -19,40 +19,50 @@ export const attachAndHydrate = action({
     try {
       await autumn.attach(ctx, {
         productId: args.productId,
-        options: args.options as any,
+        options: args.options,
         entityId: args.entityId,
         freeTrial: args.freeTrial,
         successUrl: args.successUrl,
         invoice: args.invoice,
       })
 
-      const customerRes: any = await autumn.customers.get(ctx, {
+      const customerRes = (await autumn.customers.get(ctx, {
         expand: [
           'entities',
           'invoices',
           'trials_used',
           'rewards',
           'payment_method',
-        ] as any,
-      })
-      const customer = customerRes?.data ?? null
+        ] as const,
+      })) as { data?: unknown } | unknown
+      const customer =
+        (customerRes && typeof customerRes === 'object' && 'data' in customerRes
+          ? (customerRes as { data?: unknown }).data
+          : customerRes) ?? null
       // Upsert snapshot for realtime
       if (customer) {
         try {
-          const user = await authComponent.getAuthUser(ctx as any)
-          const userId = (user as any).userId || (user as any)._id
-          await (ctx as any).runMutation(api.snapshots.upsert, {
-            userId,
-            customerId: userId,
-            customer,
-          } as any)
+          const user = await authComponent.getAuthUser(ctx)
+          const u = user as { userId?: string; _id?: string }
+          const userId = u.userId || u._id
+          if (userId) {
+            await ctx.runMutation(api.snapshots.upsert, {
+              userId,
+              customerId: userId,
+              customer,
+            })
+          }
         } catch {}
       }
       return { success: true, data: { customer } }
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const message =
+        e && typeof e === 'object' && 'message' in e
+          ? String((e as { message?: unknown }).message)
+          : 'Attach failed'
       return {
         success: false,
-        error: { message: e?.message || 'Attach failed' },
+        error: { message },
       }
     }
   },
@@ -71,19 +81,26 @@ export const prepare = action({
   },
   handler: async (ctx, args) => {
     try {
-      const res: any = await autumn.checkout(ctx, {
+      const res = (await autumn.checkout(ctx, {
         productId: args.productId,
-        options: args.options as any,
+        options: args.options,
         entityId: args.entityId,
-        freeTrial: args.freeTrial,
         invoice: args.invoice,
         successUrl: args.successUrl,
-      } as any)
-      return { success: true, data: res?.data ?? res }
-    } catch (e: any) {
+      })) as { data?: unknown } | unknown
+      const data =
+        (res && typeof res === 'object' && 'data' in res
+          ? (res as { data?: unknown }).data
+          : res) ?? null
+      return { success: true, data }
+    } catch (e: unknown) {
+      const message =
+        e && typeof e === 'object' && 'message' in e
+          ? String((e as { message?: unknown }).message)
+          : 'Prepare failed'
       return {
         success: false,
-        error: { message: e?.message || 'Prepare failed' },
+        error: { message },
       }
     }
   },

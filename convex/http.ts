@@ -2,6 +2,7 @@ import { httpRouter } from 'convex/server'
 import { authComponent, createAuth } from './auth'
 import { api } from './_generated/api'
 import { httpAction } from './_generated/server'
+import { WebhookPayload } from './schemas'
 
 const http = httpRouter()
 
@@ -20,22 +21,32 @@ http.route({
         return new Response('Unauthorized', { status: 401 })
       }
 
-      const payload = await req.json()
+      const json = (await req.json()) as unknown
+      const parsed = WebhookPayload.safeParse(json)
+      type WebhookData = {
+        customer_id?: string
+        customerId?: string
+        customer?: unknown
+        data?: { customer?: unknown }
+      }
+      const data: WebhookData = parsed.success
+        ? parsed.data
+        : (json as WebhookData)
       // Try to extract a stable customer/user id and a customer object
       const userId =
-        payload?.customer_id ||
-        payload?.customerId ||
-        payload?.customer?.id ||
-        payload?.data?.customer?.id
+        data.customer_id ||
+        data.customerId ||
+        (data.customer as { id?: string } | undefined)?.id ||
+        (data.data?.customer as { id?: string } | undefined)?.id
 
-      const customer = payload?.customer || payload?.data?.customer || null
+      const customer = data.customer ?? data.data?.customer ?? null
 
       if (userId) {
         await ctx.runMutation(api.snapshots.upsert, {
           userId,
           customerId: userId,
           customer,
-        } as any)
+        })
       }
 
       return new Response(null, { status: 204 })
