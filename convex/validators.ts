@@ -47,16 +47,8 @@ export const VProductItemDisplay = v.object({
   secondary_text: v.optional(v.string()),
 })
 
-export const VProductItem = v.object({
-  type: v.optional(v.string()),
-  feature_id: v.optional(v.string()),
-  included_usage: v.optional(VIncludedUsage),
-  interval: v.optional(VInterval),
-  usage_model: v.optional(v.string()),
-  price: v.optional(v.number()),
-  billing_units: v.optional(v.number()),
-  display: v.optional(VProductItemDisplay),
-})
+// Allow passthrough for vendor fields (e.g., entity_feature_id, feature, feature_type, interval_count)
+export const VProductItem = v.record(v.string(), v.any())
 
 export const VProductDisplay = v.object({
   name: v.optional(v.string()),
