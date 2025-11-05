@@ -18,6 +18,7 @@ import type * as demos from '../demos.js'
 import type * as features from '../features.js'
 import type * as http from '../http.js'
 import type * as pricing from '../pricing.js'
+import type * as snapshots from '../snapshots.js'
 import type * as tasks from '../tasks.js'
 
 import type {
@@ -45,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   features: typeof features
   http: typeof http
   pricing: typeof pricing
+  snapshots: typeof snapshots
   tasks: typeof tasks
 }>
 declare const fullApiWithMounts: typeof fullApi
