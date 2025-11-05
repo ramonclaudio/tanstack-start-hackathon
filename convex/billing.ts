@@ -1,7 +1,9 @@
 import { v } from 'convex/values'
 import { z } from 'zod'
+import { unwrap } from './utils'
 import { action } from './_generated/server'
 import { autumn } from './autumn'
+import { actionResultSchema } from './actionResult'
 
 export const openPortal = action({
   args: {
@@ -13,17 +15,7 @@ export const openPortal = action({
         returnUrl: args.returnUrl,
       })
       const maybe = result as unknown as { data?: unknown } | string
-      let data: unknown
-      if (typeof maybe === 'string') {
-        data = maybe
-      } else if (typeof maybe === 'object') {
-        const m = maybe as Record<string, unknown>
-        data = Object.prototype.hasOwnProperty.call(m, 'data')
-          ? (m as { data?: unknown }).data
-          : undefined
-      } else {
-        data = undefined
-      }
+      const data = unwrap<string | { url?: string }>(maybe as any)
       let url = ''
       if (typeof data === 'string') {
         url = data
@@ -32,8 +24,13 @@ export const openPortal = action({
         url = typeof d.url === 'string' ? d.url : ''
       }
       const UrlSchema = z.string().url()
-      const parsed = UrlSchema.safeParse(url)
-      return { success: true, data: { url: parsed.success ? parsed.data : '' } }
+      const parsedUrl = UrlSchema.safeParse(url)
+      const payload = { url: parsedUrl.success ? parsedUrl.data : '' }
+      const Schema = actionResultSchema(
+        z.object({ url: UrlSchema.or(z.literal('')) }),
+      )
+      const safe = Schema.safeParse({ success: true, data: payload })
+      return safe.success ? safe.data : { success: true, data: payload }
     } catch (e: unknown) {
       const message =
         e && typeof e === 'object' && 'message' in e

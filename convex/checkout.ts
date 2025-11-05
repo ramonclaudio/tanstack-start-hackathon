@@ -1,8 +1,12 @@
 import { v } from 'convex/values'
+import { z } from 'zod'
 import { action } from './_generated/server'
 import { autumn } from './autumn'
 import { authComponent } from './auth'
 import { api } from './_generated/api'
+import { unwrap } from './utils'
+import { CheckoutResultSchema, CustomerSchema } from './schemas'
+import { actionResultSchema } from './actionResult'
 
 export const attachAndHydrate = action({
   args: {
@@ -35,10 +39,10 @@ export const attachAndHydrate = action({
           'payment_method',
         ] as const,
       })) as { data?: unknown } | unknown
-      const customer =
-        (customerRes && typeof customerRes === 'object' && 'data' in customerRes
-          ? (customerRes as { data?: unknown }).data
-          : customerRes) ?? null
+      const customerRaw = unwrap<unknown>(customerRes as any)
+      const parsedCustomer = CustomerSchema.safeParse(customerRaw)
+      const customer: z.infer<typeof CustomerSchema> | null =
+        parsedCustomer.success ? parsedCustomer.data : null
       // Upsert snapshot for realtime
       if (customer) {
         try {
@@ -54,7 +58,10 @@ export const attachAndHydrate = action({
           }
         } catch {}
       }
-      return { success: true, data: { customer } }
+      const Schema = actionResultSchema(
+        z.object({ customer: CustomerSchema.nullable() }),
+      )
+      return Schema.parse({ success: true, data: { customer } })
     } catch (e: unknown) {
       const message =
         e && typeof e === 'object' && 'message' in e
@@ -88,11 +95,9 @@ export const prepare = action({
         invoice: args.invoice,
         successUrl: args.successUrl,
       })) as { data?: unknown } | unknown
-      const data =
-        (res && typeof res === 'object' && 'data' in res
-          ? (res as { data?: unknown }).data
-          : res) ?? null
-      return { success: true, data }
+      const data = unwrap<unknown>(res as any)
+      const Schema = actionResultSchema(CheckoutResultSchema.nullable())
+      return Schema.parse({ success: true, data })
     } catch (e: unknown) {
       const message =
         e && typeof e === 'object' && 'message' in e

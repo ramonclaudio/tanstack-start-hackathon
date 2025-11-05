@@ -1,5 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
+import { VCustomer } from './validators'
 import { authComponent } from './auth'
 
 // Returns the latest customer snapshot for the authenticated user (or null)
@@ -27,7 +28,7 @@ export const upsert = mutation({
   args: {
     userId: v.string(),
     customerId: v.optional(v.string()),
-    customer: v.optional(v.any()),
+    customer: v.optional(v.union(VCustomer, v.null())),
   },
   handler: async (ctx, args) => {
     const { userId, customerId, customer } = args
@@ -39,7 +40,7 @@ export const upsert = mutation({
     const payload = {
       userId,
       customerId: customerId || userId,
-      customer: customer && typeof customer === 'object' ? customer : null,
+      customer: customer ?? null,
       updatedAt: Date.now(),
     }
     if (existing) {
