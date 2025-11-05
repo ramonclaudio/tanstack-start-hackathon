@@ -18,6 +18,8 @@ export function getRouter() {
       queries: {
         queryKeyHashFn: convexQueryClient.hashFn(),
         queryFn: convexQueryClient.queryFn(),
+        staleTime: 30_000, // cache fresh for 30s to reduce refetch churn
+        refetchOnWindowFocus: false,
       },
     },
   })

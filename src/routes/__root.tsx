@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { AutumnWrapper } from '../components/AutumnWrapper'
+import { AppErrorBoundary } from '../components/AppErrorBoundary'
 
 import Footer from '../components/Footer'
 import Header from '../components/Header'
@@ -19,6 +20,7 @@ import type { QueryClient } from '@tanstack/react-query'
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
 }>()({
+  errorComponent: ({ error }) => <AppErrorBoundary error={error} />,
   head: () => ({
     meta: [
       {
@@ -58,17 +60,17 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               {children}
             </main>
             <Footer />
-            <TanStackDevtools
-              config={{
-                position: 'bottom-left',
-              }}
-              plugins={[
-                {
-                  name: 'Tanstack Router',
-                  render: <TanStackRouterDevtoolsPanel />,
-                },
-              ]}
-            />
+            {import.meta.env.PROD ? null : (
+              <TanStackDevtools
+                config={{ position: 'bottom-left' }}
+                plugins={[
+                  {
+                    name: 'Tanstack Router',
+                    render: <TanStackRouterDevtoolsPanel />,
+                  },
+                ]}
+              />
+            )}
           </AutumnWrapper>
         </ThemeProvider>
         <Scripts />
