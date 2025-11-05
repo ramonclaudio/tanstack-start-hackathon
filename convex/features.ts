@@ -1,6 +1,8 @@
 import { v } from 'convex/values'
+import { z } from 'zod'
 import { action } from './_generated/server'
 import { autumn } from './autumn'
+import { actionResultSchema } from './actionResult'
 
 /**
  * Server-side feature access check
@@ -34,21 +36,18 @@ export const checkFeatureAccess = action({
         withPreview: args.withPreview,
       })
 
-      return {
-        success: true,
-        data: result.data,
-        error: null,
-      }
+      const base = { success: true as const, data: result.data }
+      return actionResultSchema(z.unknown()).parse(base)
     } catch (error: unknown) {
       console.error('Feature access check failed:', error)
-      return {
-        success: false,
-        data: null,
+      const base = {
+        success: false as const,
         error:
           error && typeof error === 'object' && 'message' in error
             ? String((error as { message?: unknown }).message)
             : 'Failed to check feature access',
       }
+      return actionResultSchema(z.unknown()).parse(base)
     }
   },
 })
@@ -83,21 +82,18 @@ export const trackUsage = action({
         idempotencyKey: args.idempotencyKey,
       })
 
-      return {
-        success: true,
-        data: result.data,
-        error: null,
-      }
+      const base = { success: true as const, data: result.data }
+      return actionResultSchema(z.unknown()).parse(base)
     } catch (error: unknown) {
       console.error('Usage tracking failed:', error)
-      return {
-        success: false,
-        data: null,
+      const base = {
+        success: false as const,
         error:
           error && typeof error === 'object' && 'message' in error
             ? String((error as { message?: unknown }).message)
             : 'Failed to track usage',
       }
+      return actionResultSchema(z.unknown()).parse(base)
     }
   },
 })
@@ -137,12 +133,14 @@ export const checkAndTrack = action({
       })
 
       if (!checkResult.data?.allowed) {
-        return {
-          success: false,
-          allowed: false,
+        const base = {
+          success: false as const,
           data: checkResult.data,
           error: 'Access denied',
         }
+        // Validate envelope and preserve allowed flag
+        const safe = actionResultSchema(z.unknown()).parse(base)
+        return { ...safe, allowed: false }
       }
 
       // If check passes, track the usage
@@ -152,26 +150,25 @@ export const checkAndTrack = action({
         value: args.trackValue ?? args.requiredBalance ?? 1,
       })
 
-      return {
-        success: true,
-        allowed: true,
-        data: {
-          check: checkResult.data,
-          track: trackResult.data,
-        },
-        error: null,
+      const base = {
+        success: true as const,
+        data: { check: checkResult.data, track: trackResult.data },
       }
+      const safe = actionResultSchema(
+        z.object({ check: z.unknown(), track: z.unknown() }),
+      ).parse(base)
+      return { ...safe, allowed: true }
     } catch (error: unknown) {
       console.error('Check and track failed:', error)
-      return {
-        success: false,
-        allowed: false,
-        data: null,
+      const base = {
+        success: false as const,
         error:
           error && typeof error === 'object' && 'message' in error
             ? String((error as { message?: unknown }).message)
             : 'Operation failed',
       }
+      const safe = actionResultSchema(z.unknown()).parse(base)
+      return { ...safe, allowed: false }
     }
   },
 })
@@ -201,21 +198,18 @@ export const refundUsage = action({
         value: -Math.abs(args.value), // Ensure negative value
       })
 
-      return {
-        success: true,
-        data: result.data,
-        error: null,
-      }
+      const base = { success: true as const, data: result.data }
+      return actionResultSchema(z.unknown()).parse(base)
     } catch (error: unknown) {
       console.error('Usage refund failed:', error)
-      return {
-        success: false,
-        data: null,
+      const base = {
+        success: false as const,
         error:
           error && typeof error === 'object' && 'message' in error
             ? String((error as { message?: unknown }).message)
             : 'Failed to refund usage',
       }
+      return actionResultSchema(z.unknown()).parse(base)
     }
   },
 })

@@ -6,6 +6,7 @@ import { authComponent } from './auth'
 import { api } from './_generated/api'
 import { unwrap } from './utils'
 import { CheckoutResultSchema, CustomerSchema } from './schemas'
+import { unwrapAndParse } from './autumnHelpers'
 import { actionResultSchema } from './actionResult'
 
 export const attachAndHydrate = action({
@@ -39,10 +40,7 @@ export const attachAndHydrate = action({
           'payment_method',
         ] as const,
       })) as { data?: unknown } | unknown
-      const customerRaw = unwrap<unknown>(customerRes as any)
-      const parsedCustomer = CustomerSchema.safeParse(customerRaw)
-      const customer: z.infer<typeof CustomerSchema> | null =
-        parsedCustomer.success ? parsedCustomer.data : null
+      const customer = unwrapAndParse(customerRes, CustomerSchema)
       // Upsert snapshot for realtime
       if (customer) {
         try {

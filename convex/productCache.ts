@@ -1,11 +1,10 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { VProduct } from './validators'
 
 export const upsert = mutation({
   args: {
     key: v.string(),
-    products: v.array(VProduct),
+    products: v.any(), // Allow any shape from Autumn API
   },
   handler: async (ctx, { key, products }) => {
     const existing = await ctx.db

@@ -3,6 +3,8 @@ import { api } from './_generated/api'
 import { authComponent } from './auth'
 import { autumn } from './autumn'
 import { CustomerSchema, DashboardDTO } from './schemas'
+import { actionResultSchema } from './actionResult'
+import { unwrapAndParse } from './autumnHelpers'
 import type { z } from 'zod'
 
 export const get = action({
@@ -31,12 +33,7 @@ export const get = action({
             'payment_method',
           ] as const,
         })
-        let data: unknown = (await import('./utils')).unwrap<unknown>(
-          result as any,
-        )
-        data = data ?? null
-        const parsed = CustomerSchema.safeParse(data)
-        customerData = parsed.success ? parsed.data : null
+        customerData = unwrapAndParse(result, CustomerSchema)
       } catch (e) {
         // If not found or identify race, create silently and retry once
         try {
@@ -50,12 +47,7 @@ export const get = action({
             ] as const,
             errorOnNotFound: false,
           })
-          let createdData: unknown = (await import('./utils')).unwrap<unknown>(
-            created as any,
-          )
-          createdData = createdData ?? null
-          const parsed = CustomerSchema.safeParse(createdData)
-          customerData = parsed.success ? parsed.data : null
+          customerData = unwrapAndParse(created, CustomerSchema)
         } catch {
           customerData = null
         }
@@ -86,7 +78,9 @@ export const get = action({
         customer: customerData,
       }
       const parsed = DashboardDTO.safeParse(dto)
-      return { success: true, data: parsed.success ? parsed.data : dto }
+      const data = parsed.success ? parsed.data : dto
+      const Schema = actionResultSchema(DashboardDTO)
+      return Schema.parse({ success: true, data })
     } catch (error) {
       return {
         success: true,
