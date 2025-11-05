@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
-import CheckoutDialog from '@/components/autumn/checkout-dialog'
+import CheckoutDialog from '@/components/pricing/CheckoutDialog'
 import { useSession } from '@/lib/auth-client'
 
 // Minimal product shape compatible with our backend schema and autumn-js
@@ -101,8 +101,7 @@ export default function PricingTable({
   onPlanChanged?: () => Promise<void> | void
 }) {
   const { data: session } = useSession()
-  // const navigate = useNavigate() // not needed for unauthenticated redirect
-  const prepareCheckout = useAction(api.checkout.prepare)
+  const prepareCheckout = useAction(api.autumn.checkout)
 
   const [isAnnual, setIsAnnual] = useState(initialInterval === 'year')
   React.useEffect(() => {
@@ -121,66 +120,8 @@ export default function PricingTable({
   const isLoading = productsProp ? !!loading : hook.isLoading
   const error = productsProp ? null : hook.error
 
-  if (isLoading) {
-    const countFromProps = Array.isArray(productsProp)
-      ? productsProp.filter((p) => !p.is_add_on).length || productsProp.length
-      : 0
-    const skeletonCount = Math.max(countFromProps || 3, 1)
-
-    return (
-      <div className={cn('flex items-center flex-col w-full')}>
-        <div
-          className={cn(
-            'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))] w-full gap-2',
-          )}
-        >
-          {Array.from({ length: skeletonCount }).map((_, i) => (
-            <div
-              key={i}
-              className="w-full h-full py-6 border rounded-lg shadow-sm max-w-xl"
-            >
-              <div className="flex flex-col h-full">
-                <div className="pb-4 px-6">
-                  <Skeleton className="h-6 w-40 mb-2" />
-                  <Skeleton className="h-4 w-56" />
-                </div>
-                <div className="mb-4 border-y bg-secondary/40 h-16 flex items-center px-6">
-                  <Skeleton className="h-5 w-32" />
-                </div>
-                <div className="px-6 mb-6 space-y-2">
-                  <Skeleton className="h-4 w-48" />
-                  <Skeleton className="h-4 w-64" />
-                  <Skeleton className="h-4 w-40" />
-                </div>
-                <div className="px-6 mt-auto">
-                  <Skeleton className="h-10 w-full" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="w-full h-full flex justify-center items-center min-h-[300px]">
-        <div className="text-center">
-          <p className="text-destructive font-medium mb-2">
-            Something went wrong loading pricing
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Please try refreshing the page or contact support if the issue
-            persists.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
+  // Compute derived values before any early returns to maintain hook order
   const safeProducts = Array.isArray(products) ? products : []
-  // Exclude add-on products, but if that would hide everything, fall back to showing all
   const filtered = safeProducts.filter((p: any) => !p?.is_add_on)
   const displayProducts = filtered.length > 0 ? filtered : safeProducts
   const intervals = Array.from(
@@ -190,10 +131,9 @@ export default function PricingTable({
         .filter((i) => !!i),
     ),
   )
-
   const multiInterval = intervals.length > 1
 
-  // Memoize filtered and sorted products to avoid recalculating on every render
+  // useMemo must be called before any early returns
   const filteredAndSortedProducts = React.useMemo(() => {
     const intervalFilter = (product: Product | ProductLike) => {
       const group = (product as any)?.properties?.interval_group
@@ -222,25 +162,6 @@ export default function PricingTable({
     return displayProducts.filter(intervalFilter).sort(sortProducts)
   }, [displayProducts, isAnnual, multiInterval])
 
-  const handlePricingCardClick = async (product: Product | ProductLike) => {
-    if (!session?.user) {
-      // Avoid strict search typing on navigate by using location
-      window.location.assign('/auth/sign-up')
-      return
-    }
-    try {
-      const res = await prepareCheckout({ productId: product.id })
-      const payload: { success?: boolean; data?: CheckoutResult | null } =
-        res as { success?: boolean; data?: CheckoutResult | null }
-      if (payload.success && payload.data) {
-        setCheckoutResult(payload.data)
-        setOpen(true)
-      }
-    } catch (e) {
-      console.error('Failed to prepare checkout', e)
-    }
-  }
-
   // Derive per-product status from provided customer snapshot
   type CustProd = { id: string; status?: string }
   const custProducts: Array<CustProd> = Array.isArray(customer?.products)
@@ -251,6 +172,80 @@ export default function PricingTable({
   const productStatus = new Map<string, string | undefined>(
     custProducts.map((p) => [p.id, p.status]),
   )
+
+  // NOW we can have early returns after all hooks are called
+  if (isLoading) {
+    const countFromProps = Array.isArray(productsProp)
+      ? productsProp.filter((p) => !p.is_add_on).length || productsProp.length
+      : 0
+    const skeletonCount = Math.max(countFromProps || 3, 1)
+
+    return (
+      <div className={cn('flex items-center flex-col w-full')}>
+        <div
+          className={cn(
+            'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))] w-full gap-2',
+          )}
+        >
+          {Array.from({ length: skeletonCount }).map((_, i) => (
+            <div
+              key={i}
+              className="w-full h-full py-6 border rounded-lg shadow-sm max-w-xl"
+            >
+              <div className="flex flex-col h-full">
+                <div className="pb-4">
+                  <Skeleton className="h-7 w-40 mb-2 mx-6" />
+                  {/* Reserve space for description but don't show skeleton to avoid layout shift */}
+                  <div className="h-8 px-6" />
+                </div>
+                <div className="mb-2 border-y bg-secondary/40 h-16 flex items-center px-6">
+                  <Skeleton className="h-5 w-32" />
+                </div>
+                <div className="px-6 mb-6">
+                  <Skeleton className="h-4 w-52" />
+                </div>
+                <div className="px-6 mt-auto">
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="w-full h-full flex justify-center items-center min-h-[300px]">
+        <div className="text-center">
+          <p className="text-destructive font-medium mb-2">
+            Something went wrong loading pricing
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Please try refreshing the page or contact support if the issue
+            persists.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  const handlePricingCardClick = async (product: Product | ProductLike) => {
+    if (!session?.user) {
+      window.location.assign('/auth/sign-up')
+      return
+    }
+    try {
+      const response = await prepareCheckout({ productId: product.id })
+      if (response && 'data' in response && response.data) {
+        setCheckoutResult(response.data)
+        setOpen(true)
+      }
+    } catch (e) {
+      console.error('Failed to prepare checkout', e)
+    }
+  }
 
   return (
     <div className={cn('root')}>

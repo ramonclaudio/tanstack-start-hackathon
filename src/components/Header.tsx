@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { User } from 'lucide-react'
-import { ModeToggle } from './mode-toggle'
+import { ModeToggle } from './ModeToggle'
 import { Button } from './ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 import { Skeleton } from './ui/skeleton'
@@ -24,6 +24,7 @@ export default function Header() {
           {isPending ? (
             <>
               <Skeleton className="h-5 w-12" />
+              <Skeleton className="h-5 w-16" />
               <Skeleton className="h-5 w-32" />
               <Skeleton className="h-5 w-24" />
             </>

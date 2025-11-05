@@ -1,8 +1,8 @@
 'use client'
 import * as AccordionPrimitive from '@radix-ui/react-accordion'
 import React, { useEffect, useState } from 'react'
-import { useAction } from 'convex/react'
 import { ArrowRight, ChevronDown, Loader2 } from 'lucide-react'
+import { useAction } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import type { CheckoutParams, CheckoutResult, ProductItem } from 'autumn-js'
 import { cn } from '@/lib/utils'
@@ -47,7 +47,7 @@ const formatCurrency = ({
 }
 
 export default function CheckoutDialog(params: CheckoutDialogProps) {
-  const attachAndHydrate = useAction(api.checkout.attachAndHydrate)
+  const attachAction = useAction(api.autumn.attach)
   const [checkoutResult, setCheckoutResult] = useState<
     CheckoutResult | undefined
   >(params.checkoutResult)
@@ -95,14 +95,11 @@ export default function CheckoutDialog(params: CheckoutDialogProps) {
               })
 
               try {
-                const res = await attachAndHydrate({
+                await attachAction({
                   productId: checkoutResult.product.id,
                   ...(params.checkoutParams || {}),
                   options,
                 })
-                if (!(res as { success?: boolean }).success) {
-                  console.error('Attach failed')
-                }
                 // Parent will trigger refresh via onClose callback
               } catch (e) {
                 console.error('Attach failed', e)
@@ -318,7 +315,7 @@ const PrepaidItem = ({
   const [quantityInput, setQuantityInput] = useState<string>(
     (quantity / billingUnits).toString(),
   )
-  const prepare = useAction(api.checkout.prepare)
+  const checkoutAction = useAction(api.autumn.checkout)
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
   const scenario = checkoutResult.product.scenario
@@ -340,14 +337,13 @@ const PrepaidItem = ({
         quantity: Number(quantityInput) * billingUnits,
       })
 
-      const result = await prepare({
+      const response = await checkoutAction({
         productId: checkoutResult.product.id,
         options: newOptions,
       })
-      const next =
-        (result as { data?: CheckoutResult }).data ??
-        (result as unknown as CheckoutResult)
-      setCheckoutResult(next)
+      if (response && 'data' in response && response.data) {
+        setCheckoutResult(response.data)
+      }
     } catch (error) {
       console.error(error)
     } finally {
