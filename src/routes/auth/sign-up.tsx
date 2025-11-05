@@ -116,7 +116,11 @@ function SignUp() {
                 />
               </div>
               {error && <div className="text-sm text-red-500">{error}</div>}
-              <Button type="submit" className="w-full" disabled={isLoading || isPending}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading || isPending}
+              >
                 {isLoading || isPending ? 'Creating account...' : 'Sign Up'}
               </Button>
             </form>
