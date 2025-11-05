@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState } from 'react'
 
 import { usePricingTable } from 'autumn-js/react'
 import { Loader2, Mail } from 'lucide-react'
-// import { useNavigate } from '@tanstack/react-router'
 import { useAction } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import type { ProductDetails } from 'autumn-js/react'
@@ -12,21 +11,13 @@ import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import CheckoutDialog from '@/components/autumn/checkout-dialog'
-import { getPricingTableContent } from '@/lib/autumn/pricing-table-content'
 import { useSession } from '@/lib/auth-client'
 
 // Minimal product shape compatible with our backend schema and autumn-js
 type ProductItemLike = {
   included_usage?: number | 'inf'
-  interval?:
-    | 'minute'
-    | 'hour'
-    | 'day'
-    | 'week'
-    | 'month'
-    | 'quarter'
-    | 'semi_annual'
-    | 'year'
+  interval?: string | null
+  feature_id?: string | null
   display?: { primary_text?: string; secondary_text?: string }
 }
 
@@ -40,6 +31,7 @@ type ProductLike = {
     is_one_off: boolean
     updateable?: boolean
     interval_group?: string | null
+    has_trial?: boolean
   }
   display?: {
     name?: string
@@ -49,6 +41,42 @@ type ProductLike = {
     everything_from?: string
   }
   scenario?: string
+}
+
+// Helper to determine button text based on product scenario
+function getButtonText(
+  product: Product | ProductLike,
+  isAuthenticated: boolean,
+): React.ReactNode {
+  if (!isAuthenticated) {
+    return <p>Get Started</p>
+  }
+
+  const { scenario, properties } = product
+  const { is_one_off, updateable, has_trial } = properties
+
+  if (has_trial) {
+    return <p>Start Free Trial</p>
+  }
+
+  switch (scenario) {
+    case 'scheduled':
+      return <p>Plan Scheduled</p>
+    case 'active':
+      return updateable ? <p>Update Plan</p> : <p>Current Plan</p>
+    case 'new':
+      return is_one_off ? <p>Purchase</p> : <p>Get started</p>
+    case 'renew':
+      return <p>Renew</p>
+    case 'upgrade':
+      return <p>Upgrade</p>
+    case 'downgrade':
+      return <p>Downgrade</p>
+    case 'cancel':
+      return <p>Cancel Plan</p>
+    default:
+      return <p>Get Started</p>
+  }
 }
 
 export default function PricingTable({
@@ -91,7 +119,7 @@ export default function PricingTable({
     Product | ProductLike
   >
   const isLoading = productsProp ? !!loading : hook.isLoading
-  const error = hook.error
+  const error = productsProp ? null : hook.error
 
   if (isLoading) {
     const countFromProps = Array.isArray(productsProp)
@@ -153,52 +181,46 @@ export default function PricingTable({
 
   const safeProducts = Array.isArray(products) ? products : []
   // Exclude add-on products, but if that would hide everything, fall back to showing all
-  const filtered = safeProducts.filter((p) => !p.is_add_on)
+  const filtered = safeProducts.filter((p: any) => !p?.is_add_on)
   const displayProducts = filtered.length > 0 ? filtered : safeProducts
   const intervals = Array.from(
     new Set(
       displayProducts
-        .map((p) => p.properties.interval_group)
+        .map((p: any) => p?.properties?.interval_group)
         .filter((i) => !!i),
     ),
   )
 
   const multiInterval = intervals.length > 1
 
-  const intervalFilter = (product: Product | ProductLike) => {
-    if (!product.properties.interval_group) {
-      return true
-    }
-
-    if (multiInterval) {
-      if (isAnnual) {
-        return product.properties.interval_group === 'year'
-      } else {
-        return product.properties.interval_group === 'month'
+  // Memoize filtered and sorted products to avoid recalculating on every render
+  const filteredAndSortedProducts = React.useMemo(() => {
+    const intervalFilter = (product: Product | ProductLike) => {
+      const group = (product as any)?.properties?.interval_group
+      if (!group || !multiInterval) {
+        return true
       }
+      return isAnnual ? group === 'year' : group === 'month'
     }
 
-    return true
-  }
+    const sortProducts = (
+      a: Product | ProductLike,
+      b: Product | ProductLike,
+    ) => {
+      const order = ['free_plan', 'starter_plan', 'pro_plan', 'enterprise_plan']
+      const aIndex = order.indexOf(a.id)
+      const bIndex = order.indexOf(b.id)
 
-  // Sort products in order: Free, Starter, Pro, Enterprise
-  const sortProducts = (a: Product | ProductLike, b: Product | ProductLike) => {
-    const order = ['free_plan', 'starter_plan', 'pro_plan', 'enterprise_plan']
-    const aIndex = order.indexOf(a.id)
-    const bIndex = order.indexOf(b.id)
-
-    // If both are in the order array, sort by their position
-    if (aIndex !== -1 && bIndex !== -1) {
-      return aIndex - bIndex
+      if (aIndex !== -1 && bIndex !== -1) {
+        return aIndex - bIndex
+      }
+      if (aIndex !== -1) return -1
+      if (bIndex !== -1) return 1
+      return 0
     }
 
-    // If only one is in the order array, it comes first
-    if (aIndex !== -1) return -1
-    if (bIndex !== -1) return 1
-
-    // If neither is in the order array, maintain original order
-    return 0
-  }
+    return displayProducts.filter(intervalFilter).sort(sortProducts)
+  }, [displayProducts, isAnnual, multiInterval])
 
   const handlePricingCardClick = async (product: Product | ProductLike) => {
     if (!session?.user) {
@@ -232,7 +254,7 @@ export default function PricingTable({
 
   return (
     <div className={cn('root')}>
-      {displayProducts.length > 0 && (
+      {displayProducts.length > 0 ? (
         <PricingTableContainer
           products={displayProducts}
           isAnnualToggle={isAnnual}
@@ -240,48 +262,51 @@ export default function PricingTable({
           multiInterval={multiInterval}
           onIntervalToggle={(val) => onIntervalChange?.(val ? 'year' : 'month')}
         >
-          {displayProducts
-            .filter(intervalFilter)
-            .sort(sortProducts)
-            .map((product, index) => {
-              // Special handling for Enterprise plan
-              if (product.id === 'enterprise_plan') {
-                return (
-                  <EnterprisePricingCard
-                    key={index}
-                    product={product}
-                    isAuthenticated={!!session?.user}
-                  />
-                )
-              }
-
-              const status = productStatus.get(product.id)
-              const isActiveOrTrial =
-                status === 'active' || status === 'trialing'
-              const isScheduled = status === 'scheduled'
-
+          {filteredAndSortedProducts.map((product, index) => {
+            // Special handling for Enterprise plan
+            if (product.id === 'enterprise_plan') {
               return (
-                <PricingCard
+                <EnterprisePricingCard
                   key={index}
-                  productId={product.id}
-                  className={cn(
-                    selectedPlan === product.id && 'border-primary/60',
-                  )}
-                  buttonProps={{
-                    disabled: session?.user
-                      ? (isActiveOrTrial && !product.properties.updateable) ||
-                        isScheduled
-                      : false,
-
-                    onClick: async () => {
-                      onSelectPlan?.(product.id)
-                      await handlePricingCardClick(product)
-                    },
-                  }}
+                  product={product}
+                  isAuthenticated={!!session?.user}
                 />
               )
-            })}
+            }
+
+            const status = productStatus.get(product.id)
+            const isActiveOrTrial = status === 'active' || status === 'trialing'
+            const isScheduled = status === 'scheduled'
+
+            return (
+              <PricingCard
+                key={index}
+                productId={product.id}
+                isCurrentPlan={isActiveOrTrial}
+                className={cn(
+                  selectedPlan === product.id && 'border-primary/60',
+                  isActiveOrTrial && 'border-2 border-primary',
+                )}
+                buttonProps={{
+                  disabled: session?.user
+                    ? (isActiveOrTrial &&
+                        !(product as any)?.properties?.updateable) ||
+                      isScheduled
+                    : false,
+
+                  onClick: async () => {
+                    onSelectPlan?.(product.id)
+                    await handlePricingCardClick(product)
+                  },
+                }}
+              />
+            )
+          })}
         </PricingTableContainer>
+      ) : (
+        <div className="w-full text-center text-muted-foreground py-8">
+          No plans available.
+        </div>
       )}
       {open && checkoutResult && (
         <CheckoutDialog
@@ -392,12 +417,14 @@ interface PricingCardProps {
   className?: string
   onButtonClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
   buttonProps?: React.ComponentProps<'button'>
+  isCurrentPlan?: boolean
 }
 
 export const PricingCard = ({
   productId,
   className,
   buttonProps,
+  isCurrentPlan = false,
 }: PricingCardProps) => {
   const { products, showFeatures, isAuthenticated } =
     usePricingTableContext('PricingCard')
@@ -408,27 +435,32 @@ export const PricingCard = ({
     throw new Error(`Product with id ${productId} not found`)
   }
 
-  const { name, display: productDisplay } = product
+  const { name, display: productDisplay } = product as any
 
-  const { buttonText } = isAuthenticated
-    ? getPricingTableContent(product)
-    : { buttonText: <p>Get Started</p> }
+  // Override button text for current plan
+  const buttonText = isCurrentPlan ? (
+    <p>Current Plan</p>
+  ) : (
+    getButtonText(product, isAuthenticated)
+  )
 
   const isRecommended = productDisplay?.recommend_text ? true : false
-  const mainPriceDisplay = product.properties.is_free
+  const isFree = Boolean((product as any)?.properties?.is_free)
+  const itemsList = Array.isArray((product as any)?.items)
+    ? ((product as any).items as Array<any>)
+    : []
+  const mainPriceDisplay = isFree
     ? {
         primary_text: 'Free',
         secondary_text: undefined,
       }
-    : (product.items[0]?.display ?? {
+    : (itemsList[0]?.display ?? {
         primary_text: '',
         secondary_text: undefined,
       })
 
   // Base list of feature items shown under the price
-  const itemsBase = product.properties.is_free
-    ? product.items
-    : product.items.slice(1)
+  const itemsBase = isFree ? itemsList : itemsList.slice(1)
 
   // Extract a credit summary (e.g., "50 credits / month") and remove that item from the list to avoid duplication
   const creditItem = itemsBase.find(
@@ -465,7 +497,7 @@ export const PricingCard = ({
   const creditSummary = (() => {
     if (!creditItem) return null
     const units = creditItem.included_usage
-    const intervalLabel = formatInterval(creditItem.interval)
+    const intervalLabel = formatInterval(creditItem.interval ?? undefined)
     if (!intervalLabel) return null
     if (units === 'inf') return 'Unlimited credits / ' + intervalLabel
     if (typeof units === 'number') return `${units} credits / ${intervalLabel}`
@@ -747,7 +779,7 @@ const EnterprisePricingCard = ({
             <div className="grow px-6 mb-6">
               <PricingFeatureList
                 items={featureItems}
-                everythingFrom={product.display?.everything_from}
+                everythingFrom={(product as any)?.display?.everything_from}
               />
             </div>
           )}
