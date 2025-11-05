@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as actionResult from '../actionResult.js'
 import type * as auth from '../auth.js'
 import type * as autumn from '../autumn.js'
 import type * as billing from '../billing.js'
@@ -18,9 +19,12 @@ import type * as demos from '../demos.js'
 import type * as features from '../features.js'
 import type * as http from '../http.js'
 import type * as pricing from '../pricing.js'
+import type * as productCache from '../productCache.js'
 import type * as schemas from '../schemas.js'
 import type * as snapshots from '../snapshots.js'
 import type * as tasks from '../tasks.js'
+import type * as utils from '../utils.js'
+import type * as validators from '../validators.js'
 
 import type {
   ApiFromModules,
@@ -37,6 +41,7 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  actionResult: typeof actionResult
   auth: typeof auth
   autumn: typeof autumn
   billing: typeof billing
@@ -47,9 +52,12 @@ declare const fullApi: ApiFromModules<{
   features: typeof features
   http: typeof http
   pricing: typeof pricing
+  productCache: typeof productCache
   schemas: typeof schemas
   snapshots: typeof snapshots
   tasks: typeof tasks
+  utils: typeof utils
+  validators: typeof validators
 }>
 declare const fullApiWithMounts: typeof fullApi
 
