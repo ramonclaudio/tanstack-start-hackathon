@@ -20,19 +20,30 @@ export default function PricingTable({
   products: productsProp,
   customer,
   loading = false,
+  initialInterval,
+  selectedPlan,
+  onIntervalChange,
+  onSelectPlan,
   onPlanChanged,
 }: {
   productDetails?: Array<ProductDetails>
   products?: Array<Product>
   customer?: any
   loading?: boolean
+  initialInterval?: 'month' | 'year'
+  selectedPlan?: string
+  onIntervalChange?: (interval: 'month' | 'year') => void
+  onSelectPlan?: (planId: string) => void
   onPlanChanged?: () => Promise<void> | void
 }) {
   const { data: session } = useSession()
   // const navigate = useNavigate() // not needed for unauthenticated redirect
   const prepareCheckout = useAction((api as any).checkout.prepare)
 
-  const [isAnnual, setIsAnnual] = useState(false)
+  const [isAnnual, setIsAnnual] = useState(initialInterval === 'year')
+  React.useEffect(() => {
+    if (initialInterval) setIsAnnual(initialInterval === 'year')
+  }, [initialInterval])
   // Dialog state must be declared before any early returns to keep hook order stable
   const [open, setOpen] = useState(false)
   const [checkoutResult, setCheckoutResult] = useState<any>(null)
@@ -47,7 +58,8 @@ export default function PricingTable({
       ? productsProp.filter((p) => !p.is_add_on).length || productsProp.length
       : 0
     const countFromHook = Array.isArray((hook as any).products)
-      ? (hook as any).products.filter((p: any) => !p.is_add_on).length || (hook as any).products.length
+      ? (hook as any).products.filter((p: any) => !p.is_add_on).length ||
+        (hook as any).products.length
       : 0
     const skeletonCount = Math.max(countFromProps || countFromHook || 3, 1)
 
@@ -160,8 +172,9 @@ export default function PricingTable({
     }
     try {
       const res = await prepareCheckout({ productId: product.id } as any)
-      if (res) {
-        setCheckoutResult(res)
+      const payload: any = res
+      if (payload?.success && payload.data) {
+        setCheckoutResult(payload.data)
         setOpen(true)
       }
     } catch (e) {
@@ -185,6 +198,7 @@ export default function PricingTable({
           isAnnualToggle={isAnnual}
           setIsAnnualToggle={setIsAnnual}
           multiInterval={multiInterval}
+          onIntervalToggle={(val) => onIntervalChange?.(val ? 'year' : 'month')}
         >
           {displayProducts
             .filter(intervalFilter)
@@ -210,6 +224,9 @@ export default function PricingTable({
                 <PricingCard
                   key={index}
                   productId={product.id}
+                  className={cn(
+                    selectedPlan === product.id && 'border-primary/60',
+                  )}
                   buttonProps={{
                     disabled: session?.user
                       ? (isActiveOrTrial && !product.properties.updateable) ||
@@ -217,6 +234,7 @@ export default function PricingTable({
                       : false,
 
                     onClick: async () => {
+                      onSelectPlan?.(product.id)
                       await handlePricingCardClick(product)
                     },
                   }}
@@ -265,6 +283,7 @@ export const PricingTableContainer = ({
   isAnnualToggle,
   setIsAnnualToggle,
   multiInterval,
+  onIntervalToggle,
 }: {
   children?: React.ReactNode
   products?: Array<Product>
@@ -273,6 +292,7 @@ export const PricingTableContainer = ({
   isAnnualToggle: boolean
   setIsAnnualToggle: (isAnnual: boolean) => void
   multiInterval: boolean
+  onIntervalToggle?: (isAnnual: boolean) => void
 }) => {
   if (!products) {
     throw new Error('products is required in <PricingTable />')
@@ -306,7 +326,10 @@ export const PricingTableContainer = ({
           >
             <AnnualSwitch
               isAnnualToggle={isAnnualToggle}
-              setIsAnnualToggle={setIsAnnualToggle}
+              setIsAnnualToggle={(val) => {
+                setIsAnnualToggle(val)
+                onIntervalToggle?.(val)
+              }}
             />
           </div>
         )}
