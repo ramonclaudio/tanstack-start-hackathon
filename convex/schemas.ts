@@ -1,9 +1,12 @@
 import { z } from 'zod'
 
 // Minimal, flexible schema for Autumn customer snapshot. We validate only what we use.
-export const ProductStatusSchema = z.union([
-  z.enum(['active', 'expired', 'trialing', 'scheduled', 'past_due']),
-  z.string(),
+export const ProductStatusSchema = z.enum([
+  'active',
+  'expired',
+  'trialing',
+  'scheduled',
+  'past_due',
 ])
 
 export const CustomerProductSchema = z
@@ -126,6 +129,36 @@ export const PricingDTO = z.object({
   products: z.array(ProductSchema).default([]),
   customer: CustomerSchema.nullable(),
 })
+
+// Minimal checkout result schema used by server validation
+export const CheckoutLineSchema = z
+  .object({ description: z.string(), amount: z.number() })
+  .passthrough()
+
+export const CheckoutResultSchema = z
+  .object({
+    product: z
+      .object({
+        id: z.string(),
+        properties: z.object({ is_free: z.boolean() }),
+      })
+      .passthrough(),
+    options: z
+      .array(z.object({ feature_id: z.string(), quantity: z.number() }))
+      .optional()
+      .default([]),
+    has_prorations: z.boolean().optional(),
+    lines: z.array(CheckoutLineSchema).optional().default([]),
+    total: z.number(),
+    currency: z.string(),
+    next_cycle: z
+      .object({
+        starts_at: z.union([z.string(), z.number(), z.date()]),
+        total: z.number(),
+      })
+      .optional(),
+  })
+  .passthrough()
 
 export const WebhookPayload = z
   .object({
