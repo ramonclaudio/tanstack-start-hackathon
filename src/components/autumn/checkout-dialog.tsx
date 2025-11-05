@@ -95,11 +95,15 @@ export default function CheckoutDialog(params: CheckoutDialogProps) {
               })
 
               try {
-                await attachAndHydrate({
+                const res = await attachAndHydrate({
                   productId: checkoutResult.product.id,
                   ...(params.checkoutParams || {}),
                   options,
                 } as any)
+                const payload: any = res
+                if (!payload?.success) {
+                  console.error('Attach failed')
+                }
                 // Parent will trigger refresh via onClose callback
               } catch (e) {
                 console.error('Attach failed', e)

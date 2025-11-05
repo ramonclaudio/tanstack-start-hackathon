@@ -1,7 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { z } from 'zod'
 import { ArrowRight, Check, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAction } from 'convex/react'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { convexQuery } from '@convex-dev/react-query'
 import { api } from '../../convex/_generated/api'
 import PricingTable from '@/components/autumn/pricing-table'
 import { useSession } from '@/lib/auth-client'
@@ -14,22 +17,32 @@ import {
 } from '@/components/ui/accordion'
 
 export const Route = createFileRoute('/pricing')({
+  validateSearch: z.object({
+    interval: z.enum(['month', 'year']).optional(),
+    plan: z.string().optional(),
+  }),
   component: PricingPage,
 })
 
 function PricingPage() {
   const { data: session, isPending } = useSession()
+  const navigate = useNavigate()
+  const search = Route.useSearch()
   const getPricing = useAction((api as any).pricing.get)
   const [products, setProducts] = useState<Array<any>>([])
   const [customer, setCustomer] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const snapshot = useSuspenseQuery(
+    convexQuery((api as any).snapshots.get, {}),
+  ) as any
 
   useEffect(() => {
     ;(async () => {
       try {
         const res = await getPricing({})
-        setProducts(res?.products ?? [])
-        setCustomer(res?.customer ?? null)
+        const payload: any = res
+        setProducts(payload?.data?.products ?? [])
+        setCustomer(payload?.data?.customer ?? null)
       } catch (e) {
         console.error('Failed to load pricing', e)
       } finally {
@@ -64,13 +77,30 @@ function PricingPage() {
         <div className="mb-12">
           <PricingTable
             products={products}
-            customer={customer}
+            customer={snapshot?.customer ?? customer}
             loading={loading}
+            initialInterval={search.interval}
+            selectedPlan={search.plan}
+            onIntervalChange={(interval) =>
+              navigate({
+                to: '/pricing',
+                search: (s: any) => ({ ...s, interval }),
+                replace: true,
+              })
+            }
+            onSelectPlan={(planId) =>
+              navigate({
+                to: '/pricing',
+                search: (s: any) => ({ ...s, plan: planId }),
+                replace: true,
+              })
+            }
             onPlanChanged={async () => {
               try {
                 const res = await getPricing({})
-                setProducts(res?.products ?? [])
-                setCustomer(res?.customer ?? null)
+                const payload: any = res
+                setProducts(payload?.data?.products ?? [])
+                setCustomer(payload?.data?.customer ?? null)
               } catch (e) {
                 console.error('Failed to refresh pricing after plan change', e)
               }

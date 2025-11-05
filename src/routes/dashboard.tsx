@@ -9,6 +9,8 @@ import {
   TrendingUp,
   Zap,
 } from 'lucide-react'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { convexQuery } from '@convex-dev/react-query'
 import { api } from '../../convex/_generated/api'
 // Session handled via aggregated loader
 import { Button } from '@/components/ui/button'
@@ -36,6 +38,9 @@ function Dashboard() {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const { data: session, isPending: sessionPending } = useSession()
+  const snapshot = useSuspenseQuery(
+    convexQuery((api as any).snapshots.get, {}),
+  ) as any
 
   useEffect(() => {
     // Wait for auth to resolve to avoid false unauthenticated redirects on refresh
@@ -49,7 +54,12 @@ function Dashboard() {
     ;(async () => {
       try {
         const res = await getDashboard({})
-        setData(res)
+        const payload: any = res
+        if (payload?.success && payload.data?.authenticated === false) {
+          navigate({ to: '/auth/sign-in' })
+          return
+        }
+        setData(payload?.data || null)
       } catch (e) {
         console.error('Failed to load dashboard data', e)
       } finally {
@@ -63,11 +73,13 @@ function Dashboard() {
   }
 
   const normalizedCustomer = data.customer?.customer ?? data.customer
+  const customerFromSnapshot = snapshot?.customer ?? null
+  const customerForUI = customerFromSnapshot || normalizedCustomer
   return (
     <AuthenticatedDashboard
       key={data.user.id}
       user={data.user}
-      customer={normalizedCustomer}
+      customer={customerForUI}
     />
   )
 }
@@ -87,8 +99,10 @@ function AuthenticatedDashboard({
       const res = await openPortal({
         returnUrl: returnUrl || window.location.href,
       } as any)
-      if (res?.url) {
-        window.location.href = res.url as string
+      const payload: any = res
+      const url = payload?.data?.url
+      if (payload?.success && url) {
+        window.location.href = url as string
       }
     } catch (e) {
       console.error('Failed to open billing portal:', e)
@@ -507,10 +521,14 @@ function AutumnCustomerCard({
 
   // Get the active product
   const activeProduct = customer?.products
-    ? customer.products.find((p: any) => p.status === 'active')
+    ? customer.products.find(
+        (p: any) => p.status === 'active' || p.status === 'trialing',
+      )
     : undefined
   const hasActiveSubscription = !!activeProduct
-  const productName = activeProduct?.name || 'Free Plan'
+  const productNameBase = activeProduct?.name || 'Free Plan'
+  const productGroup = activeProduct?.group ? ` • ${activeProduct.group}` : ''
+  const productName = `${productNameBase}${productGroup}`
 
   // Billing portal handler removed - now using BillingPortalButton component
 

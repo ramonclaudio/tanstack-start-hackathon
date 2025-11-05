@@ -1,4 +1,5 @@
 import { action } from './_generated/server'
+import { api } from './_generated/api'
 import { authComponent } from './auth'
 import { autumn } from './autumn'
 
@@ -10,7 +11,10 @@ export const get = action({
 
       const customerId = user.userId || user._id
       if (!customerId) {
-        return { authenticated: false, user: null, customer: null }
+        return {
+          success: true,
+          data: { authenticated: false, user: null, customer: null },
+        }
       }
 
       // Fetch consolidated Autumn customer state (features, products, usage)
@@ -47,21 +51,36 @@ export const get = action({
         }
       }
 
+      // Upsert realtime snapshot for this user
+      try {
+        await ctx.runMutation(api.snapshots.upsert, {
+          userId: customerId,
+          customerId,
+          customer: customerData,
+        } as any)
+      } catch {}
+
       return {
-        authenticated: true,
-        user: {
-          id: customerId,
-          name: user.name || '',
-          email: user.email || '',
-          image: user.image || null,
-          createdAt: user.createdAt,
-          emailVerified: Boolean(user.emailVerified),
-          twoFactorEnabled: Boolean(user.twoFactorEnabled),
+        success: true,
+        data: {
+          authenticated: true,
+          user: {
+            id: customerId,
+            name: user.name || '',
+            email: user.email || '',
+            image: user.image || null,
+            createdAt: user.createdAt,
+            emailVerified: Boolean(user.emailVerified),
+            twoFactorEnabled: Boolean(user.twoFactorEnabled),
+          },
+          customer: customerData,
         },
-        customer: customerData,
       }
     } catch (error) {
-      return { authenticated: false, user: null, customer: null }
+      return {
+        success: true,
+        data: { authenticated: false, user: null, customer: null },
+      }
     }
   },
 })

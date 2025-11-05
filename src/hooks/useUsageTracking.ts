@@ -43,12 +43,17 @@ export function useUsageTracking() {
     setError(null)
 
     try {
+      const key =
+        idempotencyKey ||
+        (typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? (crypto as any).randomUUID()
+          : `idemp_${Date.now()}_${Math.random().toString(36).slice(2)}`)
       // Track the usage
       await track({
         featureId,
         value,
         entityId,
-        idempotencyKey,
+        idempotencyKey: key,
       })
 
       // Refetch customer data to update balance in UI

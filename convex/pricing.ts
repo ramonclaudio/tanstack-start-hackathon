@@ -1,5 +1,6 @@
 import { action } from './_generated/server'
 import { authComponent } from './auth'
+import { api } from './_generated/api'
 import { autumn } from './autumn'
 
 export const get = action({
@@ -55,12 +56,21 @@ export const get = action({
           customer = null
         }
       }
+
+      // Upsert snapshot for realtime
+      if (customer) {
+        try {
+          const user = await authComponent.getAuthUser(ctx)
+          const userId = (user as any).userId || (user as any)._id
+          await ctx.runMutation(api.snapshots.upsert, {
+            userId,
+            customerId: userId,
+            customer,
+          } as any)
+        } catch {}
+      }
     }
 
-    return {
-      authenticated,
-      products,
-      customer,
-    }
+    return { success: true, data: { authenticated, products, customer } }
   },
 })
