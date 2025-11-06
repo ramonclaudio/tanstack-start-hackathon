@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState } from 'react'
 import { usePricingTable } from 'autumn-js/react'
 import { Loader2 } from 'lucide-react'
 import { useAction } from 'convex/react'
+import * as Sentry from '@sentry/tanstackstart-react'
 import { api } from '../../../convex/_generated/api'
 import type { ProductDetails } from 'autumn-js/react'
 import type { CheckoutResult, Product, ProductItem } from 'autumn-js'
@@ -599,6 +600,12 @@ export const PricingCardButton = React.forwardRef<
       await onClick?.(e)
     } catch (error) {
       console.error(error)
+      Sentry.captureException(error, {
+        tags: {
+          component: 'PricingTable',
+          action: 'buttonClick',
+        },
+      })
     } finally {
       setLoading(false)
     }

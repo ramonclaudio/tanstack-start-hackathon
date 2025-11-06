@@ -6,6 +6,8 @@ import {
   createRootRouteWithContext,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+import * as Sentry from '@sentry/tanstackstart-react'
+import { useEffect } from 'react'
 import { AppErrorBoundary } from '../components/AppErrorBoundary'
 
 import Footer from '../components/Footer'
@@ -20,7 +22,13 @@ import type { QueryClient } from '@tanstack/react-query'
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
 }>()({
-  errorComponent: ({ error }) => <AppErrorBoundary error={error} />,
+  errorComponent: ({ error }) => {
+    // Capture route errors in Sentry
+    useEffect(() => {
+      Sentry.captureException(error)
+    }, [error])
+    return <AppErrorBoundary error={error} />
+  },
   head: () => ({
     meta: [
       {
