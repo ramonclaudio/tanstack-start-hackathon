@@ -14,9 +14,12 @@ export const Route = createFileRoute('/demo/start/api-request')({
 function Home() {
   const { isPending } = useSession()
   const { setPageLoading } = useGlobalLoading()
-  const { data: demos, isLoading: demosLoading } = useQuery(
-    convexQuery(api.demos.get, {}),
+  const { data: result, isLoading: demosLoading } = useQuery(
+    convexQuery(api.demos.get, {
+      paginationOpts: { numItems: 50, cursor: null },
+    }),
   )
+  const demos = result?.page
 
   useEffect(() => {
     setPageLoading(isPending || demosLoading)
@@ -51,7 +54,7 @@ function Home() {
                 </p>
               ) : (
                 <ul className="space-y-2">
-                  {demos?.map((item: any) => (
+                  {demos?.map((item) => (
                     <li
                       key={item._id}
                       className="border rounded-lg p-4 bg-card text-card-foreground h-14 flex items-center"
