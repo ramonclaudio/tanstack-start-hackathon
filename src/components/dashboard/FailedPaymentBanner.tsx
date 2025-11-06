@@ -22,7 +22,7 @@ export function FailedPaymentBanner({
 
   // Check if any product has a past_due status
   const failedPayment = customer.products
-    ? customer.products.find((p: any) => p.status === 'past_due')
+    ? customer.products.find((p) => p.status === 'past_due')
     : undefined
 
   if (!failedPayment) return null

@@ -126,12 +126,12 @@ export default function PricingTable({
 
   // Compute derived values before any early returns to maintain hook order
   const safeProducts = Array.isArray(products) ? products : []
-  const filtered = safeProducts.filter((p: any) => !p?.is_add_on)
+  const filtered = safeProducts.filter((p) => !p?.is_add_on)
   const displayProducts = filtered.length > 0 ? filtered : safeProducts
   const intervals = Array.from(
     new Set(
       displayProducts
-        .map((p: any) => p?.properties?.interval_group)
+        .map((p) => p?.properties?.interval_group)
         .filter((i) => !!i),
     ),
   )
@@ -140,7 +140,7 @@ export default function PricingTable({
   // useMemo must be called before any early returns
   const filteredAndSortedProducts = React.useMemo(() => {
     const intervalFilter = (product: Product | ProductLike) => {
-      const group = (product as any)?.properties?.interval_group
+      const group = product.properties?.interval_group
       if (!group || !multiInterval) {
         return true
       }
@@ -259,8 +259,7 @@ export default function PricingTable({
                 )}
                 buttonProps={{
                   disabled: session?.user
-                    ? (isActiveOrTrial &&
-                        !(product as any)?.properties?.updateable) ||
+                    ? (isActiveOrTrial && !product.properties?.updateable) ||
                       isScheduled
                     : false,
 
@@ -403,7 +402,7 @@ export const PricingCard = ({
     throw new Error(`Product with id ${productId} not found`)
   }
 
-  const { name, display: productDisplay } = product as any
+  const { name, display: productDisplay } = product
 
   // Override button text for current plan
   const buttonText = isCurrentPlan ? (
@@ -413,10 +412,8 @@ export const PricingCard = ({
   )
 
   const isRecommended = productDisplay?.recommend_text ? true : false
-  const isFree = Boolean((product as any)?.properties?.is_free)
-  const itemsList = Array.isArray((product as any)?.items)
-    ? ((product as any).items as Array<any>)
-    : []
+  const isFree = Boolean(product.properties?.is_free)
+  const itemsList = Array.isArray(product.items) ? product.items : []
   const mainPriceDisplay = isFree
     ? {
         primary_text: 'Free',
