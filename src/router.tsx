@@ -4,6 +4,7 @@ import { routerWithQueryClient } from '@tanstack/react-router-with-query'
 import { ConvexQueryClient } from '@convex-dev/react-query'
 import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react'
 import { AutumnProvider } from 'autumn-js/react'
+import * as Sentry from '@sentry/tanstackstart-react'
 import { api } from '../convex/_generated/api'
 import { routeTree } from './routeTree.gen'
 import { authClient } from './lib/auth-client'
@@ -53,6 +54,28 @@ export function getRouter() {
     }),
     queryClient,
   )
+
+  // Initialize Sentry for client-side error tracking
+  if (typeof window !== 'undefined') {
+    Sentry.init({
+      dsn: import.meta.env.VITE_SENTRY_DSN,
+      environment: import.meta.env.MODE,
+      integrations: [
+        Sentry.tanstackRouterBrowserTracingIntegration(router),
+        Sentry.replayIntegration({
+          maskAllText: true,
+          blockAllMedia: true,
+        }),
+      ],
+      // Performance monitoring: 10% of transactions in production
+      tracesSampleRate: import.meta.env.PROD ? 0.1 : 1.0,
+      // Session replay: 25% for low traffic (<10k sessions/day) per Sentry recommendations
+      replaysSessionSampleRate: import.meta.env.PROD ? 0.25 : 1.0,
+      // Error replay: 100% of errors get full session replay for debugging
+      replaysOnErrorSampleRate: 1.0,
+      sendDefaultPii: true,
+    })
+  }
 
   return router
 }
