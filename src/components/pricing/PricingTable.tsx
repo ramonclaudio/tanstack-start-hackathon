@@ -1,14 +1,17 @@
 import React, { createContext, useContext, useState } from 'react'
 
 import { usePricingTable } from 'autumn-js/react'
-import { Loader2, Mail } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { useAction } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import type { ProductDetails } from 'autumn-js/react'
 import type { CheckoutResult, Product, ProductItem } from 'autumn-js'
 import { cn } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
-import { Skeleton } from '@/components/ui/skeleton'
+import {
+  PricingGridSkeleton,
+  PricingToggleSkeleton,
+} from '@/components/skeletons'
 import { Button } from '@/components/ui/button'
 import CheckoutDialog from '@/components/pricing/CheckoutDialog'
 import { useSession } from '@/lib/auth-client'
@@ -147,7 +150,7 @@ export default function PricingTable({
       a: Product | ProductLike,
       b: Product | ProductLike,
     ) => {
-      const order = ['free_plan', 'starter_plan', 'pro_plan', 'enterprise_plan']
+      const order = ['free_plan', 'starter_plan', 'pro_plan']
       const aIndex = order.indexOf(a.id)
       const bIndex = order.indexOf(b.id)
 
@@ -181,35 +184,16 @@ export default function PricingTable({
     const skeletonCount = Math.max(countFromProps || 3, 1)
 
     return (
-      <div className={cn('flex items-center flex-col w-full')}>
+      <div className="flex items-center flex-col">
+        <div className="mb-4">
+          <PricingToggleSkeleton />
+        </div>
         <div
           className={cn(
             'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))] w-full gap-2',
           )}
         >
-          {Array.from({ length: skeletonCount }).map((_, i) => (
-            <div
-              key={i}
-              className="w-full h-full py-6 border rounded-lg shadow-sm max-w-xl"
-            >
-              <div className="flex flex-col h-full">
-                <div className="pb-4">
-                  <Skeleton className="h-7 w-40 mb-2 mx-6" />
-                  {/* Reserve space for description but don't show skeleton to avoid layout shift */}
-                  <div className="h-8 px-6" />
-                </div>
-                <div className="mb-2 border-y bg-secondary/40 h-16 flex items-center px-6">
-                  <Skeleton className="h-5 w-32" />
-                </div>
-                <div className="px-6 mb-6">
-                  <Skeleton className="h-4 w-52" />
-                </div>
-                <div className="px-6 mt-auto">
-                  <Skeleton className="h-10 w-full" />
-                </div>
-              </div>
-            </div>
-          ))}
+          <PricingGridSkeleton count={skeletonCount} withContainer={false} />
         </div>
       </div>
     )
@@ -248,27 +232,17 @@ export default function PricingTable({
   }
 
   return (
-    <div className={cn('root')}>
+    <div>
       {displayProducts.length > 0 ? (
         <PricingTableContainer
           products={displayProducts}
           isAnnualToggle={isAnnual}
           setIsAnnualToggle={setIsAnnual}
           multiInterval={multiInterval}
+          isAuthenticated={!!session?.user}
           onIntervalToggle={(val) => onIntervalChange?.(val ? 'year' : 'month')}
         >
           {filteredAndSortedProducts.map((product, index) => {
-            // Special handling for Enterprise plan
-            if (product.id === 'enterprise_plan') {
-              return (
-                <EnterprisePricingCard
-                  key={index}
-                  product={product}
-                  isAuthenticated={!!session?.user}
-                />
-              )
-            }
-
             const status = productStatus.get(product.id)
             const isActiveOrTrial = status === 'active' || status === 'trialing'
             const isScheduled = status === 'scheduled'
@@ -344,6 +318,7 @@ export const PricingTableContainer = ({
   setIsAnnualToggle,
   multiInterval,
   onIntervalToggle,
+  isAuthenticated,
 }: {
   children?: React.ReactNode
   products?: Array<Product | ProductLike>
@@ -353,6 +328,7 @@ export const PricingTableContainer = ({
   setIsAnnualToggle: (isAnnual: boolean) => void
   multiInterval: boolean
   onIntervalToggle?: (isAnnual: boolean) => void
+  isAuthenticated: boolean
 }) => {
   if (!products) {
     throw new Error('products is required in <PricingTable />')
@@ -363,8 +339,6 @@ export const PricingTableContainer = ({
   }
 
   const hasRecommended = products.some((p) => p.display?.recommend_text)
-  const { data: session } = useSession()
-  const isAuthenticated = !!session?.user
   return (
     <PricingTableContext.Provider
       value={{
@@ -408,9 +382,7 @@ export const PricingTableContainer = ({
 
 interface PricingCardProps {
   productId: string
-  showFeatures?: boolean
   className?: string
-  onButtonClick?: (event: React.MouseEvent<HTMLButtonElement>) => void
   buttonProps?: React.ComponentProps<'button'>
   isCurrentPlan?: boolean
 }
@@ -587,9 +559,6 @@ export const PricingFeatureList = ({
       <div className="space-y-3">
         {items.map((item, index) => (
           <div key={index} className="flex items-start gap-2 text-sm">
-            {/* {showIcon && (
-              <Check className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-            )} */}
             <div className="flex flex-col">
               <span>{item.display?.primary_text}</span>
               {item.display?.secondary_text && (
@@ -695,103 +664,4 @@ export const RecommendedBadge = ({ recommended }: { recommended: string }) => {
   )
 }
 
-// Enterprise Pricing Card with Email Button
-const EnterprisePricingCard = ({
-  product,
-  isAuthenticated,
-}: {
-  product: Product | ProductLike
-  isAuthenticated: boolean
-}) => {
-  const { name, display: productDisplay } = product
-
-  const isRecommended = productDisplay?.recommend_text ? true : false
-  const mainPriceDisplay = product.properties.is_free
-    ? {
-        primary_text: 'Free',
-        secondary_text: undefined,
-      }
-    : (product.items[0]?.display ?? {
-        primary_text: '',
-        secondary_text: undefined,
-      })
-
-  const featureItems = product.properties.is_free
-    ? product.items
-    : product.items.slice(1)
-
-  const handleContactClick = () => {
-    const subject = encodeURIComponent('Enterprise Plan Inquiry')
-    const body = encodeURIComponent(
-      `Hi,\n\nI'm interested in learning more about the Enterprise plan.\n\n${isAuthenticated ? 'I am currently signed in to my account.' : 'Please let me know the next steps.'}\n\nThank you!`,
-    )
-    window.location.href = `mailto:support@example.com?subject=${subject}&body=${body}`
-  }
-
-  return (
-    <div
-      className={cn(
-        'w-full h-full py-6 text-foreground border rounded-lg shadow-sm max-w-xl',
-        isRecommended &&
-          'lg:-translate-y-6 lg:shadow-lg dark:shadow-zinc-800/80 lg:h-[calc(100%+48px)] bg-secondary/40',
-      )}
-    >
-      {productDisplay?.recommend_text && (
-        <RecommendedBadge recommended={productDisplay.recommend_text} />
-      )}
-      <div
-        className={cn(
-          'flex flex-col h-full grow',
-          isRecommended && 'lg:translate-y-6',
-        )}
-      >
-        <div className="h-full">
-          <div className="flex flex-col">
-            <div className="pb-4">
-              <h2 className="text-2xl font-semibold px-6 truncate">
-                {productDisplay?.name || name}
-              </h2>
-              {productDisplay?.description && (
-                <div className="text-sm text-muted-foreground px-6 h-8">
-                  <p className="line-clamp-2">{productDisplay.description}</p>
-                </div>
-              )}
-            </div>
-            <div className="mb-2">
-              <h3 className="font-semibold h-16 flex px-6 items-center border-y mb-4 bg-secondary/40">
-                <div className="line-clamp-2">
-                  {mainPriceDisplay.primary_text}{' '}
-                  {mainPriceDisplay.secondary_text && (
-                    <span className="font-normal text-muted-foreground mt-1">
-                      {mainPriceDisplay.secondary_text}
-                    </span>
-                  )}
-                </div>
-              </h3>
-            </div>
-          </div>
-          {featureItems.length > 0 && (
-            <div className="grow px-6 mb-6">
-              <PricingFeatureList
-                items={featureItems}
-                everythingFrom={(product as any)?.display?.everything_from}
-              />
-            </div>
-          )}
-        </div>
-        <div className={cn('px-6', isRecommended && 'lg:-translate-y-12')}>
-          <Button
-            className="w-full py-3 px-4 group overflow-hidden relative transition-all duration-300 hover:brightness-90 border rounded-lg"
-            variant="secondary"
-            onClick={handleContactClick}
-          >
-            <div className="flex items-center justify-center gap-2 w-full">
-              <Mail className="h-4 w-4" />
-              <span>Contact Sales</span>
-            </div>
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-}
+// Enterprise flow removed
