@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
+import * as Sentry from '@sentry/tanstackstart-react'
 import { authClient, useSession } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -50,7 +51,20 @@ function SignUp() {
         },
       )
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to sign up')
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to sign up'
+      setError(errorMessage)
+      Sentry.captureException(err, {
+        tags: {
+          route: 'sign-up',
+          method: 'email',
+        },
+        contexts: {
+          auth: {
+            emailDomain: email.split('@')[1] || 'unknown', // Only send domain for privacy
+          },
+        },
+      })
     } finally {
       setIsLoading(false)
     }
@@ -64,9 +78,15 @@ function SignUp() {
         provider: 'github',
       })
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to sign in with GitHub',
-      )
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to sign in with GitHub'
+      setError(errorMessage)
+      Sentry.captureException(err, {
+        tags: {
+          route: 'sign-up',
+          method: 'github',
+        },
+      })
     } finally {
       setIsLoading(false)
     }
