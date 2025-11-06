@@ -22,12 +22,11 @@ export const Route = createFileRoute('/demo/start/server-funcs')({
 function Home() {
   const { isPending } = useSession()
   const { setPageLoading } = useGlobalLoading()
-  const { data: result, isLoading: tasksLoading } = useQuery(
+  const { data: tasks, isLoading: tasksLoading } = useQuery(
     convexQuery(api.tasks.get, {
       paginationOpts: { numItems: 50, cursor: null },
     }),
   )
-  const tasks = result?.page
 
   useEffect(() => {
     setPageLoading(isPending || tasksLoading)
@@ -77,13 +76,13 @@ function Home() {
             </div>
 
             <div className="space-y-4">
-              {tasks?.length === 0 ? (
+              {tasks?.page?.length === 0 ? (
                 <p className="text-center text-muted-foreground">
                   No tasks yet. Add one below!
                 </p>
               ) : (
                 <ul className="space-y-2">
-                  {tasks?.map((t) => (
+                  {tasks?.page?.map((t) => (
                     <li
                       key={t._id}
                       className="border rounded-lg p-4 bg-card text-card-foreground h-14 flex items-center justify-between gap-4"
