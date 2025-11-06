@@ -11,17 +11,6 @@ export const get = query({
   args: {
     paginationOpts: paginationOptsValidator,
   },
-  returns: v.object({
-    page: v.array(
-      v.object({
-        _id: v.id('tasks'),
-        _creationTime: v.number(),
-        text: v.string(),
-      }),
-    ),
-    isDone: v.boolean(),
-    continueCursor: v.string(),
-  }),
   handler: async (ctx, args) => {
     return await ctx.db.query('tasks').paginate(args.paginationOpts)
   },
