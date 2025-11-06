@@ -1,7 +1,7 @@
 'use client'
 import * as AccordionPrimitive from '@radix-ui/react-accordion'
 import React, { useEffect, useState } from 'react'
-import { ArrowRight, ChevronDown, Loader2 } from 'lucide-react'
+import { ChevronDown, Loader2 } from 'lucide-react'
 import { useAction } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import type { CheckoutParams, CheckoutResult, ProductItem } from 'autumn-js'
@@ -66,7 +66,6 @@ export default function CheckoutDialog(params: CheckoutDialogProps) {
   const { title, message } = getCheckoutContent(checkoutResult)
 
   const isFree = checkoutResult.product.properties.is_free
-  const isPaid = isFree === false
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -74,7 +73,7 @@ export default function CheckoutDialog(params: CheckoutDialogProps) {
         <DialogTitle className="px-6 mb-1">{title}</DialogTitle>
         <div className="px-6 mt-1 mb-4 text-muted-foreground">{message}</div>
 
-        {isPaid && (
+        {!isFree && (
           <PriceInformation
             checkoutResult={checkoutResult}
             setCheckoutResult={setCheckoutResult}
@@ -418,49 +417,4 @@ const PrepaidItem = ({
   )
 }
 
-export const PriceItem = ({
-  children,
-  className,
-  ...props
-}: {
-  children: React.ReactNode
-  className?: string
-} & React.HTMLAttributes<HTMLDivElement>) => {
-  return (
-    <div
-      className={cn(
-        'flex flex-col pb-4 sm:pb-0 gap-1 sm:flex-row justify-between sm:h-7 sm:gap-2 sm:items-center',
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </div>
-  )
-}
-
-export const PricingDialogButton = ({
-  children,
-  size,
-  onClick,
-  disabled,
-  className,
-}: {
-  children: React.ReactNode
-  size?: 'sm' | 'lg' | 'default' | 'icon'
-  onClick: () => void
-  disabled?: boolean
-  className?: string
-}) => {
-  return (
-    <Button
-      onClick={onClick}
-      disabled={disabled}
-      size={size}
-      className={cn(className, 'shadow-sm shadow-stone-400')}
-    >
-      {children}
-      <ArrowRight className="h-3!" />
-    </Button>
-  )
-}
+// Removed unused PriceItem and PricingDialogButton components

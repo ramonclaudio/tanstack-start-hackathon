@@ -13,10 +13,7 @@ export function FailedPaymentBanner({
   openBillingPortal,
 }: {
   customer?: AutumnCustomer | null
-  openBillingPortal: (params?: {
-    returnUrl?: string
-    openInNewTab?: boolean
-  }) => Promise<void> | void
+  openBillingPortal: (params?: { returnUrl?: string }) => Promise<void> | void
 }) {
   const [dismissed, setDismissed] = useState(false)
 

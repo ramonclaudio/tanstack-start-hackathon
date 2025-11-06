@@ -1,27 +1,17 @@
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
+import { CircleSkeleton } from '@/components/skeletons'
 import { useTheme } from '@/components/ThemeProvider'
 
 export function ModeToggle() {
   const { toggleMode, mounted } = useTheme()
 
-  const handleToggleMode = (
-    e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-  ) => {
-    e.preventDefault()
-    e.stopPropagation()
-    toggleMode()
-  }
-
-  if (!mounted) {
-    return <Skeleton className="size-8 rounded-full" />
-  }
+  if (!mounted) return <CircleSkeleton />
 
   return (
     <Button
       variant="ghost"
       size="icon"
-      onClick={handleToggleMode}
+      onClick={toggleMode}
       title="Toggle theme"
       className="group/toggle size-8"
     >

@@ -1,14 +1,19 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
 import { X } from 'lucide-react'
 import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
+import {
+  FormRowSkeleton,
+  HeroSkeleton,
+  ListSkeleton,
+} from '@/components/skeletons'
 import { useSession } from '@/lib/auth-client'
+import { useGlobalLoading } from '@/components/GlobalLoading'
 
 export const Route = createFileRoute('/demo/start/server-funcs')({
   component: Home,
@@ -16,7 +21,16 @@ export const Route = createFileRoute('/demo/start/server-funcs')({
 
 function Home() {
   const { isPending } = useSession()
-  const { data: tasks } = useSuspenseQuery(convexQuery(api.tasks.get, {}))
+  const { setPageLoading } = useGlobalLoading()
+  const { data: tasks, isLoading: tasksLoading } = useQuery(
+    convexQuery(api.tasks.get, {}),
+  )
+
+  useEffect(() => {
+    setPageLoading(isPending || tasksLoading)
+    return () => setPageLoading(false)
+  }, [isPending, tasksLoading, setPageLoading])
+
   const addTask = useConvexMutation(api.tasks.add)
   const removeTask = useConvexMutation(api.tasks.remove)
 
@@ -39,28 +53,18 @@ function Home() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-6 -mt-2">
       <div className="w-full max-w-2xl space-y-8">
-        {isPending ? (
+        {isPending || tasksLoading ? (
           <>
-            <div className="text-center space-y-2">
-              <Skeleton className="h-9 w-80 mx-auto" />
-              <Skeleton className="h-6 w-96 mx-auto" />
-            </div>
-
+            <HeroSkeleton />
             <div className="space-y-4">
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
-
-              <div className="flex gap-2">
-                <Skeleton className="flex-1 h-14" />
-                <Skeleton className="h-14 w-20" />
-              </div>
+              <ListSkeleton count={3} className="h-14" />
+              <FormRowSkeleton />
             </div>
           </>
         ) : (
           <>
             <div className="text-center space-y-2">
-              <h1 className="text-3xl font-bold tracking-tight">
+              <h1 className="text-4xl font-bold tracking-tight">
                 Convex Mutations Demo
               </h1>
               <p className="text-muted-foreground">
@@ -70,16 +74,16 @@ function Home() {
             </div>
 
             <div className="space-y-4">
-              {tasks.length === 0 ? (
+              {tasks?.length === 0 ? (
                 <p className="text-center text-muted-foreground">
                   No tasks yet. Add one below!
                 </p>
               ) : (
                 <ul className="space-y-2">
-                  {tasks.map((t: any) => (
+                  {tasks?.map((t: any) => (
                     <li
                       key={t._id}
-                      className="border rounded-lg p-4 bg-card text-card-foreground flex items-center justify-between gap-4"
+                      className="border rounded-lg p-4 bg-card text-card-foreground h-14 flex items-center justify-between gap-4"
                     >
                       <span>{t.text}</span>
                       <Button

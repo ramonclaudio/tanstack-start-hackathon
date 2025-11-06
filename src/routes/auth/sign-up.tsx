@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
+import { SignUpCardSkeleton } from '@/components/skeletons'
 
 export const Route = createFileRoute('/auth/sign-up')({
   component: SignUp,
@@ -36,7 +36,6 @@ function SignUp() {
     e.preventDefault()
     setError('')
     setIsLoading(true)
-
     try {
       await authClient.signUp.email(
         {
@@ -46,13 +45,13 @@ function SignUp() {
         },
         {
           onSuccess: () => {
-            // Navigate to dashboard after sign up
             navigate({ to: '/dashboard' })
           },
         },
       )
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign up')
+    } finally {
       setIsLoading(false)
     }
   }
@@ -60,7 +59,6 @@ function SignUp() {
   const handleGitHubSignIn = async () => {
     setError('')
     setIsLoading(true)
-
     try {
       await authClient.signIn.social({
         provider: 'github',
@@ -69,50 +67,13 @@ function SignUp() {
       setError(
         err instanceof Error ? err.message : 'Failed to sign in with GitHub',
       )
+    } finally {
       setIsLoading(false)
     }
   }
 
   if (isPending) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1">
-            <Skeleton className="h-8 w-40" />
-            <Skeleton className="h-4 w-full" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Skeleton className="h-10 w-full" />
-            </div>
-            <div className="space-y-2">
-              <Skeleton className="h-10 w-full" />
-            </div>
-            <div className="space-y-2">
-              <Skeleton className="h-10 w-full" />
-            </div>
-            <Skeleton className="h-10 w-full" />
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2">
-                  <Skeleton className="h-3 w-32" />
-                </span>
-              </div>
-            </div>
-
-            <Skeleton className="h-10 w-full" />
-
-            <div className="text-center">
-              <Skeleton className="h-4 w-56 mx-auto" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
+    return <SignUpCardSkeleton />
   }
 
   return (
@@ -173,7 +134,7 @@ function SignUp() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
+                <span className="bg-card px-2 text-muted-foreground">
                   Or continue with
                 </span>
               </div>

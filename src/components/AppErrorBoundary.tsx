@@ -49,6 +49,39 @@ export class AppErrorBoundary extends Component<Props, State> {
     )
   }
 
+  private renderErrorCard(
+    message: string,
+    isAutumn: boolean,
+    onReload: () => void,
+    reloadLabel: string = 'Reload',
+  ) {
+    return (
+      <div className="px-6 py-8 w-full flex justify-center">
+        <Card className="border-destructive/50 bg-destructive/5 max-w-2xl w-full">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="w-5 h-5" />
+              {isAutumn ? 'Billing System Error' : 'Unexpected Error'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">{message}</p>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={onReload}>
+                {reloadLabel}
+              </Button>
+              {isAutumn && (
+                <Button size="sm" variant="outline" asChild>
+                  <a href="mailto:support@example.com">Contact Support</a>
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   override render() {
     // If using as wrapper (with children), check state
     if (this.props.children) {
@@ -63,44 +96,14 @@ export class AppErrorBoundary extends Component<Props, State> {
       const error = this.state.error
       const isAutumn = error ? this.isAutumnError(error) : false
 
-      return (
-        <div className="px-6 py-8 w-full flex justify-center">
-          <Card className="border-destructive/50 bg-destructive/5 max-w-2xl w-full">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-destructive">
-                <AlertCircle className="w-5 h-5" />
-                {isAutumn ? 'Billing System Error' : 'Unexpected Error'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                {isAutumn
-                  ? "We're having trouble loading the billing information. This could be due to a configuration issue or temporary service disruption."
-                  : error?.message || 'Something went wrong. Please try again.'}
-              </p>
-              {error && (
-                <details className="text-xs text-muted-foreground">
-                  <summary className="cursor-pointer hover:text-foreground">
-                    Technical Details
-                  </summary>
-                  <pre className="mt-2 p-2 bg-muted rounded overflow-auto">
-                    {error.message}
-                  </pre>
-                </details>
-              )}
-              <div className="flex gap-2">
-                <Button size="sm" onClick={this.handleReset}>
-                  Reload Page
-                </Button>
-                {isAutumn && (
-                  <Button size="sm" variant="outline" asChild>
-                    <a href="mailto:support@example.com">Contact Support</a>
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      const message = isAutumn
+        ? "We're having trouble loading the billing information. This could be due to a configuration issue or temporary service disruption."
+        : error?.message || 'Something went wrong. Please try again.'
+      return this.renderErrorCard(
+        message,
+        isAutumn,
+        this.handleReset,
+        'Reload Page',
       )
     }
 
@@ -119,30 +122,11 @@ export class AppErrorBoundary extends Component<Props, State> {
           )
         : false
 
-    return (
-      <div className="px-6 py-8 w-full flex justify-center">
-        <Card className="border-destructive/50 bg-destructive/5 max-w-2xl w-full">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertCircle className="w-5 h-5" />
-              {isAutumn ? 'Billing System Error' : 'Unexpected Error'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">{message}</p>
-            <div className="flex gap-2">
-              <Button size="sm" onClick={() => window.location.reload()}>
-                Reload
-              </Button>
-              {isAutumn && (
-                <Button size="sm" variant="outline" asChild>
-                  <a href="mailto:support@example.com">Contact Support</a>
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+    return this.renderErrorCard(
+      message,
+      isAutumn,
+      () => window.location.reload(),
+      'Reload',
     )
   }
 }

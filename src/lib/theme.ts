@@ -1,20 +1,21 @@
 import { createClientOnlyFn, createIsomorphicFn } from '@tanstack/react-start'
-import * as z from 'zod'
 
-export const themeModeSchema = z.enum(['light', 'dark', 'auto'])
-export const resolvedThemeSchema = z.enum(['light', 'dark'])
-
-export type ThemeMode = z.infer<typeof themeModeSchema>
-export type ResolvedTheme = z.infer<typeof resolvedThemeSchema>
+// Keep types minimal and avoid runtime schema libs
+export type ThemeMode = 'light' | 'dark' | 'auto'
+export type ResolvedTheme = 'light' | 'dark'
 
 const THEME_KEY = 'theme'
+const DARK_QUERY = '(prefers-color-scheme: dark)'
+
+const isThemeMode = (v: unknown): v is ThemeMode =>
+  v === 'light' || v === 'dark' || v === 'auto'
 
 export const getStoredThemeMode = createIsomorphicFn()
   .server((): ThemeMode => 'auto')
   .client((): ThemeMode => {
     try {
       const storedTheme = localStorage.getItem(THEME_KEY)
-      return themeModeSchema.parse(storedTheme)
+      return isThemeMode(storedTheme) ? storedTheme : 'auto'
     } catch {
       return 'auto'
     }
@@ -22,87 +23,72 @@ export const getStoredThemeMode = createIsomorphicFn()
 
 export const setStoredThemeMode = createClientOnlyFn((theme: ThemeMode) => {
   try {
-    const parsedTheme = themeModeSchema.parse(theme)
-    localStorage.setItem(THEME_KEY, parsedTheme)
+    if (isThemeMode(theme)) localStorage.setItem(THEME_KEY, theme)
   } catch {}
 })
 
 export const getSystemTheme = createIsomorphicFn()
   .server((): ResolvedTheme => 'light')
   .client((): ResolvedTheme => {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches
-      ? 'dark'
-      : 'light'
+    try {
+      return window.matchMedia(DARK_QUERY).matches ? 'dark' : 'light'
+    } catch {
+      return 'light'
+    }
   })
 
 export const updateThemeClass = createClientOnlyFn((themeMode: ThemeMode) => {
   const root = document.documentElement
+  const systemTheme = window.matchMedia(DARK_QUERY).matches ? 'dark' : 'light'
+  const resolved: ResolvedTheme = themeMode === 'auto' ? systemTheme : themeMode
+  const other: ResolvedTheme = resolved === 'dark' ? 'light' : 'dark'
 
-  // Remove all theme-related classes
-  root.classList.remove('light', 'dark', 'auto')
+  // Only touch the DOM when needed
+  const hasResolved = root.classList.contains(resolved)
+  const hasOther = root.classList.contains(other)
+  const wantAuto = themeMode === 'auto'
+  const hasAuto = root.classList.contains('auto')
 
-  // Determine the actual theme to apply
-  const resolvedTheme =
-    themeMode === 'auto'
-      ? window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light'
-      : themeMode
-
-  // Add the resolved theme class
-  root.classList.add(resolvedTheme)
-
-  // If mode is auto, also add the 'auto' class
-  if (themeMode === 'auto') {
-    root.classList.add('auto')
-  }
+  if (!hasResolved) root.classList.add(resolved)
+  if (hasOther) root.classList.remove(other)
+  if (wantAuto !== hasAuto) root.classList.toggle('auto', wantAuto)
 })
 
 export const setupPreferredListener = createClientOnlyFn(() => {
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+  const m = window.matchMedia(DARK_QUERY)
   const handler = () => updateThemeClass('auto')
-  mediaQuery.addEventListener('change', handler)
-  return () => mediaQuery.removeEventListener('change', handler)
+  m.addEventListener('change', handler)
+  return () => m.removeEventListener('change', handler)
 })
 
 export const getNextTheme = createClientOnlyFn(
   (current: ThemeMode): ThemeMode => {
-    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)')
-      .matches
-      ? 'dark'
-      : 'light'
-    const themes: Array<ThemeMode> =
+    const systemTheme = window.matchMedia(DARK_QUERY).matches ? 'dark' : 'light'
+    const order: Array<ThemeMode> =
       systemTheme === 'dark'
         ? ['auto', 'light', 'dark']
         : ['auto', 'dark', 'light']
-    return themes[(themes.indexOf(current) + 1) % themes.length]
+    return order[(order.indexOf(current) + 1) % order.length]
   },
 )
 
 export const themeDetectorScript = (function () {
   function themeFn() {
+    let t = 'auto'
     try {
-      const storedTheme = localStorage.getItem('theme') || 'auto'
-      const validTheme = ['light', 'dark', 'auto'].includes(storedTheme)
-        ? storedTheme
-        : 'auto'
-
-      if (validTheme === 'auto') {
-        const autoTheme = window.matchMedia('(prefers-color-scheme: dark)')
-          .matches
-          ? 'dark'
-          : 'light'
-        document.documentElement.classList.add(autoTheme, 'auto')
-      } else {
-        document.documentElement.classList.add(validTheme)
-      }
-    } catch (e) {
-      const autoTheme = window.matchMedia('(prefers-color-scheme: dark)')
-        .matches
-        ? 'dark'
-        : 'light'
-      document.documentElement.classList.add(autoTheme, 'auto')
-    }
+      const s = localStorage.getItem('theme')
+      if (s === 'light' || s === 'dark' || s === 'auto') t = s
+    } catch {}
+    let dark = false
+    try {
+      dark =
+        window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches
+    } catch {}
+    const resolved = t === 'auto' ? (dark ? 'dark' : 'light') : t
+    const c = document.documentElement.classList
+    c.add(resolved)
+    if (t === 'auto') c.add('auto')
   }
   return `(${themeFn.toString()})();`
 })()

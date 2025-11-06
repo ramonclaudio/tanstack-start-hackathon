@@ -14,11 +14,21 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
+//
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 import { FailedPaymentBanner } from '@/components/dashboard/FailedPaymentBanner'
+import {
+  AvatarCardSkeleton,
+  FeatureUsageSingleSkeleton,
+  ListSkeleton,
+  PageHeaderSkeleton,
+  QuickActionsListSkeleton,
+  SubscriptionStatusSkeleton,
+} from '@/components/skeletons'
 import { useSession } from '@/lib/auth-client'
+import { useGlobalLoading } from '@/components/GlobalLoading'
 
 export const Route = createFileRoute('/dashboard')({
   // Note: Removed loader because Convex queries via WebSocket don't work during SSR
@@ -29,6 +39,7 @@ export const Route = createFileRoute('/dashboard')({
 function Dashboard() {
   const navigate = useNavigate()
   const { data: session, isPending: sessionPending } = useSession()
+  const { setPageLoading } = useGlobalLoading()
 
   // Use TanStack Query for user data (client-side only, Convex needs WebSocket)
   const { data: userData, isLoading: isUserDataLoading } = useQuery(
@@ -44,6 +55,19 @@ function Dashboard() {
       navigate({ to: '/auth/sign-in' })
     }
   }, [session?.user, sessionPending, navigate])
+
+  // Sync header skeleton with page
+  useEffect(() => {
+    setPageLoading(
+      sessionPending || isUserDataLoading || !userData?.authenticated,
+    )
+    return () => setPageLoading(false)
+  }, [
+    sessionPending,
+    isUserDataLoading,
+    userData?.authenticated,
+    setPageLoading,
+  ])
 
   // Show skeleton while auth is loading
   if (sessionPending || isUserDataLoading || !userData?.authenticated) {
@@ -85,6 +109,7 @@ function DashboardContent({
 }) {
   // Now useCustomer is only called when auth is ready
   const { customer, isLoading: isCustomerLoading, refetch } = useCustomer()
+  const { setPageLoading } = useGlobalLoading()
 
   // Manually trigger fetch on mount if customer data is missing
   // Using ref to prevent duplicate fetches in React StrictMode
@@ -101,6 +126,12 @@ function DashboardContent({
       })
     }
   }, [customer, isCustomerLoading, refetch])
+
+  useEffect(() => {
+    setPageLoading(isCustomerLoading || isFetching)
+    if (!isCustomerLoading && !isFetching) setPageLoading(false)
+    return () => setPageLoading(false)
+  }, [isCustomerLoading, isFetching, setPageLoading])
 
   const openBillingPortal = async ({
     returnUrl,
@@ -125,7 +156,7 @@ function DashboardContent({
   return (
     <div className="flex flex-1 flex-col px-6 py-8 max-w-6xl mx-auto w-full">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold tracking-tight mb-2">Dashboard</h1>
+        <h1 className="text-4xl font-bold tracking-tight mb-3">Dashboard</h1>
         <p className="text-muted-foreground">
           Welcome back, {userData.user?.name || 'User'}!
         </p>
@@ -226,10 +257,7 @@ function DashboardContent({
           </CardHeader>
           <CardContent>
             {isCustomerLoading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-16 w-full" />
-                <Skeleton className="h-16 w-full" />
-              </div>
+              <ListSkeleton count={2} className="h-16" />
             ) : customer && customer.products.length > 0 ? (
               <div className="space-y-4">
                 {customer.products.map((product: any) => (
@@ -279,11 +307,7 @@ function DashboardContent({
           </CardHeader>
           <CardContent>
             {isCustomerLoading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-              </div>
+              <ListSkeleton count={3} className="h-12" />
             ) : customer?.features &&
               Object.keys(customer.features).length > 0 ? (
               <div className="space-y-4">
@@ -342,87 +366,52 @@ function DashboardContent({
 function DashboardSkeleton() {
   return (
     <div className="flex flex-1 flex-col px-6 py-8 max-w-6xl mx-auto w-full">
-      {/* Header */}
-      <div className="mb-8">
-        <Skeleton className="h-10 w-48 mb-2" />
-        <Skeleton className="h-5 w-64" />
-      </div>
+      <PageHeaderSkeleton />
+
+      {/* Space for potential failed payment banner */}
+      <div className="mb-6" />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* User Profile Card */}
+        {/* Profile Card - matches actual CardHeader + CardContent structure */}
         <Card className="col-span-full lg:col-span-2">
           <CardHeader>
-            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-5 w-40" />
           </CardHeader>
           <CardContent>
-            <div className="flex items-start gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarFallback>
-                  <Skeleton className="h-16 w-16 rounded-full" />
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 space-y-3">
-                <div>
-                  <Skeleton className="h-6 w-48 mb-2" />
-                  <Skeleton className="h-4 w-64" />
-                </div>
-                <div className="flex gap-2">
-                  <Skeleton className="h-6 w-28" />
-                </div>
-              </div>
-            </div>
+            <AvatarCardSkeleton />
           </CardContent>
         </Card>
 
-        {/* Quick Actions Card */}
+        {/* Quick Actions - matches actual structure */}
         <Card>
           <CardHeader>
-            <Skeleton className="h-6 w-32" />
-            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-3.5 w-40" />
           </CardHeader>
           <CardContent className="space-y-2">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
+            <QuickActionsListSkeleton count={3} />
           </CardContent>
         </Card>
 
-        {/* Subscription Status Card */}
+        {/* Subscription Status - matches actual structure */}
         <Card className="col-span-full">
           <CardHeader>
-            <Skeleton className="h-6 w-48" />
-            <Skeleton className="h-4 w-64" />
+            <Skeleton className="h-5 w-48" />
+            <Skeleton className="h-3.5 w-64" />
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
-                <div>
-                  <Skeleton className="h-5 w-32 mb-2" />
-                  <Skeleton className="h-4 w-24" />
-                </div>
-                <Skeleton className="h-6 w-16" />
-              </div>
-            </div>
+            <SubscriptionStatusSkeleton />
           </CardContent>
         </Card>
 
-        {/* Feature Usage Card */}
+        {/* Feature Usage - matches actual structure */}
         <Card className="col-span-full">
           <CardHeader>
-            <Skeleton className="h-6 w-40" />
-            <Skeleton className="h-4 w-56" />
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-3.5 w-56" />
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-muted-foreground" />
-                  <Skeleton className="h-5 w-24" />
-                </div>
-                <Skeleton className="h-5 w-20" />
-              </div>
-              <Skeleton className="h-2 w-full rounded-full" />
-            </div>
+            <FeatureUsageSingleSkeleton />
           </CardContent>
         </Card>
       </div>

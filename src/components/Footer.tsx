@@ -1,18 +1,21 @@
-import { Skeleton } from './ui/skeleton'
+import { useGlobalLoading } from './GlobalLoading'
 import { useSession } from '@/lib/auth-client'
+import { FooterSkeleton } from '@/components/skeletons'
+
+const CURRENT_YEAR = new Date().getFullYear()
 
 export default function Footer() {
-  const currentYear = new Date().getFullYear()
   const { isPending } = useSession()
-
+  const { pageLoading } = useGlobalLoading()
+  const loading = isPending || pageLoading
   return (
     <footer className="border-t">
       <div className="flex h-16 items-center justify-center px-6">
-        {isPending ? (
-          <Skeleton className="h-5 w-64" />
+        {loading ? (
+          <FooterSkeleton />
         ) : (
           <p className="text-sm text-muted-foreground">
-            © {currentYear} TanStack Start. All rights reserved.
+            © {CURRENT_YEAR} TanStack Start. All rights reserved.
           </p>
         )}
       </div>

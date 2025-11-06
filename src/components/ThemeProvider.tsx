@@ -1,5 +1,11 @@
 import { ScriptOnce } from '@tanstack/react-router'
-import { createContext, useContext, useEffect, useState } from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useState,
+} from 'react'
 import type { ReactNode } from 'react'
 import type { ResolvedTheme, ThemeMode } from '@/lib/theme'
 import {
@@ -27,14 +33,14 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined)
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [themeMode, setThemeMode] = useState<ThemeMode>('auto')
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() =>
+    getStoredThemeMode(),
+  )
   const [mounted, setMounted] = useState(false)
 
-  // Initialize theme on mount
-  useEffect(() => {
-    const storedTheme = getStoredThemeMode()
-    setThemeMode(storedTheme)
-    updateThemeClass(storedTheme)
+  // Apply initial theme class before paint and mark mounted
+  useLayoutEffect(() => {
+    updateThemeClass(themeMode)
     setMounted(true)
   }, [])
 

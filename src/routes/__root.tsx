@@ -10,6 +10,7 @@ import { AppErrorBoundary } from '../components/AppErrorBoundary'
 
 import Footer from '../components/Footer'
 import Header from '../components/Header'
+import { GlobalLoadingProvider } from '../components/GlobalLoading'
 import { ThemeProvider } from '../components/ThemeProvider'
 import { Button } from '../components/ui/button'
 
@@ -53,24 +54,26 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="flex flex-col h-screen">
         <ThemeProvider>
-          <AppErrorBoundary>
-            <Header />
-            <main className="flex-1 flex flex-col overflow-y-auto py-6">
-              {children}
-            </main>
-            <Footer />
-            {import.meta.env.PROD ? null : (
-              <TanStackDevtools
-                config={{ position: 'bottom-left' }}
-                plugins={[
-                  {
-                    name: 'Tanstack Router',
-                    render: <TanStackRouterDevtoolsPanel />,
-                  },
-                ]}
-              />
-            )}
-          </AppErrorBoundary>
+          <GlobalLoadingProvider>
+            <AppErrorBoundary>
+              <Header />
+              <main className="flex-1 flex flex-col overflow-y-auto py-6">
+                {children}
+              </main>
+              <Footer />
+              {import.meta.env.PROD ? null : (
+                <TanStackDevtools
+                  config={{ position: 'bottom-left' }}
+                  plugins={[
+                    {
+                      name: 'Tanstack Router',
+                      render: <TanStackRouterDevtoolsPanel />,
+                    },
+                  ]}
+                />
+              )}
+            </AppErrorBoundary>
+          </GlobalLoadingProvider>
         </ThemeProvider>
         <Scripts />
       </body>
