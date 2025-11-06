@@ -45,7 +45,7 @@ export function getRouter() {
         >
           <AutumnProvider
             convex={convexQueryClient.convexClient}
-            convexApi={(api as any).autumn}
+            convexApi={api.autumn}
           >
             {children}
           </AutumnProvider>
