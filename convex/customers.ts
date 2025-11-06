@@ -1,5 +1,6 @@
+import { v } from 'convex/values'
 import { query } from './_generated/server'
-import { authComponent } from './auth'
+import { getAuthUserOrNull } from './auth'
 
 /**
  * Get user info for Autumn sync.
@@ -9,30 +10,33 @@ import { authComponent } from './auth'
  */
 export const getUserForAutumn = query({
   args: {},
+  returns: v.union(
+    v.object({
+      authenticated: v.literal(false),
+    }),
+    v.object({
+      authenticated: v.literal(true),
+      customerId: v.string(),
+      userData: v.object({
+        name: v.string(),
+        email: v.string(),
+      }),
+    }),
+  ),
   handler: async (ctx) => {
-    try {
-      const user = await authComponent.getAuthUser(ctx)
+    const user = await getAuthUserOrNull(ctx)
+    if (!user) return { authenticated: false as const }
 
-      const customerId = user.userId || user._id
-      if (!customerId) return { authenticated: false }
+    const customerId = user.userId || user._id
+    if (!customerId) return { authenticated: false as const }
 
-      return {
-        authenticated: true,
-        customerId,
-        userData: {
-          name: user.name || '',
-          email: user.email || '',
-        },
-      }
-    } catch (error) {
-      const msg =
-        error && typeof error === 'object' && 'message' in error
-          ? String((error as { message?: unknown }).message)
-          : String(error)
-      if (msg !== 'Unauthenticated') {
-        console.error('customers.getUserForAutumn failed', error)
-      }
-      return { authenticated: false }
+    return {
+      authenticated: true as const,
+      customerId,
+      userData: {
+        name: user.name || '',
+        email: user.email || '',
+      },
     }
   },
 })
@@ -42,25 +46,21 @@ export const getUserForAutumn = query({
  */
 export const getCurrentCustomer = query({
   args: {},
+  returns: v.union(
+    v.null(),
+    v.object({
+      customerId: v.string(),
+    }),
+  ),
   handler: async (ctx) => {
-    try {
-      const user = await authComponent.getAuthUser(ctx)
+    const user = await getAuthUserOrNull(ctx)
+    if (!user) return null
 
-      const customerId = user.userId || user._id
-      if (!customerId) return null
+    const customerId = user.userId || user._id
+    if (!customerId) return null
 
-      // Note: This will be handled by the useCustomer hook on the frontend
-      // This query is mainly for server-side access if needed
-      return { customerId }
-    } catch (error) {
-      const msg =
-        error && typeof error === 'object' && 'message' in error
-          ? String((error as { message?: unknown }).message)
-          : String(error)
-      if (msg !== 'Unauthenticated') {
-        console.error('customers.getCurrentCustomer failed', error)
-      }
-      return null
-    }
+    // Note: This will be handled by the useCustomer hook on the frontend
+    // This query is mainly for server-side access if needed
+    return { customerId }
   },
 })

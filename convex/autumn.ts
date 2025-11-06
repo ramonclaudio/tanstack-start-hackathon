@@ -1,6 +1,6 @@
 import { Autumn } from '@useautumn/convex'
 import { components } from './_generated/api'
-import { authComponent } from './auth'
+import { getAuthUserOrNull } from './auth'
 import type { GenericCtx } from '@convex-dev/better-auth'
 import type { DataModel } from './_generated/dataModel'
 
@@ -14,27 +14,19 @@ if (!process.env.AUTUMN_SECRET_KEY) {
 export const autumn = new Autumn(components.autumn, {
   secretKey: process.env.AUTUMN_SECRET_KEY,
   identify: async (ctx: GenericCtx<DataModel>) => {
-    try {
-      const user = await authComponent.getAuthUser(ctx)
+    const user = await getAuthUserOrNull(ctx)
+    if (!user) return null
 
-      // Check if user has a valid ID (userId or _id)
-      const customerId = user.userId || user._id
+    // Check if user has a valid ID (userId or _id)
+    const customerId = user.userId || user._id
+    if (!customerId) return null
 
-      if (!customerId) {
-        return null
-      }
-
-      return {
-        customerId,
-        customerData: {
-          name: user.name || '',
-          email: user.email || '',
-        },
-      }
-    } catch (error) {
-      // getAuthUser throws "Unauthenticated" error when no user is logged in
-      // This is expected behavior during initial page load before session is ready
-      return null
+    return {
+      customerId,
+      customerData: {
+        name: user.name || '',
+        email: user.email || '',
+      },
     }
   },
 })
