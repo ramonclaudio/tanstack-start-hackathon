@@ -1,9 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '../../convex/_generated/api'
-import { Skeleton } from '@/components/ui/skeleton'
+import { HeroSkeleton, ListSkeleton } from '@/components/skeletons'
 import { useSession } from '@/lib/auth-client'
+import { useGlobalLoading } from '@/components/GlobalLoading'
 
 export const Route = createFileRoute('/demo/start/api-request')({
   component: Home,
@@ -11,28 +13,30 @@ export const Route = createFileRoute('/demo/start/api-request')({
 
 function Home() {
   const { isPending } = useSession()
-  const { data: demos } = useSuspenseQuery(convexQuery(api.demos.get, {}))
+  const { setPageLoading } = useGlobalLoading()
+  const { data: demos, isLoading: demosLoading } = useQuery(
+    convexQuery(api.demos.get, {}),
+  )
+
+  useEffect(() => {
+    setPageLoading(isPending || demosLoading)
+    return () => setPageLoading(false)
+  }, [isPending, demosLoading, setPageLoading])
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-6 -mt-3">
       <div className="w-full max-w-2xl space-y-8">
-        {isPending ? (
+        {isPending || demosLoading ? (
           <>
-            <div className="text-center space-y-2">
-              <Skeleton className="h-9 w-72 mx-auto" />
-              <Skeleton className="h-6 w-96 mx-auto" />
-            </div>
-
+            <HeroSkeleton />
             <div className="space-y-4">
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
-              <Skeleton className="h-16 w-full" />
+              <ListSkeleton count={3} className="h-14" />
             </div>
           </>
         ) : (
           <>
             <div className="text-center space-y-2">
-              <h1 className="text-3xl font-bold tracking-tight">
+              <h1 className="text-4xl font-bold tracking-tight">
                 Convex Query Demo
               </h1>
               <p className="text-muted-foreground">
@@ -41,16 +45,16 @@ function Home() {
             </div>
 
             <div className="space-y-4">
-              {demos.length === 0 ? (
+              {demos?.length === 0 ? (
                 <p className="text-center text-muted-foreground">
                   No demo tasks found. Add some data to the demos table!
                 </p>
               ) : (
                 <ul className="space-y-2">
-                  {demos.map((item: any) => (
+                  {demos?.map((item: any) => (
                     <li
                       key={item._id}
-                      className="border rounded-lg p-4 bg-card text-card-foreground"
+                      className="border rounded-lg p-4 bg-card text-card-foreground h-14 flex items-center"
                     >
                       {item.text}
                     </li>

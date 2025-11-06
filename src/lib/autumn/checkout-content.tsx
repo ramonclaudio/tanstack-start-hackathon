@@ -23,7 +23,7 @@ export const getCheckoutContent = (checkoutResult: CheckoutResult) => {
     }
   }
 
-  if (scenario == 'active' && updateable) {
+  if (scenario === 'active' && updateable) {
     return {
       title: <p>Update Plan</p>,
       message: (

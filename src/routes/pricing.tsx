@@ -1,6 +1,9 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useEffect } from 'react'
 import { z } from 'zod'
 import { Check } from 'lucide-react'
+import { usePricingTable } from 'autumn-js/react'
+import { useGlobalLoading } from '@/components/GlobalLoading'
 import PricingTable from '@/components/pricing/PricingTable'
 import { useSession } from '@/lib/auth-client'
 import {
@@ -9,6 +12,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
+import {
+  FAQAccordionSkeleton,
+  HeroSkeleton,
+  SectionHeaderSkeleton,
+  WhyChooseGridSkeleton,
+} from '@/components/skeletons'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export const Route = createFileRoute('/pricing')({
@@ -23,11 +32,20 @@ function PricingPage() {
   const { data: session, isPending } = useSession()
   const navigate = useNavigate()
   const search = Route.useSearch()
+  // Use hook here only to sync page-level skeleton timing with pricing data
+  const { isLoading: pricingLoading } = usePricingTable({})
+  const { setPageLoading } = useGlobalLoading()
+
+  // Keep header skeleton in sync with page-level skeleton
+  useEffect(() => {
+    setPageLoading(isPending || pricingLoading)
+    return () => setPageLoading(false)
+  }, [isPending, pricingLoading, setPageLoading])
 
   // Products and customer are loaded by the PricingTable component
   // using Autumn's hooks internally
 
-  if (isPending) {
+  if (isPending || pricingLoading) {
     return <PricingPageSkeleton />
   }
 
@@ -36,7 +54,7 @@ function PricingPage() {
       <div className="mx-auto max-w-7xl w-full">
         {/* Header Section */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold tracking-tight mb-4">
+          <h1 className="text-4xl font-bold tracking-tight mb-3">
             Simple, Transparent Pricing
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -92,7 +110,7 @@ function PricingPage() {
               </div>
               <h3 className="font-semibold mb-2">Secure Payments</h3>
               <p className="text-sm text-muted-foreground">
-                All payments are processed securely through Stripe, the industry
+                Payments are processed securely through Stripe, the industry
                 leader in payment processing.
               </p>
             </div>
@@ -219,53 +237,29 @@ function PricingPageSkeleton() {
   return (
     <div className="flex flex-1 flex-col px-6 py-12">
       <div className="mx-auto max-w-7xl w-full">
-        {/* Header Section - Skeleton */}
         <div className="text-center mb-12">
-          <Skeleton className="h-10 w-96 mx-auto mb-4" />
-          <Skeleton className="h-6 w-[500px] mx-auto" />
+          <HeroSkeleton />
         </div>
-
-        {/* Pricing Table - PricingTable component has its own skeleton */}
         <div className="mb-12">
           <PricingTable loading={true} />
         </div>
-
-        {/* Why Choose Us Section - Skeleton */}
         <div className="mt-16 max-w-4xl mx-auto">
-          <Skeleton className="h-8 w-48 mx-auto mb-8" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="border rounded-lg p-6 bg-card">
-                <Skeleton className="w-12 h-12 rounded-full mb-4" />
-                <Skeleton className="h-6 w-32 mb-2" />
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-4 w-3/4" />
-              </div>
-            ))}
+          <div className="text-center mb-8">
+            <SectionHeaderSkeleton />
           </div>
+          <WhyChooseGridSkeleton />
         </div>
-
-        {/* FAQ Section - Skeleton */}
         <div className="mt-16 max-w-3xl mx-auto">
-          <Skeleton className="h-8 w-64 mx-auto mb-8" />
-          <div className="space-y-2">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div
-                key={i}
-                className="border rounded-lg px-4 py-4 flex items-center justify-between"
-              >
-                <Skeleton className="h-5 w-3/4" />
-                <Skeleton className="h-4 w-4" />
-              </div>
-            ))}
+          <div className="text-center mb-8">
+            <SectionHeaderSkeleton className="w-64" />
           </div>
+          <FAQAccordionSkeleton count={6} />
         </div>
-
-        {/* CTA Section - Skeleton */}
         <div className="mt-16 text-center border-t pt-12">
-          <Skeleton className="h-5 w-64 mx-auto mb-4" />
-          <Skeleton className="h-4 w-80 mx-auto" />
+          <div className="flex flex-col items-center gap-5">
+            <Skeleton className="h-4 w-64" />
+            <Skeleton className="h-4 w-56" />
+          </div>
         </div>
       </div>
     </div>
