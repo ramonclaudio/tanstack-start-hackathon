@@ -16,6 +16,10 @@
  *   - Server port number
  *   - Default: 3000
  *
+ * SENTRY_DSN (string)
+ *   - Sentry DSN for server-side error tracking
+ *   - Required for production error monitoring
+ *
  * ASSET_PRELOAD_MAX_SIZE (number)
  *   - Maximum file size in bytes to preload into memory
  *   - Files larger than this will be served on-demand from disk
@@ -64,6 +68,18 @@
  */
 
 import path from 'node:path'
+import * as Sentry from '@sentry/bun'
+
+// Initialize Sentry for server-side error tracking
+// Must be initialized before importing any other modules
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+    sendDefaultPii: true,
+  })
+}
 
 // Configuration
 const SERVER_PORT = Number(process.env.PORT ?? 3000)
@@ -542,6 +558,8 @@ async function initializeServer() {
       log.error(
         `Uncaught server error: ${error instanceof Error ? error.message : String(error)}`,
       )
+      // Report error to Sentry
+      Sentry.captureException(error)
       return new Response('Internal Server Error', { status: 500 })
     },
   })
