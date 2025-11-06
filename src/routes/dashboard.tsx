@@ -106,7 +106,7 @@ function DashboardContent({
       twoFactorEnabled: boolean
     }
   }
-  billingPortalAction: any
+  billingPortalAction: (args: { returnUrl?: string }) => Promise<unknown>
 }) {
   // Now useCustomer is only called when auth is ready
   const { customer, isLoading: isCustomerLoading, refetch } = useCustomer()
@@ -141,7 +141,15 @@ function DashboardContent({
       const response = await billingPortalAction({
         returnUrl: returnUrl || window.location.href,
       })
-      if (response && 'data' in response && response.data) {
+      if (
+        response &&
+        typeof response === 'object' &&
+        'data' in response &&
+        response.data &&
+        typeof response.data === 'object' &&
+        'url' in response.data &&
+        typeof response.data.url === 'string'
+      ) {
         window.location.href = response.data.url
       }
     } catch (err) {
@@ -267,7 +275,7 @@ function DashboardContent({
               <ListSkeleton count={2} className="h-16" />
             ) : customer && customer.products.length > 0 ? (
               <div className="space-y-4">
-                {customer.products.map((product: any) => (
+                {customer.products.map((product) => (
                   <div
                     key={product.id}
                     className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
@@ -319,7 +327,7 @@ function DashboardContent({
               Object.keys(customer.features).length > 0 ? (
               <div className="space-y-4">
                 {Object.entries(customer.features).map(
-                  ([featureId, feature]: [string, any]) => (
+                  ([featureId, feature]) => (
                     <div key={featureId} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">

@@ -45,6 +45,20 @@ export const createAuth = (
   })
 }
 
+// Shared helper to get authenticated user or null
+export const getAuthUserOrNull = async (
+  ctx: GenericCtx<DataModel>,
+): Promise<Awaited<ReturnType<typeof authComponent.getAuthUser>> | null> => {
+  try {
+    return await authComponent.getAuthUser(ctx)
+  } catch (e) {
+    if (e instanceof Error && e.message === 'Unauthenticated') {
+      return null
+    }
+    throw e
+  }
+}
+
 // Example function for getting the current user
 // Feel free to edit, omit, etc.
 export const getCurrentUser = query({
