@@ -1,5 +1,6 @@
 import { AlertCircle } from 'lucide-react'
 import { Component } from 'react'
+import * as Sentry from '@sentry/tanstackstart-react'
 import type { ErrorInfo, ReactNode } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -31,6 +32,14 @@ export class AppErrorBoundary extends Component<Props, State> {
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error('App Error Boundary:', error, errorInfo)
+    // Report error to Sentry
+    Sentry.captureException(error, {
+      contexts: {
+        react: {
+          componentStack: errorInfo.componentStack,
+        },
+      },
+    })
   }
 
   private handleReset = () => {

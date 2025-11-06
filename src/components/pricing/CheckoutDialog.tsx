@@ -3,6 +3,7 @@ import * as AccordionPrimitive from '@radix-ui/react-accordion'
 import React, { useEffect, useState } from 'react'
 import { ChevronDown, Loader2 } from 'lucide-react'
 import { useAction } from 'convex/react'
+import * as Sentry from '@sentry/tanstackstart-react'
 import { api } from '../../../convex/_generated/api'
 import type { CheckoutParams, CheckoutResult, ProductItem } from 'autumn-js'
 import { cn } from '@/lib/utils'
@@ -102,6 +103,13 @@ export default function CheckoutDialog(params: CheckoutDialogProps) {
                 // Parent will trigger refresh via onClose callback
               } catch (e) {
                 console.error('Attach failed', e)
+                Sentry.captureException(e, {
+                  tags: {
+                    component: 'CheckoutDialog',
+                    action: 'attachProduct',
+                    productId: checkoutResult.product.id,
+                  },
+                })
               } finally {
                 setOpen(false)
                 setLoading(false)
@@ -345,6 +353,13 @@ const PrepaidItem = ({
       }
     } catch (error) {
       console.error(error)
+      Sentry.captureException(error, {
+        tags: {
+          component: 'CheckoutDialog',
+          action: 'updatePrepaidQuantity',
+          featureId: item.feature_id,
+        },
+      })
     } finally {
       setLoading(false)
       setOpen(false)
