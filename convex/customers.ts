@@ -2,12 +2,6 @@ import { v } from 'convex/values'
 import { query } from './_generated/server'
 import { getAuthUserOrNull } from './auth'
 
-/**
- * Get user info for Autumn sync.
- * Note: Customer creation happens automatically through the Autumn identify function
- * when useCustomer() is called on the frontend.
- * This query just verifies the user is authenticated.
- */
 export const getUserForAutumn = query({
   args: {},
   returns: v.union(
@@ -41,9 +35,6 @@ export const getUserForAutumn = query({
   },
 })
 
-/**
- * Get the current user's Autumn customer data
- */
 export const getCurrentCustomer = query({
   args: {},
   returns: v.union(
@@ -59,8 +50,6 @@ export const getCurrentCustomer = query({
     const customerId = user.userId || user._id
     if (!customerId) return null
 
-    // Note: This will be handled by the useCustomer hook on the frontend
-    // This query is mainly for server-side access if needed
     return { customerId }
   },
 })

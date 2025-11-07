@@ -38,13 +38,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   )
   const [mounted, setMounted] = useState(false)
 
-  // Apply initial theme class before paint and mark mounted
   useLayoutEffect(() => {
     updateThemeClass(themeMode)
     setMounted(true)
   }, [])
 
-  // Setup system preference listener when in auto mode
   useEffect(() => {
     if (!mounted || themeMode !== 'auto') return
     return setupPreferredListener()

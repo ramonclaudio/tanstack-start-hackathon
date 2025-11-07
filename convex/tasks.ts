@@ -2,11 +2,6 @@ import { v } from 'convex/values'
 import { paginationOptsValidator } from 'convex/server'
 import { mutation, query } from './_generated/server'
 
-/**
- * Tasks table - Interactive CRUD operations
- * Used in the server functions demo for adding/removing tasks
- */
-
 export const get = query({
   args: {
     paginationOpts: paginationOptsValidator,

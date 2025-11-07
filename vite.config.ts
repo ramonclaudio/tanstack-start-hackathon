@@ -7,23 +7,39 @@ import viteTsConfigPaths from 'vite-tsconfig-paths'
 import tailwindcss from '@tailwindcss/vite'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
 
+const getHttpsConfig = () => {
+  const keyPath = path.resolve(__dirname, 'certificates/localhost-key.pem')
+  const certPath = path.resolve(__dirname, 'certificates/localhost.pem')
+
+  if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+    return {
+      key: fs.readFileSync(keyPath),
+      cert: fs.readFileSync(certPath),
+    }
+  }
+
+  console.warn(
+    'HTTPS certificates not found. Running dev server without HTTPS.',
+  )
+  return undefined
+}
+
 const config = defineConfig({
   plugins: [
-    // this is the plugin that enables path aliases
     viteTsConfigPaths({
       projects: ['./tsconfig.json'],
     }),
     tailwindcss(),
     tanstackStart(),
     viteReact(),
-    // Add Sentry plugin for source map upload (production only, requires SENTRY_AUTH_TOKEN)
-    ...(process.env.NODE_ENV === 'production' && process.env.SENTRY_AUTH_TOKEN
+    ...(process.env['NODE_ENV'] === 'production' &&
+    process.env['SENTRY_AUTH_TOKEN']
       ? [
           sentryVitePlugin({
-            org: process.env.SENTRY_ORG,
-            project: process.env.SENTRY_PROJECT,
-            authToken: process.env.SENTRY_AUTH_TOKEN,
-            silent: !process.env.CI,
+            org: process.env['SENTRY_ORG'],
+            project: process.env['SENTRY_PROJECT'],
+            authToken: process.env['SENTRY_AUTH_TOKEN'],
+            silent: !process.env['CI'],
             sourcemaps: {
               assets: './dist/client/**',
             },
@@ -37,17 +53,10 @@ const config = defineConfig({
     },
   },
   build: {
-    sourcemap: true, // Enable source maps for Sentry
+    sourcemap: true,
   },
   server: {
-    https: {
-      key: fs.readFileSync(
-        path.resolve(__dirname, 'certificates/localhost-key.pem'),
-      ),
-      cert: fs.readFileSync(
-        path.resolve(__dirname, 'certificates/localhost.pem'),
-      ),
-    },
+    https: getHttpsConfig(),
   },
 })
 

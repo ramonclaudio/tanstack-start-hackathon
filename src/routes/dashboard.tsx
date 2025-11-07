@@ -40,15 +40,12 @@ function Dashboard() {
   const navigate = useNavigate()
   const { data: session, isPending: sessionPending } = useSession()
 
-  // Use TanStack Query for user data (client-side only, Convex needs WebSocket)
   const { data: userData, isLoading: isUserDataLoading } = useQuery(
     convexQuery(api.dashboard.getUser, {}),
   )
 
-  // Use Convex action for billing portal (actions can't use useConvexMutation)
   const billingPortalAction = useAction(api.autumn.billingPortal)
 
-  // Clean loading state management
   const isLoading = usePageLoading([
     sessionPending,
     isUserDataLoading,
@@ -67,12 +64,10 @@ function Dashboard() {
     }
   }, [session?.user, sessionPending, navigate])
 
-  // Show skeleton while loading
   if (isLoading) {
     return <DashboardSkeleton />
   }
 
-  // We can safely use userData here since loading is false
   const user = userData?.user
   if (!user) return <DashboardSkeleton />
 
@@ -105,11 +100,8 @@ function DashboardContent({
   }
   billingPortalAction: (args: { returnUrl?: string }) => Promise<unknown>
 }) {
-  // Now useCustomer is only called when auth is ready
   const { customer, isLoading: isCustomerLoading, refetch } = useCustomer()
 
-  // Manually trigger fetch on mount if customer data is missing
-  // Using ref to prevent duplicate fetches in React StrictMode
   const hasFetchedRef = useRef(false)
   const [isFetching, setIsFetching] = useState(false)
 
@@ -118,7 +110,6 @@ function DashboardContent({
       hasFetchedRef.current = true
       setIsFetching(true)
       refetch().finally(() => {
-        // Small delay to ensure customer data is populated
         setTimeout(() => setIsFetching(false), 100)
       })
     }
@@ -153,7 +144,6 @@ function DashboardContent({
     }
   }
 
-  // Show skeleton while customer data is loading or being fetched
   if (isCustomerLoading || isFetching) {
     return <DashboardSkeleton />
   }
@@ -167,7 +157,6 @@ function DashboardContent({
         </p>
       </div>
 
-      {/* Failed Payment Banner */}
       {customer && (
         <div className="mb-6">
           <FailedPaymentBanner
@@ -178,7 +167,6 @@ function DashboardContent({
       )}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* User Profile Card */}
         <Card className="col-span-full lg:col-span-2">
           <CardHeader>
             <CardTitle>Profile Information</CardTitle>
@@ -224,7 +212,6 @@ function DashboardContent({
           </CardContent>
         </Card>
 
-        {/* Quick Actions */}
         <Card>
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
@@ -246,15 +233,14 @@ function DashboardContent({
               </Link>
             </Button>
             <Button variant="outline" className="w-full justify-start" asChild>
-              <a href="/auth/settings">
+              <Link to="/dashboard">
                 <Settings className="mr-2 h-4 w-4" />
-                Account Settings
-              </a>
+                Profile
+              </Link>
             </Button>
           </CardContent>
         </Card>
 
-        {/* Subscription Status */}
         <Card className="col-span-full">
           <CardHeader>
             <CardTitle>Subscription Status</CardTitle>
@@ -304,7 +290,6 @@ function DashboardContent({
           </CardContent>
         </Card>
 
-        {/* Feature Usage */}
         <Card className="col-span-full">
           <CardHeader>
             <CardTitle>Feature Usage</CardTitle>
@@ -373,11 +358,9 @@ function DashboardSkeleton() {
     <div className="flex flex-1 flex-col px-6 py-8 max-w-6xl mx-auto w-full">
       <PageHeaderSkeleton />
 
-      {/* Space for potential failed payment banner */}
       <div className="mb-6" />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Profile Card - matches actual CardHeader + CardContent structure */}
         <Card className="col-span-full lg:col-span-2">
           <CardHeader>
             <Skeleton className="h-5 w-40" />
@@ -387,7 +370,6 @@ function DashboardSkeleton() {
           </CardContent>
         </Card>
 
-        {/* Quick Actions - matches actual structure */}
         <Card>
           <CardHeader>
             <Skeleton className="h-5 w-32" />
@@ -398,7 +380,6 @@ function DashboardSkeleton() {
           </CardContent>
         </Card>
 
-        {/* Subscription Status - matches actual structure */}
         <Card className="col-span-full">
           <CardHeader>
             <Skeleton className="h-5 w-48" />
@@ -409,7 +390,6 @@ function DashboardSkeleton() {
           </CardContent>
         </Card>
 
-        {/* Feature Usage - matches actual structure */}
         <Card className="col-span-full">
           <CardHeader>
             <Skeleton className="h-5 w-40" />

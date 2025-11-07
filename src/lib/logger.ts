@@ -1,8 +1,4 @@
-/**
- * Simple client-side logger
- * Dev: Console output
- * Prod: Sentry for errors only
- */
+/* eslint-disable no-console */
 
 import * as Sentry from '@sentry/tanstackstart-react'
 
@@ -24,7 +20,6 @@ class SimpleLogger {
       console[method](`[${this.module}]`, message, context || '')
     }
 
-    // In production, only send errors to Sentry
     if (!isDev && level === 'error') {
       Sentry.captureMessage(message, 'error')
       if (context) {
@@ -54,7 +49,6 @@ class SimpleLogger {
     }
   }
 
-  // Log auth events (only important ones)
   auth(event: string, context?: LogContext) {
     if (event.includes('fail') || event.includes('error')) {
       this.log('warn', `Auth: ${event}`, context)
@@ -63,14 +57,12 @@ class SimpleLogger {
     }
   }
 
-  // Log performance (only if slow)
   perf(operation: string, duration: number, context?: LogContext) {
     if (duration > 1000) {
       this.log('warn', `Slow: ${operation} took ${duration}ms`, context)
     }
   }
 
-  // Debug only in dev
   debug(message: string, context?: LogContext) {
     if (isDev) {
       console.debug(`[${this.module}]`, message, context || '')
@@ -78,7 +70,6 @@ class SimpleLogger {
   }
 }
 
-// Export module-specific loggers
 export const logger = {
   app: new SimpleLogger('App'),
   auth: new SimpleLogger('Auth'),
@@ -86,7 +77,6 @@ export const logger = {
   security: new SimpleLogger('Security'),
 }
 
-// For custom modules
 export function createLogger(module: string) {
   return new SimpleLogger(module)
 }

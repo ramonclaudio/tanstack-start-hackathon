@@ -6,7 +6,6 @@ export const authClient = createAuthClient({
   baseURL: typeof window !== 'undefined' ? window.location.origin : '',
   plugins: [convexClient()],
   onRequest: (request: Request) => {
-    // Only log important auth requests (signin, signup, signout)
     const url = new URL(request.url)
     if (
       url.pathname.includes('/signin') ||
@@ -21,7 +20,6 @@ export const authClient = createAuthClient({
   },
   onResponse: (response: Response) => {
     const url = new URL(response.url)
-    // Log important auth events
     if (url.pathname.includes('/signin')) {
       if (response.ok) {
         logger.auth.info('User signed in successfully')

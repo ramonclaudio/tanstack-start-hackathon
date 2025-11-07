@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * TanStack Start Production Server with Bun
  *
@@ -15,10 +16,6 @@
  * PORT (number)
  *   - Server port number
  *   - Default: 3000
- *
- * SENTRY_DSN (string)
- *   - Sentry DSN for server-side error tracking
- *   - Required for production error monitoring
  *
  * ASSET_PRELOAD_MAX_SIZE (number)
  *   - Maximum file size in bytes to preload into memory
@@ -70,30 +67,16 @@
 import path from 'node:path'
 import * as Sentry from '@sentry/bun'
 import { validateServerEnv } from './src/lib/env'
-import {
-  applySecurityHeaders,
-  getCorsHeaders,
-} from './src/lib/security-headers'
-import { addRateLimitHeaders, applyRateLimit } from './src/lib/rate-limit'
-import {
-  addRequestIdToResponse,
-  getOrGenerateRequestId,
-  getRequestContext,
-  trackRequestDuration,
-} from './src/lib/request-id'
 import { createLogger } from './src/lib/logger'
 
 const serverLogger = createLogger('Server')
 
-// Validate environment variables on startup
 const env = validateServerEnv()
 serverLogger.info('Server environment validated', {
   nodeEnv: env.NODE_ENV,
   port: env.PORT,
 })
 
-// Initialize Sentry for server-side error tracking
-// Must be initialized before importing any other modules
 if (env.SENTRY_DSN) {
   serverLogger.info('Initializing Sentry for server-side error tracking', {
     environment: env.NODE_ENV,
@@ -103,84 +86,84 @@ if (env.SENTRY_DSN) {
     dsn: env.SENTRY_DSN,
     environment: env.NODE_ENV,
     tracesSampleRate: env.NODE_ENV === 'production' ? 0.1 : 1.0,
-    // Disable PII for privacy compliance
     sendDefaultPii: false,
   })
 }
 
-// Configuration
 const SERVER_PORT = Number(env.PORT)
 const CLIENT_DIRECTORY = './dist/client'
 const SERVER_ENTRY_POINT = './dist/server/server.js'
 
-// Preloading configuration from environment variables
-const MAX_PRELOAD_BYTES = env.ASSET_PRELOAD_MAX_SIZE
-  ? Number(env.ASSET_PRELOAD_MAX_SIZE)
-  : 5 * 1024 * 1024 // 5MB default only if not specified
+const log = {
+  info: (message: string) => {
+    serverLogger.info(message)
+  },
+  success: (message: string) => {
+    serverLogger.info(message, { type: 'success' })
+  },
+  warning: (message: string) => {
+    serverLogger.warn(message)
+  },
+  error: (message: string) => {
+    serverLogger.error(message)
+  },
+  header: (message: string) => {
+    serverLogger.info(message, { type: 'header' })
+  },
+}
 
-// Parse comma-separated include patterns
-const INCLUDE_PATTERNS = env.ASSET_PRELOAD_INCLUDE_PATTERNS
-  ? env.ASSET_PRELOAD_INCLUDE_PATTERNS.split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map((pattern: string) => convertGlobToRegExp(pattern))
-  : []
+const MAX_PRELOAD_BYTES = Number(
+  process.env['ASSET_PRELOAD_MAX_SIZE'] ?? 5 * 1024 * 1024,
+)
 
-// Parse comma-separated exclude patterns
-const EXCLUDE_PATTERNS = env.ASSET_PRELOAD_EXCLUDE_PATTERNS
-  ? env.ASSET_PRELOAD_EXCLUDE_PATTERNS.split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map((pattern: string) => convertGlobToRegExp(pattern))
-  : []
+const INCLUDE_PATTERNS = (process.env['ASSET_PRELOAD_INCLUDE_PATTERNS'] ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
+  .map((pattern: string) => convertGlobToRegExp(pattern))
 
-// Feature flags - explicit true/false
-const VERBOSE = env.ASSET_PRELOAD_VERBOSE_LOGGING === 'true'
-const ENABLE_ETAG = env.ASSET_PRELOAD_ENABLE_ETAG !== 'false' // Default true
-const ENABLE_GZIP = env.ASSET_PRELOAD_ENABLE_GZIP !== 'false' // Default true
-const GZIP_MIN_BYTES = env.ASSET_PRELOAD_GZIP_MIN_SIZE
-  ? Number(env.ASSET_PRELOAD_GZIP_MIN_SIZE)
-  : 1024 // 1KB
+const EXCLUDE_PATTERNS = (process.env['ASSET_PRELOAD_EXCLUDE_PATTERNS'] ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
+  .map((pattern: string) => convertGlobToRegExp(pattern))
+
+const VERBOSE = process.env['ASSET_PRELOAD_VERBOSE_LOGGING'] === 'true'
+
+const ENABLE_ETAG =
+  (process.env['ASSET_PRELOAD_ENABLE_ETAG'] ?? 'true') === 'true'
+
+const ENABLE_GZIP =
+  (process.env['ASSET_PRELOAD_ENABLE_GZIP'] ?? 'true') === 'true'
+const GZIP_MIN_BYTES = Number(
+  process.env['ASSET_PRELOAD_GZIP_MIN_SIZE'] ?? 1024,
+)
 const GZIP_TYPES = (
-  env.ASSET_PRELOAD_GZIP_MIME_TYPES ||
+  process.env['ASSET_PRELOAD_GZIP_MIME_TYPES'] ??
   'text/,application/javascript,application/json,application/xml,image/svg+xml'
 )
   .split(',')
   .map((v) => v.trim())
   .filter(Boolean)
 
-/**
- * Convert a simple glob pattern to a regular expression
- * Supports * wildcard for matching any characters
- */
 function convertGlobToRegExp(globPattern: string): RegExp {
-  // Escape regex special chars except *, then replace * with .*
   const escapedPattern = globPattern
     .replace(/[-/\\^$+?.()|[\]{}]/g, '\\$&')
     .replace(/\*/g, '.*')
   return new RegExp(`^${escapedPattern}$`, 'i')
 }
 
-/**
- * Compute ETag for a given data buffer
- */
 function computeEtag(data: Uint8Array): string {
   const hash = Bun.hash(data)
   return `W/"${hash.toString(16)}-${data.byteLength.toString()}"`
 }
 
-/**
- * Metadata for preloaded static assets
- */
 interface AssetMetadata {
   route: string
   size: number
   type: string
 }
 
-/**
- * In-memory asset with ETag and Gzip support
- */
 interface InMemoryAsset {
   raw: Uint8Array
   gz?: Uint8Array
@@ -190,29 +173,20 @@ interface InMemoryAsset {
   size: number
 }
 
-/**
- * Result of static asset preloading process
- */
 interface PreloadResult {
   routes: Record<string, (req: Request) => Response | Promise<Response>>
   loaded: Array<AssetMetadata>
   skipped: Array<AssetMetadata>
 }
 
-/**
- * Check if a file is eligible for preloading based on configured patterns
- */
 function isFileEligibleForPreloading(relativePath: string): boolean {
-  const fileName = relativePath.split(/[/\\]/).pop() || relativePath
-
-  // If include patterns are specified, file must match at least one
+  const fileName = relativePath.split(/[/\\]/).pop() ?? relativePath
   if (INCLUDE_PATTERNS.length > 0) {
     if (!INCLUDE_PATTERNS.some((pattern) => pattern.test(fileName))) {
       return false
     }
   }
 
-  // If exclude patterns are specified, file must not match any
   if (EXCLUDE_PATTERNS.some((pattern) => pattern.test(fileName))) {
     return false
   }
@@ -220,18 +194,12 @@ function isFileEligibleForPreloading(relativePath: string): boolean {
   return true
 }
 
-/**
- * Check if a MIME type is compressible
- */
 function isMimeTypeCompressible(mimeType: string): boolean {
   return GZIP_TYPES.some((type) =>
     type.endsWith('/') ? mimeType.startsWith(type) : mimeType === type,
   )
 }
 
-/**
- * Conditionally compress data based on size and MIME type
- */
 function compressDataIfAppropriate(
   data: Uint8Array,
   mimeType: string,
@@ -246,9 +214,6 @@ function compressDataIfAppropriate(
   }
 }
 
-/**
- * Create response handler function with ETag and Gzip support
- */
 function createResponseHandler(
   asset: InMemoryAsset,
 ): (req: Request) => Response {
@@ -258,8 +223,6 @@ function createResponseHandler(
       'Cache-Control': asset.immutable
         ? 'public, max-age=31536000, immutable'
         : 'public, max-age=3600',
-      // Add basic security headers for static assets
-      'X-Content-Type-Options': 'nosniff',
     }
 
     if (ENABLE_ETAG && asset.etag) {
@@ -270,7 +233,7 @@ function createResponseHandler(
           headers: { ETag: asset.etag },
         })
       }
-      headers.ETag = asset.etag
+      headers['ETag'] = asset.etag
     }
 
     if (
@@ -290,11 +253,8 @@ function createResponseHandler(
   }
 }
 
-/**
- * Create composite glob pattern from include patterns
- */
 function createCompositeGlobPattern(): Bun.Glob {
-  const raw = (env.ASSET_PRELOAD_INCLUDE_PATTERNS || '')
+  const raw = (process.env['ASSET_PRELOAD_INCLUDE_PATTERNS'] ?? '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
@@ -303,10 +263,6 @@ function createCompositeGlobPattern(): Bun.Glob {
   return new Bun.Glob(`{${raw.join(',')}}`)
 }
 
-/**
- * Initialize static routes with intelligent preloading strategy
- * Small files are loaded into memory, large files are served on-demand
- */
 async function initializeStaticRoutes(
   clientDirectory: string,
 ): Promise<PreloadResult> {
@@ -315,19 +271,19 @@ async function initializeStaticRoutes(
   const loaded: Array<AssetMetadata> = []
   const skipped: Array<AssetMetadata> = []
 
-  serverLogger.info(`Loading static assets from ${clientDirectory}...`)
+  log.info(`Loading static assets from ${clientDirectory}...`)
   if (VERBOSE) {
     console.log(
       `Max preload size: ${(MAX_PRELOAD_BYTES / 1024 / 1024).toFixed(2)} MB`,
     )
     if (INCLUDE_PATTERNS.length > 0) {
       console.log(
-        `Include patterns: ${env.ASSET_PRELOAD_INCLUDE_PATTERNS || ''}`,
+        `Include patterns: ${process.env['ASSET_PRELOAD_INCLUDE_PATTERNS'] ?? ''}`,
       )
     }
     if (EXCLUDE_PATTERNS.length > 0) {
       console.log(
-        `Exclude patterns: ${env.ASSET_PRELOAD_EXCLUDE_PATTERNS || ''}`,
+        `Exclude patterns: ${process.env['ASSET_PRELOAD_EXCLUDE_PATTERNS'] ?? ''}`,
       )
     }
   }
@@ -341,10 +297,8 @@ async function initializeStaticRoutes(
       const route = `/${relativePath.split(path.sep).join(path.posix.sep)}`
 
       try {
-        // Get file metadata
         const file = Bun.file(filepath)
 
-        // Skip if file doesn't exist or is empty
         if (!(await file.exists()) || file.size === 0) {
           continue
         }
@@ -355,12 +309,10 @@ async function initializeStaticRoutes(
           type: file.type || 'application/octet-stream',
         }
 
-        // Determine if file should be preloaded
         const matchesPattern = isFileEligibleForPreloading(relativePath)
         const withinSizeLimit = file.size <= MAX_PRELOAD_BYTES
 
         if (matchesPattern && withinSizeLimit) {
-          // Preload small files into memory with ETag and Gzip support
           const bytes = new Uint8Array(await file.arrayBuffer())
           const gz = compressDataIfAppropriate(bytes, metadata.type)
           const etag = ENABLE_ETAG ? computeEtag(bytes) : undefined
@@ -377,7 +329,6 @@ async function initializeStaticRoutes(
           loaded.push({ ...metadata, size: bytes.byteLength })
           totalPreloadedBytes += bytes.byteLength
         } else {
-          // Serve large or filtered files on-demand
           routes[route] = () => {
             const fileOnDemand = Bun.file(filepath)
             return new Response(fileOnDemand, {
@@ -392,24 +343,24 @@ async function initializeStaticRoutes(
         }
       } catch (error: unknown) {
         if (error instanceof Error && error.name !== 'EISDIR') {
-          serverLogger.error(`Failed to load ${filepath}: ${error.message}`)
+          log.error(`Failed to load ${filepath}: ${error.message}`)
+          Sentry.captureException(error, {
+            extra: { filepath, relativePath },
+          })
         }
       }
     }
 
-    // Show detailed file overview only when verbose mode is enabled
     if (VERBOSE && (loaded.length > 0 || skipped.length > 0)) {
       const allFiles = [...loaded, ...skipped].sort((a, b) =>
         a.route.localeCompare(b.route),
       )
 
-      // Calculate max path length for alignment
       const maxPathLength = Math.min(
         Math.max(...allFiles.map((f) => f.route.length)),
         60,
       )
 
-      // Format file size with KB and actual gzip size
       const formatFileSize = (bytes: number, gzBytes?: number) => {
         const kb = bytes / 1024
         const sizeStr = kb < 100 ? kb.toFixed(2) : kb.toFixed(1)
@@ -423,7 +374,6 @@ async function initializeStaticRoutes(
           }
         }
 
-        // Rough gzip estimation (typically 30-70% compression) if no actual gzip data
         const gzipKb = kb * 0.35
         return {
           size: sizeStr,
@@ -464,7 +414,6 @@ async function initializeStaticRoutes(
       }
     }
 
-    // Show detailed verbose info if enabled
     if (VERBOSE) {
       if (loaded.length > 0 || skipped.length > 0) {
         const allFiles = [...loaded, ...skipped].sort((a, b) =>
@@ -496,26 +445,24 @@ async function initializeStaticRoutes(
       }
     }
 
-    // Log summary after the file list
-    console.log() // Empty line for separation
+    console.log()
     if (loaded.length > 0) {
-      serverLogger.info(
+      log.success(
         `Preloaded ${String(loaded.length)} files (${(totalPreloadedBytes / 1024 / 1024).toFixed(2)} MB) into memory`,
-        { type: 'success' },
       )
     } else {
-      serverLogger.info('No files preloaded into memory')
+      log.info('No files preloaded into memory')
     }
 
     if (skipped.length > 0) {
       const tooLarge = skipped.filter((f) => f.size > MAX_PRELOAD_BYTES).length
       const filtered = skipped.length - tooLarge
-      serverLogger.info(
+      log.info(
         `${String(skipped.length)} files will be served on-demand (${String(tooLarge)} too large, ${String(filtered)} filtered)`,
       )
     }
   } catch (error) {
-    serverLogger.error(
+    log.error(
       `Failed to load static files from ${clientDirectory}: ${String(error)}`,
     )
   }
@@ -523,185 +470,82 @@ async function initializeStaticRoutes(
   return { routes, loaded, skipped }
 }
 
-/**
- * Initialize the server
- */
 async function initializeServer() {
-  serverLogger.info('Starting Production Server', { type: 'header' })
+  log.header('Starting Production Server')
 
-  // Load TanStack Start server handler
   let handler: { fetch: (request: Request) => Response | Promise<Response> }
   try {
     const serverModule = (await import(SERVER_ENTRY_POINT)) as {
       default: { fetch: (request: Request) => Response | Promise<Response> }
     }
     handler = serverModule.default
-    serverLogger.info('TanStack Start application handler initialized', {
-      type: 'success',
-    })
+    log.success('TanStack Start application handler initialized')
   } catch (error) {
-    serverLogger.error(`Failed to load server handler: ${String(error)}`)
+    log.error(`Failed to load server handler: ${String(error)}`)
     process.exit(1)
   }
 
-  // Build static routes with intelligent preloading
   const { routes } = await initializeStaticRoutes(CLIENT_DIRECTORY)
 
-  // Create Bun server
   const server = Bun.serve({
     port: SERVER_PORT,
 
     routes: {
-      // Serve static assets (preloaded or on-demand)
       ...routes,
-
-      // Fallback to TanStack Start handler for all other routes
       '/*': async (req: Request) => {
-        // Generate or extract request ID
-        const requestId = getOrGenerateRequestId(req.headers)
-        const context = getRequestContext(req, requestId)
-
-        // Log incoming request
-        serverLogger.info(`${req.method} ${context.url}`, {
-          requestId,
-          method: req.method,
-          path: context.url,
-          userAgent: context.userAgent,
-          ip: context.ip,
-        })
-
-        const trackDuration = trackRequestDuration(context)
+        const urlObj = new URL(req.url)
+        const start = Date.now()
+        serverLogger.info(`${req.method} ${urlObj.pathname}${urlObj.search}`)
 
         try {
-          const url = new URL(req.url)
-          const origin = req.headers.get('origin')
-
-          // Handle CORS preflight requests
-          if (req.method === 'OPTIONS') {
-            const corsHeaders = getCorsHeaders(
-              origin,
-              env.NODE_ENV === 'development',
-            )
-            const response = new Response(null, {
-              status: 204,
-              headers: corsHeaders,
-            })
-            return addRequestIdToResponse(response, requestId)
-          }
-
-          // Determine rate limit type based on path
-          let limiterType: 'auth' | 'api' | 'general' = 'general'
-
-          if (url.pathname.startsWith('/api/auth')) {
-            limiterType = 'auth'
-          } else if (url.pathname.startsWith('/api')) {
-            limiterType = 'api'
-          }
-
-          // Apply rate limiting
-          const rateLimitResponse = applyRateLimit(req, limiterType)
-          if (rateLimitResponse) {
-            trackDuration()
-            return addRequestIdToResponse(
-              applySecurityHeaders(
-                rateLimitResponse,
-                env.NODE_ENV === 'development',
-              ),
-              requestId,
-            )
-          }
-
-          // Process request
-          let response = await handler.fetch(req)
-
-          // Add rate limit headers to successful responses
-          response = addRateLimitHeaders(response, req, limiterType)
-
-          // Add CORS headers for API routes
-          if (url.pathname.startsWith('/api')) {
-            const corsHeaders = getCorsHeaders(
-              origin,
-              env.NODE_ENV === 'development',
-            )
-            const newHeaders = new Headers(response.headers)
-            Object.entries(corsHeaders).forEach(([key, value]) => {
-              newHeaders.set(key, value)
-            })
-            response = new Response(response.body, {
-              status: response.status,
-              statusText: response.statusText,
-              headers: newHeaders,
-            })
-          }
-
-          // Track successful request
-          const duration = trackDuration()
-
-          // Log response
+          const response = await handler.fetch(req)
+          const duration = Date.now() - start
           serverLogger.perf(
-            `${req.method} ${context.url} - ${response.status}`,
+            `${req.method} ${urlObj.pathname}${urlObj.search} - ${response.status}`,
             duration,
-            {
-              requestId,
-              status: response.status,
-              method: req.method,
-              path: context.url,
-            },
           )
-
-          // Add request ID and apply security headers
-          response = addRequestIdToResponse(response, requestId)
-          return applySecurityHeaders(response, env.NODE_ENV === 'development')
+          return response
         } catch (error) {
-          serverLogger.error(
-            `[${requestId}] Server handler error: ${String(error)}`,
-          )
-          trackDuration()
+          log.error(`Server handler error: ${String(error)}`)
 
-          // Report to Sentry with request context
           Sentry.withScope((scope) => {
             scope.setContext('request', {
-              requestId: context.requestId,
-              method: context.method,
-              url: context.url,
-              timestamp: context.timestamp,
-              userAgent: context.userAgent,
-              ip: context.ip,
+              method: req.method,
+              url: urlObj.pathname + urlObj.search,
+              timestamp: Date.now(),
+              userAgent: req.headers.get('user-agent') || undefined,
             })
-            scope.setTag('request.id', requestId)
             Sentry.captureException(error)
           })
 
-          const errorResponse = new Response('Internal Server Error', {
-            status: 500,
-          })
-          return addRequestIdToResponse(
-            applySecurityHeaders(errorResponse, env.NODE_ENV === 'development'),
-            requestId,
-          )
+          return new Response('Internal Server Error', { status: 500 })
         }
       },
     },
 
-    // Global error handler
     error(error) {
-      serverLogger.error(
+      log.error(
         `Uncaught server error: ${error instanceof Error ? error.message : String(error)}`,
       )
-      // Report error to Sentry
       Sentry.captureException(error)
       return new Response('Internal Server Error', { status: 500 })
     },
   })
 
-  serverLogger.info(
-    `Server listening on http://localhost:${String(server.port)}`,
-    { type: 'success' },
-  )
+  log.success(`Server listening on http://localhost:${String(server.port)}`)
+
+  Sentry.addBreadcrumb({
+    category: 'server',
+    message: 'Server initialized successfully',
+    level: 'info',
+    data: {
+      port: server.port,
+      environment: env.NODE_ENV,
+    },
+  })
 }
 
-// Initialize the server
 initializeServer().catch((error: unknown) => {
-  serverLogger.error(`Failed to start server: ${String(error)}`)
+  log.error(`Failed to start server: ${String(error)}`)
   process.exit(1)
 })

@@ -27,19 +27,16 @@ export class AuthErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): State {
-    // Update state so the next render will show the fallback UI
     return { hasError: true, error }
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    // Log the error with our logger
     logger.app.error('Auth Provider Error', error, {
       component: 'AuthErrorBoundary',
       componentStack: errorInfo.componentStack,
       errorBoundary: true,
     })
 
-    // Log the error to Sentry (logger already handles this in production)
     Sentry.withScope((scope) => {
       scope.setContext('component', {
         name: 'AuthErrorBoundary',
@@ -53,9 +50,7 @@ export class AuthErrorBoundary extends Component<Props, State> {
   }
 
   handleReset = (): void => {
-    // Clear error state
     this.setState({ hasError: false, error: null })
-    // Reload the page to reset auth state
     window.location.reload()
   }
 

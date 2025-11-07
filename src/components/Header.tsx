@@ -3,7 +3,6 @@ import { User } from 'lucide-react'
 import { ModeToggle } from './ModeToggle'
 import { Button } from './ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
-//
 import { CircleSkeleton, NavSkeleton } from './skeletons'
 import { useGlobalLoading } from './GlobalLoading'
 import {

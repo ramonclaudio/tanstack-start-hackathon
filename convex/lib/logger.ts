@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Convex Backend Logger - Simple and effective
  */

@@ -100,7 +100,6 @@ export default function CheckoutDialog(params: CheckoutDialogProps) {
                   ...(params.checkoutParams || {}),
                   options,
                 })
-                // Parent will trigger refresh via onClose callback
               } catch (e) {
                 console.error('Attach failed', e)
                 Sentry.captureException(e, {
@@ -431,5 +430,3 @@ const PrepaidItem = ({
     </div>
   )
 }
-
-// Removed unused PriceItem and PricingDialogButton components

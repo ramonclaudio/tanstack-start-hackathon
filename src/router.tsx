@@ -14,14 +14,10 @@ import { logger } from './lib/logger'
 import type { AnyRouter } from '@tanstack/react-router'
 
 export function getRouter(): AnyRouter {
-  // Note: No singleton pattern - create fresh instance each time
-  // TanStack Router handles its own internal caching and state management
   const isClient = typeof window !== 'undefined'
 
-  // Validate environment variables on startup
   const env = validateClientEnv()
 
-  // Only log on client side to avoid SSR spam
   if (isClient) {
     logger.app.info('Environment validated', {
       mode: env.MODE,
@@ -40,18 +36,11 @@ export function getRouter(): AnyRouter {
       queries: {
         queryKeyHashFn: convexQueryClient.hashFn(),
         queryFn: convexQueryClient.queryFn(),
-        // Convex data is never stale - updates pushed via WebSocket
-        // refetch options are ignored since queries are always up to date
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
-        // Subscriptions stay active for 5 mins after unmount by default (gcTime)
-        // Override per query if needed with { gcTime: 10000 }
-        gcTime: 5 * 60 * 1000, // 5 minutes
-        // Deduplicate requests - prevent multiple identical queries
-        staleTime: 0, // Data is always fresh with Convex WebSocket
-        // Retry configuration for failed queries
+        gcTime: 5 * 60 * 1000,
+        staleTime: 0,
         retry: (failureCount, error) => {
-          // Don't retry on 4xx errors (client errors)
           if (error instanceof Error && error.message.includes('4')) {
             logger.api.debug('Query failed with client error, not retrying', {
               error: error.message,
@@ -59,7 +48,6 @@ export function getRouter(): AnyRouter {
             })
             return false
           }
-          // Retry up to 3 times with exponential backoff
           const shouldRetry = failureCount < 3
           if (shouldRetry) {
             logger.api.warn(`Query retry attempt ${failureCount + 1}`, {
@@ -71,8 +59,7 @@ export function getRouter(): AnyRouter {
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
       },
       mutations: {
-        // Retry configuration for failed mutations
-        retry: false, // Don't retry mutations by default
+        retry: false,
       },
     },
   })
@@ -107,7 +94,6 @@ export function getRouter(): AnyRouter {
     queryClient,
   )
 
-  // Initialize Sentry for client-side error tracking (only once per session)
   if (isClient && env.VITE_SENTRY_DSN && !(window as any).__sentryInitialized) {
     logger.app.info('Initializing Sentry for error tracking', {
       environment: env.MODE,
@@ -124,13 +110,9 @@ export function getRouter(): AnyRouter {
           blockAllMedia: true,
         }),
       ],
-      // Performance monitoring: 10% of transactions in production
       tracesSampleRate: env.PROD ? 0.1 : 1.0,
-      // Session replay: 25% for low traffic (<10k sessions/day) per Sentry recommendations
       replaysSessionSampleRate: env.PROD ? 0.25 : 1.0,
-      // Error replay: 100% of errors get full session replay for debugging
       replaysOnErrorSampleRate: 1.0,
-      // Disable PII for privacy compliance
       sendDefaultPii: false,
     })
     ;(

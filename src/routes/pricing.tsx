@@ -31,14 +31,9 @@ function PricingPage() {
   const { data: session, isPending } = useSession()
   const navigate = useNavigate()
   const search = Route.useSearch()
-  // Use hook here only to sync page-level skeleton timing with pricing data
   const { isLoading: pricingLoading } = usePricingTable({})
 
-  // Clean loading state management
   const isLoading = usePageLoading([isPending, pricingLoading])
-
-  // Products and customer are loaded by the PricingTable component
-  // using Autumn's hooks internally
 
   if (isLoading) {
     return <PricingPageSkeleton />
@@ -47,7 +42,6 @@ function PricingPage() {
   return (
     <div className="flex flex-1 flex-col px-6 py-12">
       <div className="mx-auto max-w-7xl w-full">
-        {/* Header Section */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold tracking-tight mb-3">
             Simple, Transparent Pricing
@@ -58,7 +52,6 @@ function PricingPage() {
           </p>
         </div>
 
-        {/* Pricing Table */}
         <div className="mb-12">
           <PricingTable
             initialInterval={search.interval}
@@ -83,7 +76,6 @@ function PricingPage() {
           />
         </div>
 
-        {/* Features Comparison */}
         <div className="mt-16 max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold text-center mb-8">
             Why Choose Us?
@@ -122,7 +114,6 @@ function PricingPage() {
           </div>
         </div>
 
-        {/* FAQ Section */}
         <div className="mt-16 max-w-3xl mx-auto">
           <h2 className="text-2xl font-bold text-center mb-8">
             Frequently Asked Questions
@@ -208,7 +199,6 @@ function PricingPage() {
           </Accordion>
         </div>
 
-        {/* CTA Section */}
         <div className="mt-16 text-center border-t pt-12">
           <p className="text-muted-foreground mb-4">
             Still have questions? We're here to help.

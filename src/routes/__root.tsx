@@ -23,7 +23,6 @@ export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
 }>()({
   errorComponent: ({ error }) => {
-    // Capture route errors in Sentry
     useEffect(() => {
       Sentry.captureException(error)
     }, [error])
