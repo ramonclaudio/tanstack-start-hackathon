@@ -2,14 +2,21 @@
 
 Production-ready TanStack Start template with Convex backend, Better Auth, Autumn payments, and Sentry monitoring.
 
-## Stack
+For a complete, always up-to-date system view (diagrams, flows, and structure), see docs/ARCHITECTURE.md.
 
-**Frontend:** React 19, TanStack Router, Tailwind CSS v4, shadcn/ui
-**Backend:** Convex (serverless functions + realtime database)
-**Runtime:** Bun
-**Auth:** Better Auth (email + OAuth)
-**Payments:** Autumn (Stripe integration)
-**Monitoring:** Sentry (error tracking + session replay)
+## Stack (Omakase)
+
+- React 19
+- Vite 7
+- TanStack Start
+- TanStack Router
+- TanStack Query
+- Convex
+- Better Auth
+- Autumn
+- Sentry
+- Tailwind CSS v4
+- shadcn/ui
 
 ## What You Get
 
@@ -18,7 +25,7 @@ Production-ready TanStack Start template with Convex backend, Better Auth, Autum
 - Authentication with email and GitHub OAuth
 - Payment flows with subscription management
 - Production error tracking (client + server)
-- Custom production server with intelligent asset loading
+- Bun production server (SSR + static files on-demand)
 - Dark mode with system preference detection
 - Type-safe API layer (4k LOC, fully typed)
 
@@ -48,12 +55,19 @@ bun run start        # Run production server
 Create `.env.local`:
 
 ```bash
+# Core
+SITE_URL=http://localhost:3000
+PORT=3000
+NODE_ENV=development
+
 # Convex
 VITE_CONVEX_URL=https://your-convex-url.convex.cloud
+# Optional: custom Convex site URL for public endpoints
+# VITE_PUBLIC_CONVEX_SITE_URL=https://your-deployment.convex.site
+# Optional: deployment id (dev/preview/prod)
+# CONVEX_DEPLOYMENT=dev:your-deployment-name
 
-# Better Auth
-BETTER_AUTH_URL=http://localhost:3000
-BETTER_AUTH_SECRET=your-secret-key
+# Better Auth (uses SITE_URL for routes)
 GITHUB_CLIENT_ID=your-github-client-id
 GITHUB_CLIENT_SECRET=your-github-client-secret
 
@@ -66,25 +80,13 @@ SENTRY_DSN=your-sentry-dsn
 SENTRY_ORG=your-org
 SENTRY_PROJECT=your-project
 SENTRY_AUTH_TOKEN=your-auth-token
+
+# (No extra CORS/rate limiting configured at server layer)
 ```
 
 ## Production Server
 
-Custom Bun server (`server.ts`) with:
-
-- **Smart asset loading** - Small files preloaded, large files on-demand
-- **ETag caching** - Conditional requests with 304 responses
-- **Gzip compression** - Automatic for text/js/css
-- **Request tracing** - Sentry integration for errors
-
-Configure via environment:
-
-```bash
-PORT=3000
-ASSET_PRELOAD_MAX_SIZE=5242880        # 5MB default
-ASSET_PRELOAD_INCLUDE_PATTERNS="*.js,*.css,*.woff2"
-ASSET_PRELOAD_EXCLUDE_PATTERNS="*.map"
-```
+Custom Bun server (`server.ts`) provides SSR and serves static files on-demand from `dist/client`. No extra CORS, rate limiting, preloading, ETag, or gzip are applied — rely on upstream defaults (Better Auth/Convex/Autumn/hosting).
 
 ## Monitoring
 
@@ -158,9 +160,6 @@ bun run all          # Full check + build
 
 - Convex WebSocket subscriptions (no polling)
 - Optimistic updates
-- Smart asset preloading
-- Gzip compression
-- ETag caching
 
 ## License
 
