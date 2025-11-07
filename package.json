@@ -1,7 +1,7 @@
 {
   "name": "tanvex",
   "version": "0.1.0",
-  "description": "Modern TanStack Start template with Bun runtime and production server",
+  "description": "Modern TanStack Start application with Bun runtime, Convex backend, and enterprise features",
   "private": false,
   "type": "module",
   "keywords": [
