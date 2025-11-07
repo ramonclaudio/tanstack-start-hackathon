@@ -10,12 +10,12 @@
 
 import type * as auth from "../auth.js";
 import type * as autumn from "../autumn.js";
-import type * as customers from "../customers.js";
-import type * as dashboard from "../dashboard.js";
 import type * as demos from "../demos.js";
 import type * as http from "../http.js";
+import type * as lib_auth from "../lib/auth.js";
 import type * as lib_logger from "../lib/logger.js";
 import type * as tasks from "../tasks.js";
+import type * as user from "../user.js";
 
 import type {
   ApiFromModules,
@@ -34,12 +34,12 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   autumn: typeof autumn;
-  customers: typeof customers;
-  dashboard: typeof dashboard;
   demos: typeof demos;
   http: typeof http;
+  "lib/auth": typeof lib_auth;
   "lib/logger": typeof lib_logger;
   tasks: typeof tasks;
+  user: typeof user;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 
