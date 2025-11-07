@@ -1,6 +1,5 @@
 import { createClientOnlyFn, createIsomorphicFn } from '@tanstack/react-start'
 
-// Keep types minimal and avoid runtime schema libs
 export type ThemeMode = 'light' | 'dark' | 'auto'
 export type ResolvedTheme = 'light' | 'dark'
 
@@ -43,7 +42,6 @@ export const updateThemeClass = createClientOnlyFn((themeMode: ThemeMode) => {
   const resolved: ResolvedTheme = themeMode === 'auto' ? systemTheme : themeMode
   const other: ResolvedTheme = resolved === 'dark' ? 'light' : 'dark'
 
-  // Only touch the DOM when needed
   const hasResolved = root.classList.contains(resolved)
   const hasOther = root.classList.contains(other)
   const wantAuto = themeMode === 'auto'
