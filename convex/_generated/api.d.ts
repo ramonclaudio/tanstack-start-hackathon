@@ -14,6 +14,7 @@ import type * as customers from "../customers.js";
 import type * as dashboard from "../dashboard.js";
 import type * as demos from "../demos.js";
 import type * as http from "../http.js";
+import type * as lib_logger from "../lib/logger.js";
 import type * as tasks from "../tasks.js";
 
 import type {
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   dashboard: typeof dashboard;
   demos: typeof demos;
   http: typeof http;
+  "lib/logger": typeof lib_logger;
   tasks: typeof tasks;
 }>;
 declare const fullApiWithMounts: typeof fullApi;

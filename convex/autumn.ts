@@ -1,6 +1,7 @@
 import { Autumn } from '@useautumn/convex'
 import { components } from './_generated/api'
 import { getAuthUserOrNull } from './auth'
+import { autumnLogger } from './lib/logger'
 import type { GenericCtx } from '@convex-dev/better-auth'
 import type { DataModel } from './_generated/dataModel'
 
@@ -19,7 +20,14 @@ export const autumn = new Autumn(components.autumn, {
 
     // Check if user has a valid ID (userId or _id)
     const customerId = user.userId || user._id
-    if (!customerId) return null
+    if (!customerId) {
+      // This is actually an error - log it
+      autumnLogger.error('User has no valid ID for Autumn', undefined, {
+        userId: user.userId,
+        _id: user._id,
+      })
+      return null
+    }
 
     return {
       customerId,
@@ -33,6 +41,8 @@ export const autumn = new Autumn(components.autumn, {
 
 /**
  * These exports are required for our react hooks and components
+ * Note: These are Convex actions, not regular functions, so we can't wrap them
+ * Logging happens in the identify function above when customers are identified
  */
 
 export const {

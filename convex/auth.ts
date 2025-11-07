@@ -3,12 +3,15 @@ import { convex } from '@convex-dev/better-auth/plugins'
 import { betterAuth } from 'better-auth'
 import { components } from './_generated/api'
 import { query } from './_generated/server'
+import { authLogger } from './lib/logger'
 import type { DataModel } from './_generated/dataModel'
 import type { GenericCtx } from '@convex-dev/better-auth'
 
 const siteUrl = process.env.SITE_URL
 if (!siteUrl) {
-  console.warn('SITE_URL is not set; falling back to http://localhost:3000')
+  throw new Error(
+    'Missing required environment variable: SITE_URL. This must be set in production.',
+  )
 }
 
 // The component client has methods needed for integrating Convex with Better Auth,
@@ -25,12 +28,22 @@ export const createAuth = (
     logger: {
       disabled: optionsOnly,
     },
-    baseURL: siteUrl || 'http://localhost:3000',
+    baseURL: siteUrl,
     database: authComponent.adapter(ctx),
-    // Configure simple, non-verified email/password to get started
+    // Email/password authentication configuration
     emailAndPassword: {
       enabled: true,
+      // Email verification disabled until email service is configured
+      // To enable: implement sendVerificationEmail below and set to true
       requireEmailVerification: false,
+      // TODO: Configure email sending service (SendGrid, Resend, etc.)
+      // sendVerificationEmail: async ({ user, url, token }) => {
+      //   await sendEmail({
+      //     to: user.email,
+      //     subject: 'Verify your email address',
+      //     html: `Click to verify: <a href="${url}">${url}</a>`,
+      //   })
+      // },
     },
     socialProviders: {
       github: {
@@ -42,6 +55,8 @@ export const createAuth = (
       // The Convex plugin is required for Convex compatibility
       convex(),
     ],
+    // Note: Auth event logging happens in the client-side auth-client.ts
+    // using onRequest/onResponse hooks which are officially supported
   })
 }
 
@@ -55,6 +70,8 @@ export const getAuthUserOrNull = async (
     if (e instanceof Error && e.message === 'Unauthenticated') {
       return null
     }
+    // Only log unexpected errors
+    authLogger.error('Failed to get auth user', e)
     throw e
   }
 }
