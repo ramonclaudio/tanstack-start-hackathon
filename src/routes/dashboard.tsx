@@ -7,6 +7,8 @@ import { ArrowRight, CreditCard, Package, Settings, Zap } from 'lucide-react'
 import { useCustomer } from 'autumn-js/react'
 import * as Sentry from '@sentry/tanstackstart-react'
 import { api } from '../../convex/_generated/api'
+import { logger } from '@/lib/logger'
+import { usePageLoading } from '@/lib/hooks/use-page-loading'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -29,18 +31,14 @@ import {
   SubscriptionStatusSkeleton,
 } from '@/components/skeletons'
 import { useSession } from '@/lib/auth-client'
-import { useGlobalLoading } from '@/components/GlobalLoading'
 
 export const Route = createFileRoute('/dashboard')({
-  // Note: Removed loader because Convex queries via WebSocket don't work during SSR
-  // The useSuspenseQuery will handle loading on client-side with proper Suspense boundaries
   component: Dashboard,
 })
 
 function Dashboard() {
   const navigate = useNavigate()
   const { data: session, isPending: sessionPending } = useSession()
-  const { setPageLoading } = useGlobalLoading()
 
   // Use TanStack Query for user data (client-side only, Convex needs WebSocket)
   const { data: userData, isLoading: isUserDataLoading } = useQuery(
@@ -50,41 +48,40 @@ function Dashboard() {
   // Use Convex action for billing portal (actions can't use useConvexMutation)
   const billingPortalAction = useAction(api.autumn.billingPortal)
 
+  // Clean loading state management
+  const isLoading = usePageLoading([
+    sessionPending,
+    isUserDataLoading,
+    !userData?.authenticated,
+  ])
+
   useEffect(() => {
     if (sessionPending) return
     if (!session?.user) {
+      logger.auth.info(
+        'Unauthenticated access to dashboard, redirecting to sign-in',
+      )
       navigate({ to: '/auth/sign-in' })
+    } else {
+      logger.auth.debug('Dashboard accessed', { userId: session.user.id })
     }
   }, [session?.user, sessionPending, navigate])
 
-  // Sync header skeleton with page
-  useEffect(() => {
-    setPageLoading(
-      sessionPending || isUserDataLoading || !userData?.authenticated,
-    )
-    return () => setPageLoading(false)
-  }, [
-    sessionPending,
-    isUserDataLoading,
-    userData?.authenticated,
-    setPageLoading,
-  ])
-
-  // Show skeleton while auth is loading
-  if (sessionPending || isUserDataLoading || !userData?.authenticated) {
+  // Show skeleton while loading
+  if (isLoading) {
     return <DashboardSkeleton />
   }
 
-  // Only call useCustomer AFTER auth is fully ready
-  // Type assertion safe here because we've checked authenticated is true above
+  // We can safely use userData here since loading is false
+  const user = userData?.user
+  if (!user) return <DashboardSkeleton />
+
   return (
     <DashboardContent
-      userData={
-        userData as {
-          authenticated: true
-          user: NonNullable<typeof userData.user>
-        }
-      }
+      userData={{
+        authenticated: true,
+        user,
+      }}
       billingPortalAction={billingPortalAction}
     />
   )
@@ -110,7 +107,6 @@ function DashboardContent({
 }) {
   // Now useCustomer is only called when auth is ready
   const { customer, isLoading: isCustomerLoading, refetch } = useCustomer()
-  const { setPageLoading } = useGlobalLoading()
 
   // Manually trigger fetch on mount if customer data is missing
   // Using ref to prevent duplicate fetches in React StrictMode
@@ -127,12 +123,6 @@ function DashboardContent({
       })
     }
   }, [customer, isCustomerLoading, refetch])
-
-  useEffect(() => {
-    setPageLoading(isCustomerLoading || isFetching)
-    if (!isCustomerLoading && !isFetching) setPageLoading(false)
-    return () => setPageLoading(false)
-  }, [isCustomerLoading, isFetching, setPageLoading])
 
   const openBillingPortal = async ({
     returnUrl,
