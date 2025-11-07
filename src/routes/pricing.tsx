@@ -206,10 +206,10 @@ function PricingPage() {
           <p className="text-sm text-muted-foreground">
             Contact us at{' '}
             <a
-              href="mailto:support@example.com"
+              href={`mailto:${import.meta.env['VITE_SUPPORT_EMAIL'] || 'support@tanvex.dev'}`}
               className="text-primary hover:underline font-medium"
             >
-              support@example.com
+              {import.meta.env['VITE_SUPPORT_EMAIL'] || 'support@tanvex.dev'}
             </a>
           </p>
         </div>

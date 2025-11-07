@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
 import { query } from './_generated/server'
-import { getAuthUserOrNull } from './auth'
+import { getAuthUserOrNull, getUserId } from './lib/auth'
 
 export const getUser = query({
   args: {},
@@ -31,10 +31,18 @@ export const getUser = query({
       }
     }
 
+    const id = getUserId(user)
+    if (!id) {
+      return {
+        authenticated: false as const,
+        user: null,
+      }
+    }
+
     return {
       authenticated: true as const,
       user: {
-        id: user.userId || user._id,
+        id,
         name: user.name || '',
         email: user.email || '',
         image: user.image || null,

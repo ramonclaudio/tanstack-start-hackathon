@@ -1,7 +1,7 @@
 import { Autumn } from '@useautumn/convex'
 import { components } from './_generated/api'
-import { getAuthUserOrNull } from './auth'
 import { autumnLogger } from './lib/logger'
+import { getAuthUserOrNull, getUserId } from './lib/auth'
 import type { GenericCtx } from '@convex-dev/better-auth'
 import type { DataModel } from './_generated/dataModel'
 
@@ -17,7 +17,7 @@ export const autumn = new Autumn(components.autumn, {
     const user = await getAuthUserOrNull(ctx)
     if (!user) return null
 
-    const customerId = user.userId || user._id
+    const customerId = getUserId(user)
     if (!customerId) {
       autumnLogger.error('User has no valid ID for Autumn', undefined, {
         userId: user.userId,

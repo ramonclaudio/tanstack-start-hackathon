@@ -15,9 +15,14 @@ export const add = mutation({
   args: { text: v.string() },
   returns: v.id('tasks'),
   handler: async (ctx, args) => {
-    return await ctx.db.insert('tasks', {
-      text: args.text,
-    })
+    const trimmed = args.text.trim()
+    if (!trimmed) {
+      throw new Error('Task text cannot be empty')
+    }
+    if (trimmed.length > 10000) {
+      throw new Error('Task text exceeds maximum length of 10000 characters')
+    }
+    return await ctx.db.insert('tasks', { text: trimmed })
   },
 })
 
