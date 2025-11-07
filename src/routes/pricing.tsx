@@ -1,9 +1,8 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useEffect } from 'react'
 import { z } from 'zod'
 import { Check } from 'lucide-react'
 import { usePricingTable } from 'autumn-js/react'
-import { useGlobalLoading } from '@/components/GlobalLoading'
+import { usePageLoading } from '@/lib/hooks/use-page-loading'
 import PricingTable from '@/components/pricing/PricingTable'
 import { useSession } from '@/lib/auth-client'
 import {
@@ -34,18 +33,14 @@ function PricingPage() {
   const search = Route.useSearch()
   // Use hook here only to sync page-level skeleton timing with pricing data
   const { isLoading: pricingLoading } = usePricingTable({})
-  const { setPageLoading } = useGlobalLoading()
 
-  // Keep header skeleton in sync with page-level skeleton
-  useEffect(() => {
-    setPageLoading(isPending || pricingLoading)
-    return () => setPageLoading(false)
-  }, [isPending, pricingLoading, setPageLoading])
+  // Clean loading state management
+  const isLoading = usePageLoading([isPending, pricingLoading])
 
   // Products and customer are loaded by the PricingTable component
   // using Autumn's hooks internally
 
-  if (isPending || pricingLoading) {
+  if (isLoading) {
     return <PricingPageSkeleton />
   }
 
@@ -71,14 +66,14 @@ function PricingPage() {
             onIntervalChange={(interval) =>
               navigate({
                 to: '/pricing',
-                search: (s) => ({ ...s, interval }),
+                search: (prev: typeof search) => ({ ...prev, interval }),
                 replace: true,
               })
             }
             onSelectPlan={(planId) =>
               navigate({
                 to: '/pricing',
-                search: (s) => ({ ...s, plan: planId }),
+                search: (prev: typeof search) => ({ ...prev, plan: planId }),
                 replace: true,
               })
             }

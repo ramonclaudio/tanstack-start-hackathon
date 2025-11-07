@@ -1,11 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '../../convex/_generated/api'
 import { HeroSkeleton, ListSkeleton } from '@/components/skeletons'
 import { useSession } from '@/lib/auth-client'
-import { useGlobalLoading } from '@/components/GlobalLoading'
+import { usePageLoading } from '@/lib/hooks/use-page-loading'
 
 export const Route = createFileRoute('/demo/start/api-request')({
   component: Home,
@@ -13,22 +12,18 @@ export const Route = createFileRoute('/demo/start/api-request')({
 
 function Home() {
   const { isPending } = useSession()
-  const { setPageLoading } = useGlobalLoading()
   const { data: demos, isLoading: demosLoading } = useQuery(
     convexQuery(api.demos.get, {
       paginationOpts: { numItems: 50, cursor: null },
     }),
   )
 
-  useEffect(() => {
-    setPageLoading(isPending || demosLoading)
-    return () => setPageLoading(false)
-  }, [isPending, demosLoading, setPageLoading])
+  const isLoading = usePageLoading([isPending, demosLoading])
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-6 -mt-3">
       <div className="w-full max-w-2xl space-y-8">
-        {isPending || demosLoading ? (
+        {isLoading ? (
           <>
             <HeroSkeleton />
             <div className="space-y-4">

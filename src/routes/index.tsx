@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useEffect } from 'react'
 import logo from '../logo.svg'
 import { Button } from '@/components/ui/button'
 import {
@@ -8,7 +7,7 @@ import {
   LogoSkeleton,
 } from '@/components/skeletons'
 import { useSession } from '@/lib/auth-client'
-import { useGlobalLoading } from '@/components/GlobalLoading'
+import { usePageLoading } from '@/lib/hooks/use-page-loading'
 
 export const Route = createFileRoute('/')({
   component: App,
@@ -16,15 +15,11 @@ export const Route = createFileRoute('/')({
 
 function App() {
   const { isPending } = useSession()
-  const { setPageLoading } = useGlobalLoading()
-  useEffect(() => {
-    setPageLoading(isPending)
-    return () => setPageLoading(false)
-  }, [isPending, setPageLoading])
+  const isLoading = usePageLoading(isPending)
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 text-center min-h-full -my-6">
-      {isPending ? (
+      {isLoading ? (
         <>
           <LogoSkeleton className="mb-8" />
           <div className="mb-8">
