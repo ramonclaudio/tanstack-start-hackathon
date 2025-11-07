@@ -41,16 +41,12 @@ function Dashboard() {
   const { data: session, isPending: sessionPending } = useSession()
 
   const { data: userData, isLoading: isUserDataLoading } = useQuery(
-    convexQuery(api.dashboard.getUser, {}),
+    convexQuery(api.user.getUser, {}),
   )
 
   const billingPortalAction = useAction(api.autumn.billingPortal)
 
-  const isLoading = usePageLoading([
-    sessionPending,
-    isUserDataLoading,
-    !userData?.authenticated,
-  ])
+  const isLoading = usePageLoading([sessionPending, isUserDataLoading])
 
   useEffect(() => {
     if (sessionPending) return
