@@ -2,11 +2,6 @@ import { v } from 'convex/values'
 import { query } from './_generated/server'
 import { getAuthUserOrNull } from './auth'
 
-/**
- * Simplified dashboard module - returns user data from Better Auth
- * For customer billing data, use Autumn's hooks directly in React
- */
-
 export const getUser = query({
   args: {},
   returns: v.union(

@@ -5,23 +5,20 @@ import { autumnLogger } from './lib/logger'
 import type { GenericCtx } from '@convex-dev/better-auth'
 import type { DataModel } from './_generated/dataModel'
 
-// Validate required environment variables
-if (!process.env.AUTUMN_SECRET_KEY) {
+if (!process.env['AUTUMN_SECRET_KEY']) {
   throw new Error(
     'AUTUMN_SECRET_KEY is required. Get your key from https://app.useautumn.com/sandbox/dev',
   )
 }
 
 export const autumn = new Autumn(components.autumn, {
-  secretKey: process.env.AUTUMN_SECRET_KEY,
+  secretKey: process.env['AUTUMN_SECRET_KEY'],
   identify: async (ctx: GenericCtx<DataModel>) => {
     const user = await getAuthUserOrNull(ctx)
     if (!user) return null
 
-    // Check if user has a valid ID (userId or _id)
     const customerId = user.userId || user._id
     if (!customerId) {
-      // This is actually an error - log it
       autumnLogger.error('User has no valid ID for Autumn', undefined, {
         userId: user.userId,
         _id: user._id,
@@ -38,12 +35,6 @@ export const autumn = new Autumn(components.autumn, {
     }
   },
 })
-
-/**
- * These exports are required for our react hooks and components
- * Note: These are Convex actions, not regular functions, so we can't wrap them
- * Logging happens in the identify function above when customers are identified
- */
 
 export const {
   track,
