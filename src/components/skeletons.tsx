@@ -8,10 +8,10 @@ export function CircleSkeleton({ className }: { className?: string }) {
 export function NavSkeleton() {
   return (
     <>
-      <Skeleton className="h-[14px] w-11 rounded" />
-      <Skeleton className="h-[14px] w-[52px] rounded" />
-      <Skeleton className="h-[14px] w-32 rounded" />
-      <Skeleton className="h-[14px] w-24 rounded" />
+      <Skeleton className="h-3.5 w-11 rounded" />
+      <Skeleton className="h-3.5 w-[52px] rounded" />
+      <Skeleton className="h-3.5 w-32 rounded" />
+      <Skeleton className="h-3.5 w-24 rounded" />
     </>
   )
 }
@@ -70,30 +70,22 @@ export function ListSkeleton({
 export function AuthCardSkeleton() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
-      {/* Card with gap-6 between header and content, py-6, rounded-xl */}
       <div className="w-full max-w-md border rounded-xl shadow-sm bg-card flex flex-col gap-6 py-6">
-        {/* CardHeader with gap-2 and px-6 */}
         <div className="px-6 grid auto-rows-min grid-rows-[auto_auto] items-start gap-2">
           <Skeleton className="h-8 w-28" />
           <Skeleton className="h-5 w-full max-w-[420px]" />
         </div>
-        {/* CardContent with px-6 and space-y-4 */}
         <div className="px-6 space-y-4">
-          {/* Form inputs - space-y-4 */}
           <div className="space-y-4">
-            {/* Email input - space-y-2 */}
             <div className="space-y-2">
               <Skeleton className="h-10 w-full rounded-md" />
             </div>
-            {/* Password input - space-y-2 */}
             <div className="space-y-2">
               <Skeleton className="h-10 w-full rounded-md" />
             </div>
-            {/* Submit button */}
             <Skeleton className="h-10 w-full rounded-md" />
           </div>
 
-          {/* Divider with "Or continue with" text */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
@@ -105,10 +97,8 @@ export function AuthCardSkeleton() {
             </div>
           </div>
 
-          {/* GitHub button with icon */}
           <Skeleton className="h-10 w-full rounded-md" />
 
-          {/* Bottom text with link */}
           <div className="text-center">
             <Skeleton className="h-5 w-56 mx-auto" />
           </div>
@@ -121,34 +111,25 @@ export function AuthCardSkeleton() {
 export function SignUpCardSkeleton() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
-      {/* Card with gap-6 between header and content, py-6, rounded-xl */}
       <div className="w-full max-w-md border rounded-xl shadow-sm bg-card flex flex-col gap-6 py-6">
-        {/* CardHeader with gap-2 and px-6 */}
         <div className="px-6 grid auto-rows-min grid-rows-[auto_auto] items-start gap-2">
           <Skeleton className="h-8 w-40" />
           <Skeleton className="h-5 w-full max-w-[420px]" />
         </div>
-        {/* CardContent with px-6 and space-y-4 */}
         <div className="px-6 space-y-4">
-          {/* Form inputs - space-y-4 */}
           <div className="space-y-4">
-            {/* Name input - space-y-2 */}
             <div className="space-y-2">
               <Skeleton className="h-10 w-full rounded-md" />
             </div>
-            {/* Email input - space-y-2 */}
             <div className="space-y-2">
               <Skeleton className="h-10 w-full rounded-md" />
             </div>
-            {/* Password input - space-y-2 */}
             <div className="space-y-2">
               <Skeleton className="h-10 w-full rounded-md" />
             </div>
-            {/* Submit button */}
             <Skeleton className="h-10 w-full rounded-md" />
           </div>
 
-          {/* Divider with "Or continue with" text */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
@@ -160,10 +141,8 @@ export function SignUpCardSkeleton() {
             </div>
           </div>
 
-          {/* GitHub button with icon */}
           <Skeleton className="h-10 w-full rounded-md" />
 
-          {/* Bottom text with link */}
           <div className="text-center">
             <Skeleton className="h-5 w-64 mx-auto" />
           </div>
@@ -329,7 +308,6 @@ export function PricingGridSkeleton({
   )
 }
 
-// Pricing toggle (Monthly | Annual) skeleton
 export function PricingToggleSkeleton() {
   return (
     <div className="flex items-center space-x-2">
@@ -340,7 +318,6 @@ export function PricingToggleSkeleton() {
   )
 }
 
-// "Why Choose Us" cards skeleton (3-up)
 export function WhyChooseGridSkeleton() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -359,7 +336,6 @@ export function WhyChooseGridSkeleton() {
   )
 }
 
-// FAQ accordion items skeleton
 export function FAQAccordionSkeleton({ count = 6 }: { count?: number }) {
   return (
     <div className="space-y-2">

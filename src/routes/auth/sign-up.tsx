@@ -26,7 +26,6 @@ function SignUp() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  // If already signed in (or once session resolves), redirect to dashboard
   useEffect(() => {
     if (!isPending && session?.user) {
       navigate({ to: '/dashboard' })
@@ -61,7 +60,7 @@ function SignUp() {
         },
         contexts: {
           auth: {
-            emailDomain: email.split('@')[1] || 'unknown', // Only send domain for privacy
+            emailDomain: email.split('@')[1] || 'unknown',
           },
         },
       })

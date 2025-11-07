@@ -17,7 +17,6 @@ import { Button } from '@/components/ui/button'
 import CheckoutDialog from '@/components/pricing/CheckoutDialog'
 import { useSession } from '@/lib/auth-client'
 
-// Minimal product shape compatible with our backend schema and autumn-js
 type ProductItemLike = {
   included_usage?: number | 'inf'
   interval?: string | null
@@ -47,7 +46,6 @@ type ProductLike = {
   scenario?: string
 }
 
-// Helper to determine button text based on product scenario
 function getButtonText(
   product: Product | ProductLike,
   isAuthenticated: boolean,
@@ -111,7 +109,6 @@ export default function PricingTable({
   React.useEffect(() => {
     if (initialInterval) setIsAnnual(initialInterval === 'year')
   }, [initialInterval])
-  // Dialog state must be declared before any early returns to keep hook order stable
   const [open, setOpen] = useState(false)
   const [checkoutResult, setCheckoutResult] = useState<CheckoutResult | null>(
     null,
@@ -124,7 +121,6 @@ export default function PricingTable({
   const isLoading = productsProp ? !!loading : hook.isLoading
   const error = productsProp ? null : hook.error
 
-  // Compute derived values before any early returns to maintain hook order
   const safeProducts = Array.isArray(products) ? products : []
   const filtered = safeProducts.filter((p) => !p?.is_add_on)
   const displayProducts = filtered.length > 0 ? filtered : safeProducts
@@ -137,7 +133,6 @@ export default function PricingTable({
   )
   const multiInterval = intervals.length > 1
 
-  // useMemo must be called before any early returns
   const filteredAndSortedProducts = React.useMemo(() => {
     const intervalFilter = (product: Product | ProductLike) => {
       const group = product.properties?.interval_group
@@ -166,7 +161,6 @@ export default function PricingTable({
     return displayProducts.filter(intervalFilter).sort(sortProducts)
   }, [displayProducts, isAnnual, multiInterval])
 
-  // Derive per-product status from provided customer snapshot
   type CustProd = { id: string; status?: string }
   const custProducts: Array<CustProd> = Array.isArray(customer?.products)
     ? (customer.products as Array<unknown>).filter(
@@ -177,7 +171,6 @@ export default function PricingTable({
     custProducts.map((p) => [p.id, p.status]),
   )
 
-  // NOW we can have early returns after all hooks are called
   if (isLoading) {
     const countFromProps = Array.isArray(productsProp)
       ? productsProp.filter((p) => !p.is_add_on).length || productsProp.length
@@ -404,7 +397,6 @@ export const PricingCard = ({
 
   const { name, display: productDisplay } = product
 
-  // Override button text for current plan
   const buttonText = isCurrentPlan ? (
     <p>Current Plan</p>
   ) : (
@@ -424,10 +416,8 @@ export const PricingCard = ({
         secondary_text: undefined,
       })
 
-  // Base list of feature items shown under the price
   const itemsBase = isFree ? itemsList : itemsList.slice(1)
 
-  // Extract a credit summary (e.g., "50 credits / month") and remove that item from the list to avoid duplication
   const creditItem = itemsBase.find(
     (it) =>
       typeof it.included_usage !== 'undefined' &&
@@ -537,7 +527,6 @@ export const PricingCard = ({
   )
 }
 
-// Pricing Feature List
 export const PricingFeatureList = ({
   items,
   everythingFrom,
@@ -579,7 +568,6 @@ export const PricingFeatureList = ({
   )
 }
 
-// Pricing Card Button
 export interface PricingCardButtonProps extends React.ComponentProps<'button'> {
   recommended?: boolean
   buttonUrl?: string
@@ -639,7 +627,6 @@ export const PricingCardButton = React.forwardRef<
 })
 PricingCardButton.displayName = 'PricingCardButton'
 
-// Annual Switch
 export const AnnualSwitch = ({
   isAnnualToggle,
   setIsAnnualToggle,
@@ -667,5 +654,3 @@ export const RecommendedBadge = ({ recommended }: { recommended: string }) => {
     </div>
   )
 }
-
-// Enterprise flow removed

@@ -5,10 +5,6 @@ import type { Customer as AutumnCustomer } from 'autumn-js'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 
-/**
- * Banner that displays when a customer has a failed payment (past_due status)
- * Prompts them to update their payment method via the billing portal
- */
 export function FailedPaymentBanner({
   customer,
   openBillingPortal,
@@ -20,7 +16,6 @@ export function FailedPaymentBanner({
 
   if (!customer || dismissed) return null
 
-  // Check if any product has a past_due status
   const failedPayment = customer.products
     ? customer.products.find((p) => p.status === 'past_due')
     : undefined

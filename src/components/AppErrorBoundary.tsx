@@ -16,10 +16,6 @@ interface State {
   error: Error | null
 }
 
-/**
- * Universal error boundary for the entire app
- * Detects Autumn/billing errors and shows appropriate messaging
- */
 export class AppErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
@@ -32,7 +28,6 @@ export class AppErrorBoundary extends Component<Props, State> {
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error('App Error Boundary:', error, errorInfo)
-    // Report error to Sentry
     Sentry.captureException(error, {
       contexts: {
         react: {
@@ -92,7 +87,6 @@ export class AppErrorBoundary extends Component<Props, State> {
   }
 
   override render() {
-    // If using as wrapper (with children), check state
     if (this.props.children) {
       if (!this.state.hasError) {
         return this.props.children
@@ -116,7 +110,6 @@ export class AppErrorBoundary extends Component<Props, State> {
       )
     }
 
-    // If using as route errorComponent (with error prop)
     const err = this.props.error
     const message =
       err && typeof err === 'object' && 'message' in err
