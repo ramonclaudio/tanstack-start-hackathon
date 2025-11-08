@@ -8,7 +8,7 @@ import { useCustomer } from 'autumn-js/react'
 import * as Sentry from '@sentry/tanstackstart-react'
 import { api } from '../../convex/_generated/api'
 import { logger } from '@/lib/logger'
-import { usePageLoading } from '@/lib/hooks/use-page-loading'
+import { usePageLoading } from '@/lib/hooks'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -30,7 +30,7 @@ import {
   QuickActionsListSkeleton,
   SubscriptionStatusSkeleton,
 } from '@/components/skeletons'
-import { useSession } from '@/lib/auth-client'
+import { useSession } from '@/lib/auth'
 
 export const Route = createFileRoute('/dashboard')({
   component: Dashboard,

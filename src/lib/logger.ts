@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/tanstackstart-react'
 
 const isDev = import.meta.env.DEV
 
-type LogContext = Record<string, any>
+type LogContext = Record<string, unknown>
 
 class SimpleLogger {
   constructor(private module: string) {}
@@ -36,10 +36,10 @@ class SimpleLogger {
     this.log('warn', message, context)
   }
 
-  error(message: string, error?: any, context?: LogContext) {
+  error(message: string, error?: unknown, context?: LogContext) {
     const errorContext = {
       ...context,
-      error: error instanceof Error ? error.message : error,
+      error: error instanceof Error ? error.message : String(error),
     }
 
     this.log('error', message, errorContext)
@@ -70,13 +70,14 @@ class SimpleLogger {
   }
 }
 
-export const logger = {
-  app: new SimpleLogger('App'),
-  auth: new SimpleLogger('Auth'),
-  api: new SimpleLogger('API'),
-  security: new SimpleLogger('Security'),
-}
-
 export function createLogger(module: string) {
   return new SimpleLogger(module)
+}
+
+// Pre-configured loggers for common use cases
+export const logger = {
+  app: createLogger('App'),
+  auth: createLogger('Auth'),
+  api: createLogger('API'),
+  security: createLogger('Security'),
 }

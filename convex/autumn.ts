@@ -19,10 +19,14 @@ export const autumn = new Autumn(components.autumn, {
 
     const customerId = getUserId(user)
     if (!customerId) {
-      autumnLogger.error('User has no valid ID for Autumn', undefined, {
-        userId: user.userId,
-        _id: user._id,
-      })
+      autumnLogger.error(
+        'User has no valid ID for Autumn',
+        new Error('Missing userId and _id'),
+        {
+          userId: user.userId,
+          _id: user._id,
+        },
+      )
       return null
     }
 

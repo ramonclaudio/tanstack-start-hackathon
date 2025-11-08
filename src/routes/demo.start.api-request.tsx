@@ -3,8 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '../../convex/_generated/api'
 import { HeroSkeleton, ListSkeleton } from '@/components/skeletons'
-import { useSession } from '@/lib/auth-client'
-import { usePageLoading } from '@/lib/hooks/use-page-loading'
+import { useSession } from '@/lib/auth'
+import { usePageLoading } from '@/lib/hooks'
 
 export const Route = createFileRoute('/demo/start/api-request')({
   component: Home,

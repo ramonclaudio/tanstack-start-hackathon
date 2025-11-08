@@ -15,7 +15,7 @@ import {
 } from '@/components/skeletons'
 import { Button } from '@/components/ui/button'
 import CheckoutDialog from '@/components/pricing/CheckoutDialog'
-import { useSession } from '@/lib/auth-client'
+import { useSession } from '@/lib/auth'
 
 type ProductItemLike = {
   included_usage?: number | 'inf'

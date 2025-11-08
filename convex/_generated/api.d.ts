@@ -13,6 +13,7 @@ import type * as autumn from "../autumn.js";
 import type * as demos from "../demos.js";
 import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_errors from "../lib/errors.js";
 import type * as lib_logger from "../lib/logger.js";
 import type * as tasks from "../tasks.js";
 import type * as user from "../user.js";
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   demos: typeof demos;
   http: typeof http;
   "lib/auth": typeof lib_auth;
+  "lib/errors": typeof lib_errors;
   "lib/logger": typeof lib_logger;
   tasks: typeof tasks;
   user: typeof user;

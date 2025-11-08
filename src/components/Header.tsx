@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
-import { signOut, useSession } from '@/lib/auth-client'
+import { signOut, useSession } from '@/lib/auth'
 
 const NAV_LINKS: Array<{ to: string; label: string; className: string }> = [
   { to: '/', label: 'Home', className: 'hover:text-foreground/80' },

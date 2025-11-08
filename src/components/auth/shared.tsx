@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/tanstackstart-react'
-import { authClient } from '@/lib/auth-client'
+import { authClient } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 
 interface GitHubSignInButtonProps {

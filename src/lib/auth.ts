@@ -38,9 +38,6 @@ export const authClient = createAuthClient({
       }
     }
   },
-  onSuccess: (_data: any) => {
-    // Already logged in onResponse
-  },
   onError: (error: Error) => {
     logger.auth.error('Auth error', error)
   },
