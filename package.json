@@ -1,6 +1,6 @@
 {
   "name": "tanvex",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "Modern TanStack Start application with Bun runtime, Convex backend, and enterprise features",
   "private": true,
   "type": "module",
@@ -35,15 +35,15 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest watch",
-    "generate": "bunx convex dev --once",
+    "typegen": "bunx convex dev --once",
     "seed": "bunx convex run seed:seedDatabase",
     "seed:clear": "bunx convex run seed:clearDatabase",
     "db:studio": "bunx convex dashboard",
-    "clean": "rm -rf .output .vinxi dist node_modules/.vite",
+    "clean": "rm -rf .output .vinxi dist node_modules/.vite .tanstack",
     "lint": "eslint --fix",
     "check": "prettier --check . && eslint && tsc --noEmit",
     "format": "prettier --write .",
-    "ci": "bun run generate && bun run format && bun run check && bun run build"
+    "ci": "bun run typegen && bun run format && bun run check && bun run build"
   },
   "dependencies": {
     "@convex-dev/better-auth": "^0.9.7",
