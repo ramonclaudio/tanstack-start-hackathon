@@ -12,10 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DemoQueriesRouteImport } from './routes/demo.queries'
+import { Route as DemoMutationsRouteImport } from './routes/demo.mutations'
 import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
-import { Route as DemoStartServerFuncsRouteImport } from './routes/demo.start.server-funcs'
-import { Route as DemoStartApiRequestRouteImport } from './routes/demo.start.api-request'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const PricingRoute = PricingRouteImport.update({
@@ -33,6 +33,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemoQueriesRoute = DemoQueriesRouteImport.update({
+  id: '/demo/queries',
+  path: '/demo/queries',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoMutationsRoute = DemoMutationsRouteImport.update({
+  id: '/demo/mutations',
+  path: '/demo/mutations',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthSignUpRoute = AuthSignUpRouteImport.update({
   id: '/auth/sign-up',
   path: '/auth/sign-up',
@@ -41,16 +51,6 @@ const AuthSignUpRoute = AuthSignUpRouteImport.update({
 const AuthSignInRoute = AuthSignInRouteImport.update({
   id: '/auth/sign-in',
   path: '/auth/sign-in',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoStartServerFuncsRoute = DemoStartServerFuncsRouteImport.update({
-  id: '/demo/start/server-funcs',
-  path: '/demo/start/server-funcs',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoStartApiRequestRoute = DemoStartApiRequestRouteImport.update({
-  id: '/demo/start/api-request',
-  path: '/demo/start/api-request',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -65,9 +65,9 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
+  '/demo/mutations': typeof DemoMutationsRoute
+  '/demo/queries': typeof DemoQueriesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/demo/start/api-request': typeof DemoStartApiRequestRoute
-  '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -75,9 +75,9 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
+  '/demo/mutations': typeof DemoMutationsRoute
+  '/demo/queries': typeof DemoQueriesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/demo/start/api-request': typeof DemoStartApiRequestRoute
-  '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,9 +86,9 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
+  '/demo/mutations': typeof DemoMutationsRoute
+  '/demo/queries': typeof DemoQueriesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/demo/start/api-request': typeof DemoStartApiRequestRoute
-  '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -98,9 +98,9 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/auth/sign-in'
     | '/auth/sign-up'
+    | '/demo/mutations'
+    | '/demo/queries'
     | '/api/auth/$'
-    | '/demo/start/api-request'
-    | '/demo/start/server-funcs'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -108,9 +108,9 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/auth/sign-in'
     | '/auth/sign-up'
+    | '/demo/mutations'
+    | '/demo/queries'
     | '/api/auth/$'
-    | '/demo/start/api-request'
-    | '/demo/start/server-funcs'
   id:
     | '__root__'
     | '/'
@@ -118,9 +118,9 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/auth/sign-in'
     | '/auth/sign-up'
+    | '/demo/mutations'
+    | '/demo/queries'
     | '/api/auth/$'
-    | '/demo/start/api-request'
-    | '/demo/start/server-funcs'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -129,9 +129,9 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   AuthSignInRoute: typeof AuthSignInRoute
   AuthSignUpRoute: typeof AuthSignUpRoute
+  DemoMutationsRoute: typeof DemoMutationsRoute
+  DemoQueriesRoute: typeof DemoQueriesRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  DemoStartApiRequestRoute: typeof DemoStartApiRequestRoute
-  DemoStartServerFuncsRoute: typeof DemoStartServerFuncsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -157,6 +157,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demo/queries': {
+      id: '/demo/queries'
+      path: '/demo/queries'
+      fullPath: '/demo/queries'
+      preLoaderRoute: typeof DemoQueriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo/mutations': {
+      id: '/demo/mutations'
+      path: '/demo/mutations'
+      fullPath: '/demo/mutations'
+      preLoaderRoute: typeof DemoMutationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/sign-up': {
       id: '/auth/sign-up'
       path: '/auth/sign-up'
@@ -169,20 +183,6 @@ declare module '@tanstack/react-router' {
       path: '/auth/sign-in'
       fullPath: '/auth/sign-in'
       preLoaderRoute: typeof AuthSignInRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/start/server-funcs': {
-      id: '/demo/start/server-funcs'
-      path: '/demo/start/server-funcs'
-      fullPath: '/demo/start/server-funcs'
-      preLoaderRoute: typeof DemoStartServerFuncsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/start/api-request': {
-      id: '/demo/start/api-request'
-      path: '/demo/start/api-request'
-      fullPath: '/demo/start/api-request'
-      preLoaderRoute: typeof DemoStartApiRequestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -201,9 +201,9 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   AuthSignInRoute: AuthSignInRoute,
   AuthSignUpRoute: AuthSignUpRoute,
+  DemoMutationsRoute: DemoMutationsRoute,
+  DemoQueriesRoute: DemoQueriesRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
-  DemoStartApiRequestRoute: DemoStartApiRequestRoute,
-  DemoStartServerFuncsRoute: DemoStartServerFuncsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
