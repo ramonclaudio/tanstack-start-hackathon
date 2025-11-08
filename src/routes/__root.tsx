@@ -8,11 +8,10 @@ import {
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import * as Sentry from '@sentry/tanstackstart-react'
 import { useEffect } from 'react'
-import { AppErrorBoundary } from '../components/AppErrorBoundary'
+import { ErrorBoundary } from '../components/ErrorBoundary'
 
 import Footer from '../components/Footer'
 import Header from '../components/Header'
-import { GlobalLoadingProvider } from '../components/GlobalLoading'
 import { ThemeProvider } from '../components/ThemeProvider'
 import { Button } from '../components/ui/button'
 
@@ -26,7 +25,7 @@ export const Route = createRootRouteWithContext<{
     useEffect(() => {
       Sentry.captureException(error)
     }, [error])
-    return <AppErrorBoundary error={error} />
+    return <ErrorBoundary error={error} />
   },
   head: () => ({
     meta: [
@@ -61,26 +60,24 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="flex flex-col h-screen">
         <ThemeProvider>
-          <GlobalLoadingProvider>
-            <AppErrorBoundary>
-              <Header />
-              <main className="flex-1 flex flex-col overflow-y-auto py-6">
-                {children}
-              </main>
-              <Footer />
-              {import.meta.env.PROD ? null : (
-                <TanStackDevtools
-                  config={{ position: 'bottom-left' }}
-                  plugins={[
-                    {
-                      name: 'Tanstack Router',
-                      render: <TanStackRouterDevtoolsPanel />,
-                    },
-                  ]}
-                />
-              )}
-            </AppErrorBoundary>
-          </GlobalLoadingProvider>
+          <ErrorBoundary>
+            <Header />
+            <main className="flex-1 flex flex-col overflow-y-auto py-6">
+              {children}
+            </main>
+            <Footer />
+            {import.meta.env.PROD ? null : (
+              <TanStackDevtools
+                config={{ position: 'bottom-left' }}
+                plugins={[
+                  {
+                    name: 'Tanstack Router',
+                    render: <TanStackRouterDevtoolsPanel />,
+                  },
+                ]}
+              />
+            )}
+          </ErrorBoundary>
         </ThemeProvider>
         <Scripts />
       </body>

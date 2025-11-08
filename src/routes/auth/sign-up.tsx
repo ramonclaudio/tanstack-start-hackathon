@@ -11,12 +11,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { SignUpCardSkeleton } from '@/components/skeletons'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   AuthFormDivider,
   AuthFormFooter,
   GitHubSignInButton,
-} from '@/components/auth/shared'
+} from '@/components/auth/Components'
 
 export const Route = createFileRoute('/auth/sign-up')({
   component: SignUp,
@@ -75,7 +75,38 @@ function SignUp() {
   }
 
   if (isPending) {
-    return <SignUpCardSkeleton />
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
+        <div className="w-full max-w-md border rounded-xl shadow-sm bg-card flex flex-col gap-6 py-6">
+          <div className="px-6 grid auto-rows-min grid-rows-[auto_auto] items-start gap-2">
+            <Skeleton className="h-8 w-40" />
+            <Skeleton className="h-5 w-full max-w-[420px]" />
+          </div>
+          <div className="px-6 space-y-4">
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-10 w-full rounded-md" />
+            </div>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 relative z-10">
+                  <Skeleton className="h-3 w-28" />
+                </span>
+              </div>
+            </div>
+            <Skeleton className="h-10 w-full rounded-md" />
+            <div className="text-center">
+              <Skeleton className="h-5 w-64 mx-auto" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

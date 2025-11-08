@@ -11,12 +11,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import {
-  FAQAccordionSkeleton,
-  HeroSkeleton,
-  SectionHeaderSkeleton,
-  WhyChooseGridSkeleton,
-} from '@/components/skeletons'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export const Route = createFileRoute('/pricing')({
@@ -36,7 +30,61 @@ function PricingPage() {
   const isLoading = usePageLoading([isPending, pricingLoading])
 
   if (isLoading) {
-    return <PricingPageSkeleton />
+    return (
+      <div className="flex flex-1 flex-col px-6 py-12">
+        <div className="mx-auto max-w-7xl w-full">
+          <div className="text-center mb-12">
+            <div className="text-center space-y-5">
+              <Skeleton className="h-9 w-80 mx-auto" />
+              <Skeleton className="h-5 w-full max-w-xl mx-auto" />
+            </div>
+          </div>
+          <div className="mb-12">
+            <PricingTable loading={true} />
+          </div>
+          <div className="mt-16 max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+              <Skeleton className="h-8 w-48 mx-auto" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="border rounded-lg p-6 bg-card">
+                  <div className="w-12 h-12 rounded-full bg-accent animate-pulse mb-4" />
+                  <Skeleton className="h-5 w-32 mb-2" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="mt-16 max-w-3xl mx-auto">
+            <div className="text-center mb-8">
+              <Skeleton className="h-8 w-64 mx-auto" />
+            </div>
+            <div className="space-y-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="border rounded-lg px-4 h-13.5 flex items-center justify-between"
+                >
+                  <Skeleton className="h-4 w-72" />
+                  <Skeleton className="h-4 w-4 rounded" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="mt-16 text-center border-t pt-12">
+            <div className="flex flex-col items-center gap-5">
+              <Skeleton className="h-4 w-64" />
+              <Skeleton className="h-4 w-56" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -212,39 +260,6 @@ function PricingPage() {
               {import.meta.env['VITE_SUPPORT_EMAIL'] || 'support@tanvex.dev'}
             </a>
           </p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function PricingPageSkeleton() {
-  return (
-    <div className="flex flex-1 flex-col px-6 py-12">
-      <div className="mx-auto max-w-7xl w-full">
-        <div className="text-center mb-12">
-          <HeroSkeleton />
-        </div>
-        <div className="mb-12">
-          <PricingTable loading={true} />
-        </div>
-        <div className="mt-16 max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <SectionHeaderSkeleton />
-          </div>
-          <WhyChooseGridSkeleton />
-        </div>
-        <div className="mt-16 max-w-3xl mx-auto">
-          <div className="text-center mb-8">
-            <SectionHeaderSkeleton className="w-64" />
-          </div>
-          <FAQAccordionSkeleton count={6} />
-        </div>
-        <div className="mt-16 text-center border-t pt-12">
-          <div className="flex flex-col items-center gap-5">
-            <Skeleton className="h-4 w-64" />
-            <Skeleton className="h-4 w-56" />
-          </div>
         </div>
       </div>
     </div>

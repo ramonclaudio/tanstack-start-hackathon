@@ -8,7 +8,7 @@ import * as Sentry from '@sentry/tanstackstart-react'
 import { api } from '../convex/_generated/api'
 import { routeTree } from './routeTree.gen'
 import { authClient } from './lib/auth'
-import { AuthErrorBoundary } from './components/AuthErrorBoundary'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { validateClientEnv } from './lib/env'
 import { logger } from './lib/logger'
 import type { AnyRouter } from '@tanstack/react-router'
@@ -76,7 +76,7 @@ export function getRouter(): AnyRouter {
       context: { queryClient },
       scrollRestoration: true,
       Wrap: ({ children }) => (
-        <AuthErrorBoundary>
+        <ErrorBoundary variant="auth">
           <ConvexBetterAuthProvider
             client={convexQueryClient.convexClient}
             authClient={authClient}
@@ -88,7 +88,7 @@ export function getRouter(): AnyRouter {
               {children}
             </AutumnProvider>
           </ConvexBetterAuthProvider>
-        </AuthErrorBoundary>
+        </ErrorBoundary>
       ),
     }),
     queryClient,
@@ -103,16 +103,8 @@ export function getRouter(): AnyRouter {
     Sentry.init({
       dsn: env.VITE_SENTRY_DSN,
       environment: env.MODE,
-      integrations: [
-        Sentry.tanstackRouterBrowserTracingIntegration(router),
-        Sentry.replayIntegration({
-          maskAllText: true,
-          blockAllMedia: true,
-        }),
-      ],
+      integrations: [Sentry.tanstackRouterBrowserTracingIntegration(router)],
       tracesSampleRate: env.PROD ? 0.1 : 1.0,
-      replaysSessionSampleRate: env.PROD ? 0.25 : 1.0,
-      replaysOnErrorSampleRate: 1.0,
       sendDefaultPii: false,
     })
     ;(

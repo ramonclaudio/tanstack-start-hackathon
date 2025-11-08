@@ -3,8 +3,7 @@ import { User } from 'lucide-react'
 import { ModeToggle } from './ModeToggle'
 import { Button } from './ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
-import { CircleSkeleton, NavSkeleton } from './skeletons'
-import { useGlobalLoading } from './GlobalLoading'
+import { Skeleton } from './ui/skeleton'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,15 +35,19 @@ const NAV_LINKS: Array<{ to: string; label: string; className: string }> = [
 
 export default function Header() {
   const { data: session, isPending } = useSession()
-  const { pageLoading } = useGlobalLoading()
-  const loading = isPending || pageLoading
+  const loading = isPending
 
   return (
     <header className="border-b">
       <div className="flex h-16 items-center px-6">
         <nav className="flex gap-6 text-sm font-medium">
           {loading ? (
-            <NavSkeleton />
+            <>
+              <Skeleton className="h-3.5 w-11 rounded" />
+              <Skeleton className="h-3.5 w-[52px] rounded" />
+              <Skeleton className="h-3.5 w-32 rounded" />
+              <Skeleton className="h-3.5 w-24 rounded" />
+            </>
           ) : (
             NAV_LINKS.map((l) => (
               <Link key={l.to} to={l.to} className={l.className}>
@@ -63,7 +66,7 @@ export default function Header() {
                 className="h-8 w-8 rounded-full"
               >
                 {loading ? (
-                  <CircleSkeleton />
+                  <Skeleton className="h-8 w-8 rounded-full" />
                 ) : session?.user ? (
                   <Avatar className="h-8 w-8">
                     <AvatarImage
@@ -130,7 +133,11 @@ export default function Header() {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-          {loading ? <CircleSkeleton /> : <ModeToggle />}
+          {loading ? (
+            <Skeleton className="h-8 w-8 rounded-full" />
+          ) : (
+            <ModeToggle />
+          )}
         </div>
       </div>
     </header>
