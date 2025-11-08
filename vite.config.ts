@@ -18,9 +18,6 @@ const getHttpsConfig = () => {
     }
   }
 
-  console.warn(
-    'HTTPS certificates not found. Running dev server without HTTPS.',
-  )
   return undefined
 }
 

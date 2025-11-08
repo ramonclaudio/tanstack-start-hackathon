@@ -66,7 +66,8 @@ export const getNextTheme = createClientOnlyFn(
       systemTheme === 'dark'
         ? ['auto', 'light', 'dark']
         : ['auto', 'dark', 'light']
-    return order[(order.indexOf(current) + 1) % order.length]
+    const nextTheme = order[(order.indexOf(current) + 1) % order.length]
+    return nextTheme ?? 'auto'
   },
 )
 

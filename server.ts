@@ -259,7 +259,11 @@ function createCompositeGlobPattern(): Bun.Glob {
     .map((s) => s.trim())
     .filter(Boolean)
   if (raw.length === 0) return new Bun.Glob('**/*')
-  if (raw.length === 1) return new Bun.Glob(raw[0])
+  if (raw.length === 1) {
+    const firstPattern = raw[0]
+    if (!firstPattern) return new Bun.Glob('**/*')
+    return new Bun.Glob(firstPattern)
+  }
   return new Bun.Glob(`{${raw.join(',')}}`)
 }
 

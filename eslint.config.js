@@ -24,8 +24,6 @@ export default [
       '.convex/**',
       'convex/_generated/**',
       'src/routeTree.gen.ts',
-      'src/lib/logger.ts',
-      'convex/lib/logger.ts',
       'eslint.config.js',
       'prettier.config.js',
       'vite.config.ts',
