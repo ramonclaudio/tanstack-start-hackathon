@@ -6,13 +6,10 @@ import {
   createRootRouteWithContext,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import * as Sentry from '@sentry/tanstackstart-react'
-import { useEffect } from 'react'
 import { ErrorBoundary } from '../components/ErrorBoundary'
-
-import Footer from '../components/Footer'
-import Header from '../components/Header'
-import { ThemeProvider } from '../components/ThemeProvider'
+import Footer from '../components/layout/Footer'
+import Header from '../components/layout/Header'
+import { ThemeProvider } from '../components/theme/ThemeProvider'
 import { Button } from '../components/ui/button'
 
 import appCss from '../styles.css?url'
@@ -22,9 +19,6 @@ export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
 }>()({
   errorComponent: ({ error }) => {
-    useEffect(() => {
-      Sentry.captureException(error)
-    }, [error])
     return <ErrorBoundary error={error} />
   },
   head: () => ({
