@@ -54,6 +54,13 @@ const config = defineConfig({
   },
   build: {
     sourcemap: true,
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      onwarn(warning, warn) {
+        if (warning.code === 'UNUSED_EXTERNAL_IMPORT') return
+        warn(warning)
+      },
+    },
   },
   server: {
     https: getHttpsConfig(),
