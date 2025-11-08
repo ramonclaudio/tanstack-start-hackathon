@@ -11,6 +11,7 @@ import Footer from '../components/layout/Footer'
 import Header from '../components/layout/Header'
 import { ThemeProvider } from '../components/theme/ThemeProvider'
 import { Button } from '../components/ui/button'
+import { Toaster } from '../components/ui/sonner'
 
 import appCss from '../styles.css?url'
 import type { QueryClient } from '@tanstack/react-query'
@@ -60,6 +61,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               {children}
             </main>
             <Footer />
+            <Toaster />
             {import.meta.env.PROD ? null : (
               <TanStackDevtools
                 config={{ position: 'bottom-left' }}
