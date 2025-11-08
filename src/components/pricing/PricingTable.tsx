@@ -3,10 +3,10 @@ import React, { createContext, useContext, useState } from 'react'
 import { usePricingTable } from 'autumn-js/react'
 import { Loader2 } from 'lucide-react'
 import { useAction } from 'convex/react'
-import * as Sentry from '@sentry/tanstackstart-react'
 import { api } from '../../../convex/_generated/api'
 import type { ProductDetails } from 'autumn-js/react'
 import type { CheckoutResult, Product, ProductItem } from 'autumn-js'
+import { logger } from '@/lib/logger'
 import { cn } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -244,7 +244,21 @@ export default function PricingTable({
         setOpen(true)
       }
     } catch (e) {
-      console.error('Failed to prepare checkout', e)
+      logger.error(
+        'Failed to prepare checkout',
+        e,
+        {
+          component: 'PricingTable',
+          action: 'prepareCheckout',
+          productId: product.id,
+        },
+        {
+          tags: {
+            component: 'PricingTable',
+            action: 'prepareCheckout',
+          },
+        },
+      )
     }
   }
 
@@ -607,13 +621,20 @@ export const PricingCardButton = React.forwardRef<
     try {
       await onClick?.(e)
     } catch (error) {
-      console.error(error)
-      Sentry.captureException(error, {
-        tags: {
+      logger.error(
+        'Pricing button click failed',
+        error,
+        {
           component: 'PricingTable',
           action: 'buttonClick',
         },
-      })
+        {
+          tags: {
+            component: 'PricingTable',
+            action: 'buttonClick',
+          },
+        },
+      )
     } finally {
       setLoading(false)
     }

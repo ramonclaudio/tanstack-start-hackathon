@@ -5,7 +5,6 @@ import { convexQuery } from '@convex-dev/react-query'
 import { useAction } from 'convex/react'
 import { ArrowRight, CreditCard, Package, Zap } from 'lucide-react'
 import { useCustomer } from 'autumn-js/react'
-import * as Sentry from '@sentry/tanstackstart-react'
 import { api } from '../../convex/_generated/api'
 import { logger } from '@/lib/logger'
 import { Button } from '@/components/ui/button'
@@ -202,13 +201,20 @@ function DashboardContent({
         window.location.href = response.data.url
       }
     } catch (err) {
-      console.error('Failed to open billing portal:', err)
-      Sentry.captureException(err, {
-        tags: {
+      logger.error(
+        'Failed to open billing portal',
+        err,
+        {
           route: 'dashboard',
           action: 'openBillingPortal',
         },
-      })
+        {
+          tags: {
+            route: 'dashboard',
+            action: 'openBillingPortal',
+          },
+        },
+      )
     }
   }
 

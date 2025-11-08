@@ -1,9 +1,9 @@
 import { Link } from '@tanstack/react-router'
 import { User } from 'lucide-react'
-import { ModeToggle } from './ModeToggle'
-import { Button } from './ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
-import { Skeleton } from './ui/skeleton'
+import { ModeToggle } from '@/components/theme/ModeToggle'
+import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +11,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from './ui/dropdown-menu'
+} from '@/components/ui/dropdown-menu'
 import { signOut, useSession } from '@/lib/auth'
 
 const NAV_LINKS: Array<{ to: string; label: string; className: string }> = [

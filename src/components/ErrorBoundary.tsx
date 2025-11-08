@@ -1,6 +1,5 @@
 import { AlertCircle } from 'lucide-react'
 import { Component } from 'react'
-import * as Sentry from '@sentry/tanstackstart-react'
 import type { ErrorInfo, ReactNode } from 'react'
 import {
   Card,
@@ -38,24 +37,28 @@ export class ErrorBoundary extends Component<Props, State> {
   override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     const { variant = 'app' } = this.props
 
-    if (variant === 'auth') {
-      logger.app.error('Auth Provider Error', error, {
+    logger.app.error(
+      variant === 'auth' ? 'Auth Provider Error' : 'App Error Boundary',
+      error,
+      {
         component: 'ErrorBoundary',
-        variant: 'auth',
-        componentStack: errorInfo.componentStack,
-        errorBoundary: true,
-      })
-    } else {
-      console.error('Error Boundary:', error, errorInfo)
-    }
-
-    Sentry.withScope((scope) => {
-      scope.setContext('errorBoundary', {
         variant,
         componentStack: errorInfo.componentStack,
-      })
-      Sentry.captureException(error)
-    })
+        errorBoundary: true,
+      },
+      {
+        tags: {
+          variant,
+          errorBoundary: 'true',
+        },
+        contexts: {
+          errorBoundary: {
+            variant,
+            componentStack: errorInfo.componentStack,
+          },
+        },
+      },
+    )
   }
 
   private handleReset = () => {

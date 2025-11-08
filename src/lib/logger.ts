@@ -6,6 +6,12 @@ const isDev = import.meta.env.DEV
 
 type LogContext = Record<string, unknown>
 
+interface SentryOptions {
+  tags?: Record<string, string | number | boolean>
+  contexts?: Record<string, Record<string, unknown>>
+  level?: 'fatal' | 'error' | 'warning' | 'log' | 'info' | 'debug'
+}
+
 interface LoggerConfig {
   perfThresholdMs?: number
 }
@@ -68,7 +74,12 @@ class SimpleLogger {
     this.log('warn', message, context)
   }
 
-  error(message: string, error?: unknown, context?: LogContext) {
+  error(
+    message: string,
+    error?: unknown,
+    context?: LogContext,
+    sentryOptions?: SentryOptions,
+  ) {
     const errorContext = {
       ...context,
       error: error instanceof Error ? error.message : String(error),
@@ -79,7 +90,12 @@ class SimpleLogger {
 
     if (error instanceof Error && !isDev) {
       Sentry.captureException(error, {
-        contexts: { [this.module]: this.enrichContext(context) },
+        tags: sentryOptions?.tags,
+        contexts: {
+          [this.module]: this.enrichContext(context),
+          ...sentryOptions?.contexts,
+        },
+        level: sentryOptions?.level || 'error',
       })
     }
   }
@@ -123,6 +139,14 @@ export const logger = {
   auth: createLogger('Auth'),
   api: createLogger('API', { perfThresholdMs: 500 }),
   security: createLogger('Security'),
+  error: (
+    message: string,
+    error?: unknown,
+    context?: LogContext,
+    sentryOptions?: SentryOptions,
+  ) => {
+    createLogger('Error').error(message, error, context, sentryOptions)
+  },
 }
 
-export type { LogContext, LoggerConfig }
+export type { LogContext, LoggerConfig, SentryOptions }

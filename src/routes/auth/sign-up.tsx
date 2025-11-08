@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import * as Sentry from '@sentry/tanstackstart-react'
 import { authClient, useSession } from '@/lib/auth'
+import { logger } from '@/lib/logger'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -16,7 +16,7 @@ import {
   AuthFormDivider,
   AuthFormFooter,
   GitHubSignInButton,
-} from '@/components/auth/Components'
+} from '@/components/auth/auth-ui'
 
 export const Route = createFileRoute('/auth/sign-up')({
   component: SignUp,
@@ -58,17 +58,26 @@ function SignUp() {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to sign up'
       setError(errorMessage)
-      Sentry.captureException(err, {
-        tags: {
+      logger.error(
+        'Sign up failed',
+        err,
+        {
           route: 'sign-up',
           method: 'email',
+          emailDomain: email.split('@')[1] || 'unknown',
         },
-        contexts: {
-          auth: {
-            emailDomain: email.split('@')[1] || 'unknown',
+        {
+          tags: {
+            route: 'sign-up',
+            method: 'email',
+          },
+          contexts: {
+            auth: {
+              emailDomain: email.split('@')[1] || 'unknown',
+            },
           },
         },
-      })
+      )
     } finally {
       setIsLoading(false)
     }

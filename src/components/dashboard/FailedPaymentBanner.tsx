@@ -1,7 +1,7 @@
 import { AlertTriangle, CreditCard, X } from 'lucide-react'
 import { useState } from 'react'
-import * as Sentry from '@sentry/tanstackstart-react'
 import type { Customer as AutumnCustomer } from 'autumn-js'
+import { logger } from '@/lib/logger'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 
@@ -28,13 +28,20 @@ export function FailedPaymentBanner({
         returnUrl: window.location.href,
       })
     } catch (error) {
-      console.error('Failed to open billing portal:', error)
-      Sentry.captureException(error, {
-        tags: {
+      logger.error(
+        'Failed to open billing portal',
+        error,
+        {
           component: 'FailedPaymentBanner',
           action: 'openBillingPortal',
         },
-      })
+        {
+          tags: {
+            component: 'FailedPaymentBanner',
+            action: 'openBillingPortal',
+          },
+        },
+      )
     }
   }
 
