@@ -6,8 +6,8 @@ import {
   HeroSkeleton,
   LogoSkeleton,
 } from '@/components/skeletons'
-import { useSession } from '@/lib/auth-client'
-import { usePageLoading } from '@/lib/hooks/use-page-loading'
+import { useSession } from '@/lib/auth'
+import { usePageLoading } from '@/lib/hooks'
 
 export const Route = createFileRoute('/')({
   component: App,

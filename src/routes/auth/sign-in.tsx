@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import * as Sentry from '@sentry/tanstackstart-react'
-import { authClient, useSession } from '@/lib/auth-client'
+import { authClient, useSession } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {

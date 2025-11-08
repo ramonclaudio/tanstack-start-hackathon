@@ -2,9 +2,9 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 import { Check } from 'lucide-react'
 import { usePricingTable } from 'autumn-js/react'
-import { usePageLoading } from '@/lib/hooks/use-page-loading'
+import { usePageLoading } from '@/lib/hooks'
 import PricingTable from '@/components/pricing/PricingTable'
-import { useSession } from '@/lib/auth-client'
+import { useSession } from '@/lib/auth'
 import {
   Accordion,
   AccordionContent,
