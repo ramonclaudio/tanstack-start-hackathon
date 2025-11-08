@@ -1,11 +1,8 @@
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 import { useTheme } from '@/components/ThemeProvider'
 
 export function ModeToggle() {
-  const { toggleMode, mounted } = useTheme()
-
-  if (!mounted) return <Skeleton className="h-8 w-8 rounded-full" />
+  const { toggleMode } = useTheme()
 
   return (
     <Button
