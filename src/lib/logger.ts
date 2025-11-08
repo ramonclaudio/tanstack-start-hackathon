@@ -6,25 +6,57 @@ const isDev = import.meta.env.DEV
 
 type LogContext = Record<string, unknown>
 
+interface LoggerConfig {
+  perfThresholdMs?: number
+}
+
+const DEFAULT_CONFIG: Required<LoggerConfig> = {
+  perfThresholdMs: 1000,
+}
+
 class SimpleLogger {
-  constructor(private module: string) {}
+  private config: Required<LoggerConfig>
+
+  constructor(
+    private module: string,
+    config?: LoggerConfig,
+  ) {
+    this.config = { ...DEFAULT_CONFIG, ...config }
+  }
+
+  private enrichContext(context?: LogContext): LogContext & {
+    timestamp: string
+    module: string
+    environment: 'development' | 'production'
+  } {
+    return {
+      timestamp: new Date().toISOString(),
+      module: this.module,
+      environment: isDev ? 'development' : 'production',
+      ...context,
+    }
+  }
 
   private log(
     level: 'info' | 'warn' | 'error',
     message: string,
     context?: LogContext,
   ) {
+    const enrichedContext = this.enrichContext(context)
+
     if (isDev) {
       const method =
         level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log'
-      console[method](`[${this.module}]`, message, context || '')
+      console[method](
+        `[${enrichedContext.timestamp}] [${this.module}]`,
+        message,
+        context || '',
+      )
     }
 
     if (!isDev && level === 'error') {
       Sentry.captureMessage(message, 'error')
-      if (context) {
-        Sentry.setContext(this.module, context)
-      }
+      Sentry.setContext(this.module, enrichedContext)
     }
   }
 
@@ -40,12 +72,15 @@ class SimpleLogger {
     const errorContext = {
       ...context,
       error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
     }
 
     this.log('error', message, errorContext)
 
     if (error instanceof Error && !isDev) {
-      Sentry.captureException(error)
+      Sentry.captureException(error, {
+        contexts: { [this.module]: this.enrichContext(context) },
+      })
     }
   }
 
@@ -58,26 +93,36 @@ class SimpleLogger {
   }
 
   perf(operation: string, duration: number, context?: LogContext) {
-    if (duration > 1000) {
-      this.log('warn', `Slow: ${operation} took ${duration}ms`, context)
+    if (duration > this.config.perfThresholdMs) {
+      this.log('warn', `Slow: ${operation} took ${duration}ms`, {
+        ...context,
+        duration_ms: duration,
+        threshold_ms: this.config.perfThresholdMs,
+      })
     }
   }
 
   debug(message: string, context?: LogContext) {
     if (isDev) {
-      console.debug(`[${this.module}]`, message, context || '')
+      const enrichedContext = this.enrichContext(context)
+      console.debug(
+        `[${enrichedContext.timestamp}] [${this.module}]`,
+        message,
+        context || '',
+      )
     }
   }
 }
 
-export function createLogger(module: string) {
-  return new SimpleLogger(module)
+export function createLogger(module: string, config?: LoggerConfig) {
+  return new SimpleLogger(module, config)
 }
 
-// Pre-configured loggers for common use cases
 export const logger = {
   app: createLogger('App'),
   auth: createLogger('Auth'),
-  api: createLogger('API'),
+  api: createLogger('API', { perfThresholdMs: 500 }),
   security: createLogger('Security'),
 }
+
+export type { LogContext, LoggerConfig }
