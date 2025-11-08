@@ -1,11 +1,6 @@
-/* eslint-disable no-console */
-/**
- * Convex Backend Logger - Simple and effective
- */
+const isDevelopment = !process.env['VITE_CONVEX_URL']
 
-const isDevelopment = process.env.NODE_ENV !== 'production'
-
-type LogContext = Record<string, any>
+type LogContext = Record<string, unknown>
 
 class ConvexLogger {
   constructor(private module: string) {}
@@ -15,7 +10,6 @@ class ConvexLogger {
     message: string,
     context?: LogContext,
   ) {
-    // In production, only log warnings and errors
     if (!isDevelopment && level === 'info') return
 
     const log = {
@@ -26,12 +20,23 @@ class ConvexLogger {
       timestamp: Date.now(),
     }
 
-    // Simple console output
     if (isDevelopment) {
       const emoji = level === 'error' ? '❌' : level === 'warn' ? '⚠️' : 'ℹ️'
-      console.log(`${emoji} [${this.module}] ${message}`, context || '')
+      const consoleMethod =
+        level === 'error'
+          ? console.error
+          : level === 'warn'
+            ? console.warn
+            : console.error
+      consoleMethod(`${emoji} [${this.module}] ${message}`, context || '')
     } else {
-      console.log(JSON.stringify(log))
+      const consoleMethod =
+        level === 'error'
+          ? console.error
+          : level === 'warn'
+            ? console.warn
+            : console.error
+      consoleMethod(JSON.stringify(log))
     }
   }
 
@@ -50,17 +55,14 @@ class ConvexLogger {
     })
   }
 
-  // Simple helper for auth events
   auth(event: string, context?: LogContext) {
     this.log('info', `Auth: ${event}`, context)
   }
 
-  // Simple helper for billing events
   billing(event: string, context?: LogContext) {
     this.log('info', `Billing: ${event}`, context)
   }
 
-  // Simple helper for performance (only logs if slow)
   perf(operation: string, duration: number, context?: LogContext) {
     if (duration > 1000) {
       this.log(
@@ -72,9 +74,7 @@ class ConvexLogger {
   }
 }
 
-// Export pre-configured loggers for each module
 export const authLogger = new ConvexLogger('Auth')
 export const autumnLogger = new ConvexLogger('Autumn')
 
-// Export the class for custom loggers
 export default ConvexLogger
