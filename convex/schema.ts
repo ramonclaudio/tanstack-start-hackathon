@@ -2,11 +2,10 @@ import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
 export default defineSchema({
-  mutations: defineTable({
+  demo_queries: defineTable({
     text: v.string(),
   }),
-
-  queries: defineTable({
+  demo_mutations: defineTable({
     text: v.string(),
   }),
 })
