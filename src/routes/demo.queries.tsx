@@ -4,21 +4,20 @@ import { convexQuery } from '@convex-dev/react-query'
 import { api } from '../../convex/_generated/api'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useSession } from '@/lib/auth'
-import { usePageLoading } from '@/lib/hooks'
 
-export const Route = createFileRoute('/demo/start/api-request')({
+export const Route = createFileRoute('/demo/queries')({
   component: Home,
 })
 
 function Home() {
   const { isPending } = useSession()
-  const { data: demos, isLoading: demosLoading } = useQuery(
-    convexQuery(api.demos.get, {
+  const { data: queries, isLoading: queriesLoading } = useQuery(
+    convexQuery(api.queries.get, {
       paginationOpts: { numItems: 50, cursor: null },
     }),
   )
 
-  const isLoading = usePageLoading([isPending, demosLoading])
+  const isLoading = [isPending, queriesLoading].some(Boolean)
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-6 -mt-3">
@@ -47,13 +46,13 @@ function Home() {
             </div>
 
             <div className="space-y-4">
-              {demos?.page?.length === 0 ? (
+              {queries?.page?.length === 0 ? (
                 <p className="text-center text-muted-foreground">
-                  No demo tasks found. Add some data to the demos table!
+                  No demo queries found. Add some data to the queries table!
                 </p>
               ) : (
                 <ul className="space-y-2">
-                  {demos?.page?.map((item) => (
+                  {queries?.page?.map((item) => (
                     <li
                       key={item._id}
                       className="border rounded-lg p-4 bg-card text-card-foreground h-14 flex items-center"

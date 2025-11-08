@@ -3,12 +3,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { useAction } from 'convex/react'
-import { ArrowRight, CreditCard, Package, Settings, Zap } from 'lucide-react'
+import { ArrowRight, CreditCard, Package, Zap } from 'lucide-react'
 import { useCustomer } from 'autumn-js/react'
 import * as Sentry from '@sentry/tanstackstart-react'
 import { api } from '../../convex/_generated/api'
 import { logger } from '@/lib/logger'
-import { usePageLoading } from '@/lib/hooks'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -38,7 +37,7 @@ function Dashboard() {
 
   const billingPortalAction = useAction(api.autumn.billingPortal)
 
-  const isLoading = usePageLoading([sessionPending, isUserDataLoading])
+  const isLoading = [sessionPending, isUserDataLoading].some(Boolean)
 
   useEffect(() => {
     if (sessionPending) return
@@ -380,12 +379,6 @@ function DashboardContent({
               <Link to="/pricing">
                 <Package className="mr-2 h-4 w-4" />
                 View Plans
-              </Link>
-            </Button>
-            <Button variant="outline" className="w-full justify-start" asChild>
-              <Link to="/dashboard">
-                <Settings className="mr-2 h-4 w-4" />
-                Profile
               </Link>
             </Button>
           </CardContent>

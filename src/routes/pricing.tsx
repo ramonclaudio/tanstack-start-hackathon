@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 import { Check } from 'lucide-react'
 import { usePricingTable } from 'autumn-js/react'
-import { usePageLoading } from '@/lib/hooks'
 import PricingTable from '@/components/pricing/PricingTable'
 import { useSession } from '@/lib/auth'
 import {
@@ -27,7 +26,7 @@ function PricingPage() {
   const search = Route.useSearch()
   const { isLoading: pricingLoading } = usePricingTable({})
 
-  const isLoading = usePageLoading([isPending, pricingLoading])
+  const isLoading = [isPending, pricingLoading].some(Boolean)
 
   if (isLoading) {
     return (

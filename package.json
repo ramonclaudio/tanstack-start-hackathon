@@ -29,16 +29,21 @@
   "homepage": "https://github.com/RMNCLDYO/tanvex#readme",
   "scripts": {
     "dev": "vite dev --port 3000",
+    "dev:convex": "bunx convex dev",
     "start": "bun run server.ts",
     "build": "vite build",
-    "serve": "vite preview",
+    "preview": "vite preview",
     "test": "vitest run",
+    "test:watch": "vitest watch",
     "generate": "bunx convex dev --once",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint",
+    "seed": "bunx convex run seed:seedDatabase",
+    "seed:clear": "bunx convex run seed:clearDatabase",
+    "db:studio": "bunx convex dashboard",
+    "clean": "rm -rf .output .vinxi dist node_modules/.vite",
+    "lint": "eslint --fix",
     "check": "prettier --check . && eslint && tsc --noEmit",
-    "format": "prettier --write . && eslint --fix",
-    "all": "bun run generate && bun run format && bun run lint && bun run check && bun run build"
+    "format": "prettier --write .",
+    "ci": "bun run generate && bun run format && bun run check && bun run build"
   },
   "dependencies": {
     "@convex-dev/better-auth": "^0.9.7",

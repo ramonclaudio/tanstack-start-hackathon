@@ -6,6 +6,6 @@ export const get = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    return await ctx.db.query('demos').paginate(args.paginationOpts)
+    return await ctx.db.query('queries').paginate(args.paginationOpts)
   },
 })

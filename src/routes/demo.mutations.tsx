@@ -9,39 +9,38 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useSession } from '@/lib/auth'
-import { usePageLoading } from '@/lib/hooks'
 
-export const Route = createFileRoute('/demo/start/server-funcs')({
+export const Route = createFileRoute('/demo/mutations')({
   component: Home,
 })
 
 function Home() {
   const { isPending } = useSession()
-  const { data: tasks, isLoading: tasksLoading } = useQuery(
-    convexQuery(api.tasks.get, {
+  const { data: mutations, isLoading: mutationsLoading } = useQuery(
+    convexQuery(api.mutations.get, {
       paginationOpts: { numItems: 50, cursor: null },
     }),
   )
 
-  const isLoading = usePageLoading([isPending, tasksLoading])
+  const isLoading = [isPending, mutationsLoading].some(Boolean)
 
-  const addTask = useConvexMutation(api.tasks.add)
-  const removeTask = useConvexMutation(api.tasks.remove)
+  const addMutation = useConvexMutation(api.mutations.add)
+  const removeMutation = useConvexMutation(api.mutations.remove)
 
   const [todo, setTodo] = useState('')
 
   const submitTodo = useCallback(async () => {
     if (todo.trim()) {
-      await addTask({ text: todo })
+      await addMutation({ text: todo })
       setTodo('')
     }
-  }, [addTask, todo])
+  }, [addMutation, todo])
 
   const handleRemove = useCallback(
-    async (id: Id<'tasks'>) => {
-      await removeTask({ id })
+    async (id: Id<'mutations'>) => {
+      await removeMutation({ id })
     },
-    [removeTask],
+    [removeMutation],
   )
 
   return (
@@ -76,24 +75,24 @@ function Home() {
             </div>
 
             <div className="space-y-4">
-              {tasks?.page?.length === 0 ? (
+              {mutations?.page?.length === 0 ? (
                 <p className="text-center text-muted-foreground">
-                  No tasks yet. Add one below!
+                  No mutations yet. Add one below!
                 </p>
               ) : (
                 <ul className="space-y-2">
-                  {tasks?.page?.map((t) => (
+                  {mutations?.page?.map((m) => (
                     <li
-                      key={t._id}
+                      key={m._id}
                       className="border rounded-lg p-4 bg-card text-card-foreground h-14 flex items-center justify-between gap-4"
                     >
-                      <span>{t.text}</span>
+                      <span>{m.text}</span>
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        onClick={() => handleRemove(t._id)}
+                        onClick={() => handleRemove(m._id)}
                         className="shrink-0"
-                        aria-label="Delete task"
+                        aria-label="Delete item"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -112,7 +111,7 @@ function Home() {
                       submitTodo()
                     }
                   }}
-                  placeholder="Enter a new todo..."
+                  placeholder="Enter a new item..."
                   className="flex-1 h-14"
                 />
                 <Button
