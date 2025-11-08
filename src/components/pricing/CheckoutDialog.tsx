@@ -14,7 +14,7 @@ import {
   DialogFooter,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { getCheckoutContent } from '@/lib/autumn/checkout-content'
+import { getCheckoutContent } from '@/lib/checkout'
 import {
   Accordion,
   AccordionContent,
