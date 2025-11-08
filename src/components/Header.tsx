@@ -22,13 +22,13 @@ const NAV_LINKS: Array<{ to: string; label: string; className: string }> = [
     className: 'text-muted-foreground hover:text-foreground',
   },
   {
-    to: '/demo/start/server-funcs',
-    label: 'Server Functions',
+    to: '/demo/mutations',
+    label: 'Mutations',
     className: 'text-muted-foreground hover:text-foreground',
   },
   {
-    to: '/demo/start/api-request',
-    label: 'API Request',
+    to: '/demo/queries',
+    label: 'Queries',
     className: 'text-muted-foreground hover:text-foreground',
   },
 ]
@@ -41,20 +41,11 @@ export default function Header() {
     <header className="border-b">
       <div className="flex h-16 items-center px-6">
         <nav className="flex gap-6 text-sm font-medium">
-          {loading ? (
-            <>
-              <Skeleton className="h-3.5 w-11 rounded" />
-              <Skeleton className="h-3.5 w-[52px] rounded" />
-              <Skeleton className="h-3.5 w-32 rounded" />
-              <Skeleton className="h-3.5 w-24 rounded" />
-            </>
-          ) : (
-            NAV_LINKS.map((l) => (
-              <Link key={l.to} to={l.to} className={l.className}>
-                {l.label}
-              </Link>
-            ))
-          )}
+          {NAV_LINKS.map((l) => (
+            <Link key={l.to} to={l.to} className={l.className}>
+              {l.label}
+            </Link>
+          ))}
         </nav>
 
         <div className="ml-auto flex items-center gap-4">
@@ -65,20 +56,22 @@ export default function Header() {
                 size="icon"
                 className="h-8 w-8 rounded-full"
               >
-                {loading ? (
-                  <Skeleton className="h-8 w-8 rounded-full" />
-                ) : session?.user ? (
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage
-                      src={session.user.image || ''}
-                      alt={session.user.name || ''}
-                    />
-                    <AvatarFallback>
-                      {session.user.name
-                        ? session.user.name.charAt(0).toUpperCase()
-                        : 'U'}
-                    </AvatarFallback>
-                  </Avatar>
+                {session?.user ? (
+                  loading ? (
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                  ) : (
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage
+                        src={session.user.image || ''}
+                        alt={session.user.name || ''}
+                      />
+                      <AvatarFallback>
+                        {session.user.name
+                          ? session.user.name.charAt(0).toUpperCase()
+                          : 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                  )
                 ) : (
                   <User className="h-5 w-5" />
                 )}
@@ -133,11 +126,7 @@ export default function Header() {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-          {loading ? (
-            <Skeleton className="h-8 w-8 rounded-full" />
-          ) : (
-            <ModeToggle />
-          )}
+          <ModeToggle />
         </div>
       </div>
     </header>
