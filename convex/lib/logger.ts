@@ -24,18 +24,24 @@ class ConvexLogger {
       const emoji = level === 'error' ? '❌' : level === 'warn' ? '⚠️' : 'ℹ️'
       const consoleMethod =
         level === 'error'
-          ? console.error
+          ? // eslint-disable-next-line no-console
+            console.error
           : level === 'warn'
-            ? console.warn
-            : console.error
+            ? // eslint-disable-next-line no-console
+              console.warn
+            : // eslint-disable-next-line no-console
+              console.error
       consoleMethod(`${emoji} [${this.module}] ${message}`, context || '')
     } else {
       const consoleMethod =
         level === 'error'
-          ? console.error
+          ? // eslint-disable-next-line no-console
+            console.error
           : level === 'warn'
-            ? console.warn
-            : console.error
+            ? // eslint-disable-next-line no-console
+              console.warn
+            : // eslint-disable-next-line no-console
+              console.error
       consoleMethod(JSON.stringify(log))
     }
   }
