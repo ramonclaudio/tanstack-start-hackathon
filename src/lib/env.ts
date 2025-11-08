@@ -15,19 +15,32 @@ const clientEnvSchema = z.object({
   DEV: z.boolean(),
 })
 
-const serverEnvSchema = z.object({
-  SITE_URL: z.string().url('SITE_URL must be a valid URL'),
-  NODE_ENV: z.enum(['development', 'production', 'test']),
-  PORT: z.string().regex(/^\d+$/, 'PORT must be a number'),
-  CONVEX_DEPLOYMENT: z.string().optional(),
-  GITHUB_CLIENT_ID: z.string().optional(),
-  GITHUB_CLIENT_SECRET: z.string().optional(),
-  AUTUMN_SECRET_KEY: z.string().optional(),
-  SENTRY_DSN: z.string().url('SENTRY_DSN must be a valid URL').optional(),
-  SENTRY_AUTH_TOKEN: z.string().optional(),
-  SENTRY_ORG: z.string().optional(),
-  SENTRY_PROJECT: z.string().optional(),
-})
+const serverEnvSchema = z
+  .object({
+    SITE_URL: z.string().url('SITE_URL must be a valid URL'),
+    NODE_ENV: z.enum(['development', 'production', 'test']),
+    PORT: z.string().regex(/^\d+$/, 'PORT must be a number'),
+    CONVEX_DEPLOYMENT: z.string().optional(),
+    GITHUB_CLIENT_ID: z.string().optional(),
+    GITHUB_CLIENT_SECRET: z.string().optional(),
+    AUTUMN_SECRET_KEY: z.string().min(1, 'AUTUMN_SECRET_KEY is required'),
+    SENTRY_DSN: z.string().url('SENTRY_DSN must be a valid URL').optional(),
+    SENTRY_AUTH_TOKEN: z.string().optional(),
+    SENTRY_ORG: z.string().optional(),
+    SENTRY_PROJECT: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      const hasId = !!data.GITHUB_CLIENT_ID
+      const hasSecret = !!data.GITHUB_CLIENT_SECRET
+      return hasId === hasSecret
+    },
+    {
+      message:
+        'Both GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET must be provided together, or neither',
+      path: ['GITHUB_CLIENT_ID'],
+    },
+  )
 
 export function validateClientEnv() {
   try {
