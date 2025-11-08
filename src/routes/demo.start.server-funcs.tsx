@@ -7,11 +7,7 @@ import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  FormRowSkeleton,
-  HeroSkeleton,
-  ListSkeleton,
-} from '@/components/skeletons'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useSession } from '@/lib/auth'
 import { usePageLoading } from '@/lib/hooks'
 
@@ -53,10 +49,18 @@ function Home() {
       <div className="w-full max-w-2xl space-y-8">
         {isLoading ? (
           <>
-            <HeroSkeleton />
+            <div className="text-center space-y-5">
+              <Skeleton className="h-9 w-80 mx-auto" />
+              <Skeleton className="h-5 w-full max-w-xl mx-auto" />
+            </div>
             <div className="space-y-4">
-              <ListSkeleton count={3} className="h-14" />
-              <FormRowSkeleton />
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-14 w-full" />
+              ))}
+              <div className="flex gap-2">
+                <Skeleton className="flex-1 h-14 rounded-md" />
+                <Skeleton className="h-14 w-24 rounded-md" />
+              </div>
             </div>
           </>
         ) : (

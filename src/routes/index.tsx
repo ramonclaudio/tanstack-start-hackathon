@@ -1,11 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import logo from '../logo.svg'
 import { Button } from '@/components/ui/button'
-import {
-  ButtonRowSkeleton,
-  HeroSkeleton,
-  LogoSkeleton,
-} from '@/components/skeletons'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useSession } from '@/lib/auth'
 import { usePageLoading } from '@/lib/hooks'
 
@@ -21,11 +17,15 @@ function App() {
     <div className="flex flex-1 flex-col items-center justify-center px-6 text-center min-h-full -my-6">
       {isLoading ? (
         <>
-          <LogoSkeleton className="mb-8" />
-          <div className="mb-8">
-            <HeroSkeleton />
+          <Skeleton className="h-40 w-40 rounded-full mb-8" />
+          <div className="text-center space-y-5 mb-8">
+            <Skeleton className="h-9 w-80 mx-auto" />
+            <Skeleton className="h-5 w-full max-w-xl mx-auto" />
           </div>
-          <ButtonRowSkeleton />
+          <div className="flex gap-4 justify-center">
+            <Skeleton className="h-9 w-32" />
+            <Skeleton className="h-9 w-32" />
+          </div>
         </>
       ) : (
         <>
