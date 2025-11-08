@@ -9,10 +9,7 @@ import type { ProductDetails } from 'autumn-js/react'
 import type { CheckoutResult, Product, ProductItem } from 'autumn-js'
 import { cn } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
-import {
-  PricingGridSkeleton,
-  PricingToggleSkeleton,
-} from '@/components/skeletons'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import CheckoutDialog from '@/components/pricing/CheckoutDialog'
 import { useSession } from '@/lib/auth'
@@ -180,14 +177,40 @@ export default function PricingTable({
     return (
       <div className="flex items-center flex-col">
         <div className="mb-4">
-          <PricingToggleSkeleton />
+          <div className="flex items-center space-x-2 justify-center">
+            <Skeleton className="h-4 w-14" />
+            <Skeleton className="h-6 w-10 rounded-full" />
+            <Skeleton className="h-4 w-14" />
+          </div>
         </div>
         <div
           className={cn(
             'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))] w-full gap-2',
           )}
         >
-          <PricingGridSkeleton count={skeletonCount} withContainer={false} />
+          {Array.from({ length: skeletonCount }).map((_, i) => (
+            <div
+              key={i}
+              className="w-full h-full py-6 border rounded-lg shadow-sm max-w-xl"
+            >
+              <div className="flex flex-col h-full">
+                <div className="pb-4">
+                  <Skeleton className="h-7 w-40 mx-6 mb-1" />
+                </div>
+                <div className="mb-2">
+                  <div className="border-y bg-secondary/40 h-16 flex items-center px-6 mb-2">
+                    <Skeleton className="h-5 w-32" />
+                  </div>
+                </div>
+                <div className="px-6 mb-6">
+                  <Skeleton className="h-4 w-52" />
+                </div>
+                <div className="px-6 mt-auto">
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     )

@@ -1,11 +1,11 @@
 import { Button } from '@/components/ui/button'
-import { CircleSkeleton } from '@/components/skeletons'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useTheme } from '@/components/ThemeProvider'
 
 export function ModeToggle() {
   const { toggleMode, mounted } = useTheme()
 
-  if (!mounted) return <CircleSkeleton />
+  if (!mounted) return <Skeleton className="h-8 w-8 rounded-full" />
 
   return (
     <Button
