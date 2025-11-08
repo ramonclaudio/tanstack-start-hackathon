@@ -1,27 +1,39 @@
-export class AuthenticationError extends Error {
+import { ConvexError } from 'convex/values'
+
+export class AuthenticationError extends ConvexError<{
+  code: string
+  message: string
+}> {
   constructor(message = 'Authentication required') {
-    super(message)
-    this.name = 'AuthenticationError'
+    super({ code: 'UNAUTHENTICATED', message })
   }
 }
 
-export class AuthorizationError extends Error {
+export class AuthorizationError extends ConvexError<{
+  code: string
+  message: string
+}> {
   constructor(message = 'Unauthorized') {
-    super(message)
-    this.name = 'AuthorizationError'
+    super({ code: 'UNAUTHORIZED', message })
   }
 }
 
-export class ValidationError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'ValidationError'
+export class ValidationError extends ConvexError<{
+  code: string
+  message: string
+  field?: string
+}> {
+  constructor(message: string, field?: string) {
+    super({ code: 'VALIDATION_ERROR', message, field })
   }
 }
 
-export class NotFoundError extends Error {
+export class NotFoundError extends ConvexError<{
+  code: string
+  message: string
+  resource: string
+}> {
   constructor(resource: string) {
-    super(`${resource} not found`)
-    this.name = 'NotFoundError'
+    super({ code: 'NOT_FOUND', message: `${resource} not found`, resource })
   }
 }

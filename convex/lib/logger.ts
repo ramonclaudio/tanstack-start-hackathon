@@ -30,7 +30,7 @@ class ConvexLogger {
             ? // eslint-disable-next-line no-console
               console.warn
             : // eslint-disable-next-line no-console
-              console.error
+              console.log
       consoleMethod(`${emoji} [${this.module}] ${message}`, context || '')
     } else {
       const consoleMethod =
