@@ -3,9 +3,9 @@ import * as AccordionPrimitive from '@radix-ui/react-accordion'
 import React, { useEffect, useState } from 'react'
 import { ChevronDown, Loader2 } from 'lucide-react'
 import { useAction } from 'convex/react'
-import * as Sentry from '@sentry/tanstackstart-react'
 import { api } from '../../../convex/_generated/api'
 import type { CheckoutParams, CheckoutResult, ProductItem } from 'autumn-js'
+import { logger } from '@/lib/logger'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -239,14 +239,22 @@ export default function CheckoutDialog(params: CheckoutDialogProps) {
                   options,
                 })
               } catch (e) {
-                console.error('Attach failed', e)
-                Sentry.captureException(e, {
-                  tags: {
+                logger.error(
+                  'Attach product failed',
+                  e,
+                  {
                     component: 'CheckoutDialog',
                     action: 'attachProduct',
                     productId: checkoutResult.product.id,
                   },
-                })
+                  {
+                    tags: {
+                      component: 'CheckoutDialog',
+                      action: 'attachProduct',
+                      productId: checkoutResult.product.id,
+                    },
+                  },
+                )
               } finally {
                 setOpen(false)
                 setLoading(false)
@@ -489,14 +497,22 @@ const PrepaidItem = ({
         setCheckoutResult(response.data)
       }
     } catch (error) {
-      console.error(error)
-      Sentry.captureException(error, {
-        tags: {
+      logger.error(
+        'Update prepaid quantity failed',
+        error,
+        {
           component: 'CheckoutDialog',
           action: 'updatePrepaidQuantity',
           featureId: item.feature_id,
         },
-      })
+        {
+          tags: {
+            component: 'CheckoutDialog',
+            action: 'updatePrepaidQuantity',
+            ...(item.feature_id && { featureId: item.feature_id }),
+          },
+        },
+      )
     } finally {
       setLoading(false)
       setOpen(false)
