@@ -16,7 +16,7 @@ import {
   AuthFormDivider,
   AuthFormFooter,
   GitHubSignInButton,
-} from '@/components/auth/auth-ui'
+} from '@/components/auth/AuthUI'
 
 export const Route = createFileRoute('/auth/sign-in')({
   component: SignIn,

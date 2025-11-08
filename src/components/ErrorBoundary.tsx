@@ -1,5 +1,6 @@
 import { AlertCircle } from 'lucide-react'
 import { Component } from 'react'
+import { ConvexError } from 'convex/values'
 import type { ErrorInfo, ReactNode } from 'react'
 import {
   Card,
@@ -37,6 +38,10 @@ export class ErrorBoundary extends Component<Props, State> {
   override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     const { variant = 'app' } = this.props
 
+    // Extract ConvexError data if applicable
+    const isConvexError = error instanceof ConvexError
+    const errorData = isConvexError ? error.data : null
+
     logger.app.error(
       variant === 'auth' ? 'Auth Provider Error' : 'App Error Boundary',
       error,
@@ -45,16 +50,20 @@ export class ErrorBoundary extends Component<Props, State> {
         variant,
         componentStack: errorInfo.componentStack,
         errorBoundary: true,
+        isConvexError,
+        convexErrorData: errorData,
       },
       {
         tags: {
           variant,
           errorBoundary: 'true',
+          isConvexError: String(isConvexError),
         },
         contexts: {
           errorBoundary: {
             variant,
             componentStack: errorInfo.componentStack,
+            convexErrorData: errorData,
           },
         },
       },
@@ -73,6 +82,23 @@ export class ErrorBoundary extends Component<Props, State> {
   private isSpecialError(error: Error, keywords: Array<string>): boolean {
     const message = error.message.toLowerCase()
     return keywords.some((keyword) => message.includes(keyword))
+  }
+
+  private getErrorMessage(error: Error): string {
+    if (error instanceof ConvexError) {
+      const data = error.data as
+        | string
+        | { message?: string; code?: string }
+        | undefined
+
+      if (typeof data === 'string') {
+        return data
+      }
+      if (data && typeof data === 'object' && 'message' in data) {
+        return data.message || 'An unexpected error occurred'
+      }
+    }
+    return error.message || 'An unexpected error occurred'
   }
 
   private renderAuthError() {
@@ -105,7 +131,7 @@ export class ErrorBoundary extends Component<Props, State> {
             {import.meta.env.DEV && error && (
               <div className="p-3 bg-muted rounded-md">
                 <p className="text-sm font-mono text-muted-foreground break-all">
-                  {error.message}
+                  {this.getErrorMessage(error)}
                 </p>
               </div>
             )}
@@ -153,7 +179,9 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className="text-sm text-muted-foreground">
               {isBillingError
                 ? "We're having trouble loading the billing information. This could be due to a configuration issue or temporary service disruption."
-                : error?.message || 'Something went wrong. Please try again.'}
+                : error
+                  ? this.getErrorMessage(error)
+                  : 'Something went wrong. Please try again.'}
             </p>
             <div className="flex gap-2">
               <Button size="sm" onClick={this.handleReset}>

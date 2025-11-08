@@ -2,22 +2,19 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '../../convex/_generated/api'
+import type { Id } from '../../convex/_generated/dataModel'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useSession } from '@/lib/auth'
 
 export const Route = createFileRoute('/demo/queries')({
-  component: Home,
+  component: ExampleQueries,
 })
 
-function Home() {
-  const { isPending } = useSession()
-  const { data: queries, isLoading: queriesLoading } = useQuery(
-    convexQuery(api.queries.get, {
+function ExampleQueries() {
+  const { data: queries, isLoading } = useQuery(
+    convexQuery(api.demo_queries.get, {
       paginationOpts: { numItems: 50, cursor: null },
     }),
   )
-
-  const isLoading = [isPending, queriesLoading].some(Boolean)
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-6 -mt-3">
@@ -52,14 +49,16 @@ function Home() {
                 </p>
               ) : (
                 <ul className="space-y-2">
-                  {queries?.page?.map((item) => (
-                    <li
-                      key={item._id}
-                      className="border rounded-lg p-4 bg-card text-card-foreground h-14 flex items-center"
-                    >
-                      {item.text}
-                    </li>
-                  ))}
+                  {queries?.page?.map(
+                    (item: { _id: Id<'demo_queries'>; text: string }) => (
+                      <li
+                        key={item._id}
+                        className="border rounded-lg p-4 bg-card text-card-foreground h-14 flex items-center"
+                      >
+                        {item.text}
+                      </li>
+                    ),
+                  )}
                 </ul>
               )}
             </div>
