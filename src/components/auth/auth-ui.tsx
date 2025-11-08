@@ -1,5 +1,5 @@
-import * as Sentry from '@sentry/tanstackstart-react'
 import { authClient } from '@/lib/auth'
+import { logger } from '@/lib/logger'
 import { Button } from '@/components/ui/button'
 
 interface GitHubSignInButtonProps {
@@ -24,12 +24,20 @@ export function GitHubSignInButton({
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to sign in with GitHub'
       onError(errorMessage)
-      Sentry.captureException(err, {
-        tags: {
+      logger.error(
+        'GitHub sign in failed',
+        err,
+        {
           route,
           method: 'github',
         },
-      })
+        {
+          tags: {
+            route,
+            method: 'github',
+          },
+        },
+      )
     } finally {
       onLoadingChange(false)
     }
