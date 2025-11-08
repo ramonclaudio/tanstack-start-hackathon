@@ -94,17 +94,22 @@ export function getRouter(): AnyRouter {
     queryClient,
   )
 
-  if (isClient && env.VITE_SENTRY_DSN && !(window as any).__sentryInitialized) {
+  if (
+    isClient &&
+    env.PROD &&
+    env.VITE_SENTRY_DSN &&
+    !(window as Window & { __sentryInitialized?: boolean }).__sentryInitialized
+  ) {
     logger.app.info('Initializing Sentry for error tracking', {
       environment: env.MODE,
-      tracesSampleRate: env.PROD ? 0.1 : 1.0,
+      tracesSampleRate: 0.1,
     })
 
     Sentry.init({
       dsn: env.VITE_SENTRY_DSN,
       environment: env.MODE,
       integrations: [Sentry.tanstackRouterBrowserTracingIntegration(router)],
-      tracesSampleRate: env.PROD ? 0.1 : 1.0,
+      tracesSampleRate: 0.1,
       sendDefaultPii: false,
     })
     ;(
