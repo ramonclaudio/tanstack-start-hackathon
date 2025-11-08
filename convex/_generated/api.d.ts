@@ -10,13 +10,14 @@
 
 import type * as auth from "../auth.js";
 import type * as autumn from "../autumn.js";
+import type * as demo_mutations from "../demo_mutations.js";
+import type * as demo_queries from "../demo_queries.js";
+import type * as demo_seed from "../demo_seed.js";
 import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_errors from "../lib/errors.js";
 import type * as lib_logger from "../lib/logger.js";
-import type * as mutations from "../mutations.js";
-import type * as queries from "../queries.js";
-import type * as seed from "../seed.js";
+import type * as lib_validators from "../lib/validators.js";
 import type * as user from "../user.js";
 
 import type {
@@ -36,13 +37,14 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   autumn: typeof autumn;
+  demo_mutations: typeof demo_mutations;
+  demo_queries: typeof demo_queries;
+  demo_seed: typeof demo_seed;
   http: typeof http;
   "lib/auth": typeof lib_auth;
   "lib/errors": typeof lib_errors;
   "lib/logger": typeof lib_logger;
-  mutations: typeof mutations;
-  queries: typeof queries;
-  seed: typeof seed;
+  "lib/validators": typeof lib_validators;
   user: typeof user;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
