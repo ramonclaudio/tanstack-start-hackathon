@@ -1,5 +1,5 @@
 import { useGlobalLoading } from './GlobalLoading'
-import { useSession } from '@/lib/auth-client'
+import { useSession } from '@/lib/auth'
 import { FooterSkeleton } from '@/components/skeletons'
 
 const CURRENT_YEAR = new Date().getFullYear()
