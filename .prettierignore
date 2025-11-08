@@ -1,4 +1,9 @@
 package-lock.json
 pnpm-lock.yaml
 yarn.lock
+bun.lock
 convex/_generated/**
+dist/
+.convex/
+*.min.js
+*.min.css
