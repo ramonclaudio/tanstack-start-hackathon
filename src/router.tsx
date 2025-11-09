@@ -2,6 +2,7 @@ import { createRouter } from '@tanstack/react-router'
 import { QueryClient } from '@tanstack/react-query'
 import { routerWithQueryClient } from '@tanstack/react-router-with-query'
 import { ConvexQueryClient } from '@convex-dev/react-query'
+import { ConvexReactClient } from 'convex/react'
 import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react'
 import { AutumnProvider } from 'autumn-js/react'
 import * as Sentry from '@sentry/tanstackstart-react'
@@ -25,7 +26,13 @@ export function getRouter(): AnyRouter {
     })
   }
 
-  const convexQueryClient = new ConvexQueryClient(env.VITE_CONVEX_URL)
+  // Construct Convex client with optional auth expectation
+  // For protected routes, expectAuth prevents flicker by pausing queries until auth loads
+  const convex = new ConvexReactClient(env.VITE_CONVEX_URL, {
+    // Only expect auth if we're on a protected route
+    expectAuth: false, // We'll handle auth state in individual components
+  })
+  const convexQueryClient = new ConvexQueryClient(convex)
 
   if (isClient) {
     logger.api.info('Convex client initialized', { url: env.VITE_CONVEX_URL })
@@ -39,7 +46,7 @@ export function getRouter(): AnyRouter {
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
         gcTime: 5 * 60 * 1000,
-        staleTime: 0,
+        staleTime: 60 * 1000,
         retry: (failureCount, error) => {
           if (error instanceof Error && error.message.includes('4')) {
             logger.api.debug('Query failed with client error, not retrying', {
@@ -77,14 +84,8 @@ export function getRouter(): AnyRouter {
       scrollRestoration: true,
       Wrap: ({ children }) => (
         <ErrorBoundary variant="auth">
-          <ConvexBetterAuthProvider
-            client={convexQueryClient.convexClient}
-            authClient={authClient}
-          >
-            <AutumnProvider
-              convex={convexQueryClient.convexClient}
-              convexApi={api.autumn}
-            >
+          <ConvexBetterAuthProvider client={convex} authClient={authClient}>
+            <AutumnProvider convex={convex} convexApi={api.autumn}>
               {children}
             </AutumnProvider>
           </ConvexBetterAuthProvider>

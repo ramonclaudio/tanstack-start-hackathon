@@ -1,7 +1,6 @@
 import { Autumn } from '@useautumn/convex'
 import { components } from './_generated/api'
-import { autumnLogger } from './lib/logger'
-import { getAuthUserOrNull, getUserId } from './lib/auth'
+import { authComponent } from './auth'
 import type { GenericCtx } from '@convex-dev/better-auth'
 import type { DataModel } from './_generated/dataModel'
 
@@ -14,24 +13,16 @@ if (!process.env['AUTUMN_SECRET_KEY']) {
 export const autumn = new Autumn(components.autumn, {
   secretKey: process.env['AUTUMN_SECRET_KEY'],
   identify: async (ctx: GenericCtx<DataModel>) => {
-    const user = await getAuthUserOrNull(ctx)
+    // Get user from Better Auth through Convex
+    const user = await authComponent.getAuthUser(ctx).catch(() => null)
+
     if (!user) return null
 
-    const customerId = getUserId(user)
-    if (!customerId) {
-      autumnLogger.error(
-        'User has no valid ID for Autumn',
-        new Error('Missing userId and _id'),
-        {
-          userId: user.userId,
-          _id: user._id,
-        },
-      )
-      return null
-    }
+    const userId = user._id || user.userId
+    if (!userId) return null
 
     return {
-      customerId,
+      customerId: userId,
       customerData: {
         name: user.name || '',
         email: user.email || '',
@@ -40,6 +31,7 @@ export const autumn = new Autumn(components.autumn, {
   },
 })
 
+// Export all Autumn API methods
 export const {
   track,
   cancel,

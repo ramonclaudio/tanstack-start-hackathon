@@ -1,6 +1,7 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { authClient, useSession } from '@/lib/auth'
+import { requireGuest } from '@/lib/auth-middleware'
 import { logger } from '@/lib/logger'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,12 +20,21 @@ import {
 } from '@/components/auth/AuthUI'
 
 export const Route = createFileRoute('/auth/sign-up')({
+  ssr: false,
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      redirect: search['redirect'] as string | undefined,
+    }
+  },
+  beforeLoad: async () => requireGuest('/dashboard'),
   component: SignUp,
 })
 
 function SignUp() {
   const { data: session, isPending } = useSession()
   const navigate = useNavigate()
+  const router = useRouter()
+  const search = Route.useSearch()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -33,9 +43,14 @@ function SignUp() {
 
   useEffect(() => {
     if (!isPending && session?.user) {
-      navigate({ to: '/dashboard' })
+      const redirectTo = search?.redirect
+      if (redirectTo) {
+        router.history.push(redirectTo)
+      } else {
+        navigate({ to: '/dashboard' })
+      }
     }
-  }, [isPending, session?.user, navigate])
+  }, [isPending, session?.user, navigate, router, search?.redirect])
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,7 +65,12 @@ function SignUp() {
         },
         {
           onSuccess: () => {
-            navigate({ to: '/dashboard' })
+            const redirectTo = search?.redirect
+            if (redirectTo) {
+              router.history.push(redirectTo)
+            } else {
+              navigate({ to: '/dashboard' })
+            }
           },
         },
       )

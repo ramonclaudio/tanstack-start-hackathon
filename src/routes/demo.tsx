@@ -12,67 +12,67 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { logger } from '@/lib/logger'
 
-export const Route = createFileRoute('/demo/mutations')({
-  component: ExampleMutations,
+export const Route = createFileRoute('/demo')({
+  component: TaskMutations,
 })
 
-function ExampleMutations() {
-  const { data: mutations, isLoading } = useQuery(
-    convexQuery(api.demo_mutations.get, {
+function TaskMutations() {
+  const { data: tasks, isLoading } = useQuery(
+    convexQuery(api.tasks.list, {
       paginationOpts: { numItems: 50, cursor: null },
     }),
   )
 
-  const addMutation = useConvexMutation(api.demo_mutations.add)
-  const removeMutation = useConvexMutation(api.demo_mutations.remove)
+  const createTask = useConvexMutation(api.tasks.create)
+  const removeTask = useConvexMutation(api.tasks.remove)
 
-  const [todo, setTodo] = useState('')
+  const [taskText, setTaskText] = useState('')
 
-  const submitTodo = useCallback(async () => {
-    if (todo.trim()) {
+  const submitTask = useCallback(async () => {
+    if (taskText.trim()) {
       try {
-        await addMutation({ text: todo })
-        setTodo('')
-        toast.success('Item added successfully')
+        await createTask({ text: taskText })
+        setTaskText('')
+        toast.success('Task created successfully')
       } catch (error) {
         const errorMessage =
           error instanceof ConvexError
             ? (error.data as { message?: string })?.message ||
-              'Failed to add item'
+              'Failed to create task'
             : 'An unexpected error occurred'
 
-        logger.error('Failed to add mutation', error, {
-          component: 'demo.mutations',
-          action: 'submitTodo',
+        logger.error('Failed to create task', error, {
+          component: 'tasks.mutations',
+          action: 'submitTask',
         })
 
         toast.error(errorMessage)
       }
     }
-  }, [addMutation, todo])
+  }, [createTask, taskText])
 
   const handleRemove = useCallback(
-    async (id: Id<'demo_mutations'>) => {
+    async (id: Id<'tasks'>) => {
       try {
-        await removeMutation({ id })
-        toast.success('Item removed successfully')
+        await removeTask({ id })
+        toast.success('Task deleted successfully')
       } catch (error) {
         const errorMessage =
           error instanceof ConvexError
             ? (error.data as { message?: string })?.message ||
-              'Failed to remove item'
+              'Failed to delete task'
             : 'An unexpected error occurred'
 
-        logger.error('Failed to remove mutation', error, {
-          component: 'demo.mutations',
+        logger.error('Failed to remove task', error, {
+          component: 'tasks.mutations',
           action: 'handleRemove',
-          itemId: id,
+          taskId: id,
         })
 
         toast.error(errorMessage)
       }
     },
-    [removeMutation],
+    [removeTask],
   )
 
   return (
@@ -81,49 +81,70 @@ function ExampleMutations() {
         {isLoading ? (
           <>
             <div className="text-center space-y-5">
-              <Skeleton className="h-9 w-80 mx-auto" />
+              <Skeleton className="h-10 w-80 mx-auto" />
               <Skeleton className="h-5 w-full max-w-xl mx-auto" />
             </div>
             <div className="space-y-4">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-14 w-full" />
-              ))}
               <div className="flex gap-2">
                 <Skeleton className="flex-1 h-14 rounded-md" />
-                <Skeleton className="h-14 w-24 rounded-md" />
+                <Skeleton className="h-14 w-20 rounded-md" />
               </div>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-14 w-full rounded-lg" />
+              ))}
             </div>
           </>
         ) : (
           <>
             <div className="text-center space-y-2">
               <h1 className="text-4xl font-bold tracking-tight">
-                Convex Mutations Demo
+                Convex Tasks Demo
               </h1>
               <p className="text-muted-foreground">
-                Add and manage todos using Convex mutations with real-time
-                updates
+                Add and manage tasks with real-time updates using Convex
               </p>
             </div>
 
             <div className="space-y-4">
-              {mutations?.page?.length === 0 ? (
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={taskText}
+                  onChange={(e) => setTaskText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      submitTask()
+                    }
+                  }}
+                  placeholder="Enter a new item..."
+                  className="flex-1 h-14"
+                />
+                <Button
+                  disabled={taskText.trim().length === 0}
+                  onClick={submitTask}
+                  className="h-14 px-8"
+                >
+                  Add
+                </Button>
+              </div>
+
+              {tasks?.page?.length === 0 ? (
                 <p className="text-center text-muted-foreground">
-                  No mutations yet. Add one below!
+                  No tasks yet. Add one above!
                 </p>
               ) : (
                 <ul className="space-y-2">
-                  {mutations?.page?.map(
-                    (m: { _id: Id<'demo_mutations'>; text: string }) => (
+                  {tasks?.page?.map(
+                    (task: { _id: Id<'tasks'>; text: string }) => (
                       <li
-                        key={m._id}
+                        key={task._id}
                         className="border rounded-lg p-4 bg-card text-card-foreground h-14 flex items-center justify-between gap-4"
                       >
-                        <span>{m.text}</span>
+                        <span>{task.text}</span>
                         <Button
                           variant="ghost"
                           size="icon-sm"
-                          onClick={() => handleRemove(m._id)}
+                          onClick={() => handleRemove(task._id)}
                           className="shrink-0"
                           aria-label="Delete item"
                         >
@@ -134,28 +155,6 @@ function ExampleMutations() {
                   )}
                 </ul>
               )}
-
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  value={todo}
-                  onChange={(e) => setTodo(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      submitTodo()
-                    }
-                  }}
-                  placeholder="Enter a new item..."
-                  className="flex-1 h-14"
-                />
-                <Button
-                  disabled={todo.trim().length === 0}
-                  onClick={submitTodo}
-                  className="h-14 px-8"
-                >
-                  Add
-                </Button>
-              </div>
             </div>
           </>
         )}

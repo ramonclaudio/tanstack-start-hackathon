@@ -10,10 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as DemoRouteImport } from './routes/demo'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DemoQueriesRouteImport } from './routes/demo.queries'
-import { Route as DemoMutationsRouteImport } from './routes/demo.mutations'
 import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -21,6 +20,11 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoRoute = DemoRouteImport.update({
+  id: '/demo',
+  path: '/demo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -31,16 +35,6 @@ const DashboardRoute = DashboardRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoQueriesRoute = DemoQueriesRouteImport.update({
-  id: '/demo/queries',
-  path: '/demo/queries',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoMutationsRoute = DemoMutationsRouteImport.update({
-  id: '/demo/mutations',
-  path: '/demo/mutations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthSignUpRoute = AuthSignUpRouteImport.update({
@@ -62,32 +56,29 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/demo': typeof DemoRoute
   '/pricing': typeof PricingRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
-  '/demo/mutations': typeof DemoMutationsRoute
-  '/demo/queries': typeof DemoQueriesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/demo': typeof DemoRoute
   '/pricing': typeof PricingRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
-  '/demo/mutations': typeof DemoMutationsRoute
-  '/demo/queries': typeof DemoQueriesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/demo': typeof DemoRoute
   '/pricing': typeof PricingRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
-  '/demo/mutations': typeof DemoMutationsRoute
-  '/demo/queries': typeof DemoQueriesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
@@ -95,42 +86,38 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/demo'
     | '/pricing'
     | '/auth/sign-in'
     | '/auth/sign-up'
-    | '/demo/mutations'
-    | '/demo/queries'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/dashboard'
+    | '/demo'
     | '/pricing'
     | '/auth/sign-in'
     | '/auth/sign-up'
-    | '/demo/mutations'
-    | '/demo/queries'
     | '/api/auth/$'
   id:
     | '__root__'
     | '/'
     | '/dashboard'
+    | '/demo'
     | '/pricing'
     | '/auth/sign-in'
     | '/auth/sign-up'
-    | '/demo/mutations'
-    | '/demo/queries'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
+  DemoRoute: typeof DemoRoute
   PricingRoute: typeof PricingRoute
   AuthSignInRoute: typeof AuthSignInRoute
   AuthSignUpRoute: typeof AuthSignUpRoute
-  DemoMutationsRoute: typeof DemoMutationsRoute
-  DemoQueriesRoute: typeof DemoQueriesRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -141,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo': {
+      id: '/demo'
+      path: '/demo'
+      fullPath: '/demo'
+      preLoaderRoute: typeof DemoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -155,20 +149,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/queries': {
-      id: '/demo/queries'
-      path: '/demo/queries'
-      fullPath: '/demo/queries'
-      preLoaderRoute: typeof DemoQueriesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/mutations': {
-      id: '/demo/mutations'
-      path: '/demo/mutations'
-      fullPath: '/demo/mutations'
-      preLoaderRoute: typeof DemoMutationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/sign-up': {
@@ -198,11 +178,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
+  DemoRoute: DemoRoute,
   PricingRoute: PricingRoute,
   AuthSignInRoute: AuthSignInRoute,
   AuthSignUpRoute: AuthSignUpRoute,
-  DemoMutationsRoute: DemoMutationsRoute,
-  DemoQueriesRoute: DemoQueriesRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

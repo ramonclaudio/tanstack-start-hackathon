@@ -32,7 +32,25 @@ export const Route = createRootRouteWithContext<{
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'Tanvex',
+        title: 'Tanvex - TanStack Start + Convex Production Stack',
+      },
+      {
+        name: 'description',
+        content:
+          'Production-ready full-stack application built with TanStack Start, Convex, and Bun. Features authentication, payments, and real-time data.',
+      },
+      {
+        property: 'og:title',
+        content: 'Tanvex - TanStack Start + Convex Production Stack',
+      },
+      {
+        property: 'og:description',
+        content:
+          'Production-ready full-stack application with authentication and payments.',
+      },
+      {
+        property: 'og:type',
+        content: 'website',
       },
     ],
     links: [
