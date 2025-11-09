@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import CheckoutDialog from '@/components/pricing/CheckoutDialog'
-import { useSession } from '@/lib/auth'
+import { useAuth } from '@/lib/auth-context'
 
 type ProductItemLike = {
   included_usage?: number | 'inf'
@@ -99,7 +99,7 @@ export default function PricingTable({
   onSelectPlan?: (planId: string) => void
   onPlanChanged?: () => Promise<void> | void
 }) {
-  const { data: session } = useSession()
+  const { session } = useAuth()
   const prepareCheckout = useAction(api.autumn.checkout)
 
   const [isAnnual, setIsAnnual] = useState(initialInterval === 'year')
