@@ -1,8 +1,10 @@
 /* eslint-disable no-console */
 
 import * as Sentry from '@sentry/tanstackstart-react'
+import { validateClientEnv } from './env'
 
-const isDev = import.meta.env.DEV
+const clientEnv = validateClientEnv()
+const isDev = clientEnv.DEV
 
 type LogContext = Record<string, unknown>
 
@@ -14,10 +16,12 @@ interface SentryOptions {
 
 interface LoggerConfig {
   perfThresholdMs?: number
+  trackAllPerf?: boolean
 }
 
 const DEFAULT_CONFIG: Required<LoggerConfig> = {
   perfThresholdMs: 1000,
+  trackAllPerf: false,
 }
 
 class SimpleLogger {
@@ -30,16 +34,36 @@ class SimpleLogger {
     this.config = { ...DEFAULT_CONFIG, ...config }
   }
 
-  private enrichContext(context?: LogContext): LogContext & {
+  private enrichContext(context?: LogContext): {
     timestamp: string
     module: string
     environment: 'development' | 'production'
-  } {
+  } & LogContext {
     return {
       timestamp: new Date().toISOString(),
       module: this.module,
       environment: isDev ? 'development' : 'production',
-      ...context,
+      ...(context || {}),
+    }
+  }
+
+  private addBreadcrumb(
+    level: 'info' | 'warning' | 'error' | 'debug',
+    message: string,
+    context?: LogContext,
+  ) {
+    if (isDev) return
+
+    try {
+      Sentry.addBreadcrumb({
+        level,
+        message,
+        category: this.module,
+        data: context,
+        timestamp: Date.now() / 1000,
+      })
+    } catch {
+      // Silent fail - breadcrumbs are non-critical
     }
   }
 
@@ -49,6 +73,7 @@ class SimpleLogger {
     context?: LogContext,
   ) {
     const enrichedContext = this.enrichContext(context)
+    const sentryLevel = level === 'warn' ? 'warning' : level
 
     if (isDev) {
       const method =
@@ -60,9 +85,15 @@ class SimpleLogger {
       )
     }
 
+    this.addBreadcrumb(sentryLevel, message, context)
+
     if (!isDev && level === 'error') {
-      Sentry.captureMessage(message, 'error')
-      Sentry.setContext(this.module, enrichedContext)
+      try {
+        Sentry.captureMessage(message, 'error')
+        Sentry.setContext(this.module, enrichedContext)
+      } catch {
+        // Silent fail - Sentry not initialized or network error
+      }
     }
   }
 
@@ -89,14 +120,18 @@ class SimpleLogger {
     this.log('error', message, errorContext)
 
     if (error instanceof Error && !isDev) {
-      Sentry.captureException(error, {
-        tags: sentryOptions?.tags,
-        contexts: {
-          [this.module]: this.enrichContext(context),
-          ...sentryOptions?.contexts,
-        },
-        level: sentryOptions?.level || 'error',
-      })
+      try {
+        Sentry.captureException(error, {
+          tags: sentryOptions?.tags,
+          contexts: {
+            [this.module]: this.enrichContext(context),
+            ...sentryOptions?.contexts,
+          },
+          level: sentryOptions?.level || 'error',
+        })
+      } catch {
+        // Silent fail - Sentry not initialized or network error
+      }
     }
   }
 
@@ -109,12 +144,16 @@ class SimpleLogger {
   }
 
   perf(operation: string, duration: number, context?: LogContext) {
+    const perfContext = {
+      ...context,
+      duration_ms: duration,
+      threshold_ms: this.config.perfThresholdMs,
+    }
+
     if (duration > this.config.perfThresholdMs) {
-      this.log('warn', `Slow: ${operation} took ${duration}ms`, {
-        ...context,
-        duration_ms: duration,
-        threshold_ms: this.config.perfThresholdMs,
-      })
+      this.log('warn', `Slow: ${operation} took ${duration}ms`, perfContext)
+    } else if (this.config.trackAllPerf) {
+      this.log('info', `${operation} took ${duration}ms`, perfContext)
     }
   }
 
@@ -126,6 +165,7 @@ class SimpleLogger {
         message,
         context || '',
       )
+      this.addBreadcrumb('debug', message, context)
     }
   }
 }
@@ -133,6 +173,8 @@ class SimpleLogger {
 export function createLogger(module: string, config?: LoggerConfig) {
   return new SimpleLogger(module, config)
 }
+
+const errorLogger = createLogger('Error')
 
 export const logger = {
   app: createLogger('App'),
@@ -145,7 +187,7 @@ export const logger = {
     context?: LogContext,
     sentryOptions?: SentryOptions,
   ) => {
-    createLogger('Error').error(message, error, context, sentryOptions)
+    errorLogger.error(message, error, context, sentryOptions)
   },
 }
 
