@@ -2,17 +2,29 @@ import { createAuthClient } from 'better-auth/react'
 import { convexClient } from '@convex-dev/better-auth/client/plugins'
 import { logger } from './logger'
 
+// Better Auth endpoint segments (relative to baseURL)
 const AUTH_PATHS = {
-  SIGNIN: '/signin',
-  SIGNUP: '/signup',
-  SIGNOUT: '/signout',
+  SIGNIN: '/sign-in',
+  SIGNUP: '/sign-up',
+  SIGNOUT: '/sign-out',
 } as const
 
 const isAuthPath = (pathname: string): boolean =>
   Object.values(AUTH_PATHS).some((path) => pathname.includes(path))
 
+// Get the base URL for auth - in dev it's localhost:3000, in prod it's the actual domain
+const getAuthBaseURL = () => {
+  if (typeof window !== 'undefined') {
+    // Client-side: use current origin
+    return `${window.location.origin}/api/auth`
+  }
+  // Server-side SSR: use localhost for development
+  return 'https://localhost:3000/api/auth'
+}
+
 export const authClient = createAuthClient({
-  baseURL: typeof window !== 'undefined' ? window.location.origin : '',
+  // Proxy Better Auth through our TanStack Start route handler
+  baseURL: getAuthBaseURL(),
   plugins: [convexClient()],
   onRequest: (request: Request) => {
     const url = new URL(request.url)
