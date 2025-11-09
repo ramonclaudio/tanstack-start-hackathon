@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
@@ -7,6 +7,7 @@ import { ArrowRight, CreditCard, Package, Zap } from 'lucide-react'
 import { useCustomer } from 'autumn-js/react'
 import { api } from '../../convex/_generated/api'
 import { logger } from '@/lib/logger'
+import { requireAuth } from '@/lib/auth-middleware'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -15,180 +16,76 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-//
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
+import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
 import { FailedPaymentBanner } from '@/components/dashboard/FailedPaymentBanner'
-import { useSession } from '@/lib/auth'
 
 export const Route = createFileRoute('/dashboard')({
+  ssr: false,
+  beforeLoad: async ({ location }) => requireAuth(location),
   component: Dashboard,
 })
 
 function Dashboard() {
-  const navigate = useNavigate()
-  const { data: session, isPending: sessionPending } = useSession()
-
-  const { data: userData, isLoading: isUserDataLoading } = useQuery(
+  const router = useRouter()
+  const { data: userData, isLoading: userLoading } = useQuery(
     convexQuery(api.user.getUser, {}),
   )
 
+  const {
+    customer,
+    isLoading: customerLoading,
+    refetch: refetchCustomer,
+  } = useCustomer()
   const billingPortalAction = useAction(api.autumn.billingPortal)
 
-  const isLoading = [sessionPending, isUserDataLoading].some(Boolean)
+  // State to track if we're still fetching customer data
+  const [isInitializing, setIsInitializing] = useState(true)
+  const hasAttemptedRefetch = useRef(false)
 
+  // Redirect to sign-in if user signs out while on this page
   useEffect(() => {
-    if (sessionPending) return
-    if (!session?.user) {
-      logger.auth.info(
-        'Unauthenticated access to dashboard, redirecting to sign-in',
-      )
-      navigate({ to: '/auth/sign-in' })
-    } else {
-      logger.auth.debug('Dashboard accessed', { userId: session.user.id })
+    if (!userLoading && !userData?.user) {
+      router.navigate({ to: '/auth/sign-in' })
     }
-  }, [session?.user, sessionPending, navigate])
+  }, [userData?.user, userLoading, router])
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-1 flex-col px-6 py-8 max-w-6xl mx-auto w-full">
-        <div className="mb-8">
-          <Skeleton className="h-10 w-48 mb-3" />
-          <Skeleton className="h-6 w-64" />
-        </div>
+  // Handle Autumn customer data initialization
+  useEffect(() => {
+    // Only run when we have user data
+    if (userData?.user && !userLoading) {
+      // If no customer data and haven't tried refetching yet
+      if (!customer && !customerLoading && !hasAttemptedRefetch.current) {
+        hasAttemptedRefetch.current = true
+        // Autumn customer not found, attempting refetch
+        refetchCustomer().finally(() => {
+          // Give it a moment to settle
+          setTimeout(() => setIsInitializing(false), 500)
+        })
+      } else if (customer || customerLoading) {
+        // We have customer data or it's loading
+        setIsInitializing(false)
+      } else {
+        // No customer data after refetch
+        setIsInitializing(false)
+      }
+    }
+  }, [userData?.user, userLoading, customer, customerLoading, refetchCustomer])
 
-        <div className="mb-6" />
-
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="col-span-full lg:col-span-2">
-            <CardHeader>
-              <Skeleton className="h-5 w-40" />
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-start gap-4">
-                <Skeleton className="h-16 w-16 rounded-full" />
-                <div className="flex-1 space-y-3">
-                  <div className="space-y-1">
-                    <Skeleton className="h-7 w-48" />
-                    <Skeleton className="h-5 w-64" />
-                  </div>
-                  <div className="flex gap-2">
-                    <Skeleton className="h-[22px] w-28 rounded-full" />
-                    <Skeleton className="h-[22px] w-24 rounded-full" />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-5 w-32" />
-              <Skeleton className="h-3.5 w-40" />
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-9 w-full rounded-md" />
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="col-span-full">
-            <CardHeader>
-              <Skeleton className="h-5 w-48" />
-              <Skeleton className="h-3.5 w-64" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between border-b pb-4">
-                  <div>
-                    <Skeleton className="h-5 w-28 mb-2" />
-                    <Skeleton className="h-4 w-40" />
-                  </div>
-                  <Skeleton className="h-6 w-16 rounded-full" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="col-span-full">
-            <CardHeader>
-              <Skeleton className="h-5 w-40" />
-              <Skeleton className="h-3.5 w-56" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="h-4 w-4 rounded" />
-                    <Skeleton className="h-5 w-20" />
-                  </div>
-                  <Skeleton className="h-4 w-16" />
-                </div>
-                <Skeleton className="h-2 w-full rounded-full" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    )
+  // Show skeleton while loading user or initializing customer
+  if (userLoading || !userData?.user || isInitializing || customerLoading) {
+    return <DashboardSkeleton />
   }
 
-  const user = userData?.user
-  if (!user) return null
+  const user = userData.user
 
-  return (
-    <DashboardContent
-      userData={{
-        authenticated: true,
-        user,
-      }}
-      billingPortalAction={billingPortalAction}
-    />
-  )
-}
-
-function DashboardContent({
-  userData,
-  billingPortalAction,
-}: {
-  userData: {
-    authenticated: true
-    user: {
-      id: string
-      name: string
-      email: string
-      image: string | null
-      createdAt: number
-      emailVerified: boolean
-      twoFactorEnabled: boolean
-    }
-  }
-  billingPortalAction: (args: { returnUrl?: string }) => Promise<unknown>
-}) {
-  const { customer, isLoading: isCustomerLoading, refetch } = useCustomer()
-
-  const hasFetchedRef = useRef(false)
-  const [isFetching, setIsFetching] = useState(false)
-
-  useEffect(() => {
-    if (!customer && !isCustomerLoading && !hasFetchedRef.current) {
-      hasFetchedRef.current = true
-      setIsFetching(true)
-      refetch().finally(() => {
-        setTimeout(() => setIsFetching(false), 100)
-      })
-    }
-  }, [customer, isCustomerLoading, refetch])
-
-  const openBillingPortal = async ({
-    returnUrl,
-  }: { returnUrl?: string } = {}) => {
+  const openBillingPortal = async () => {
     try {
       const response = await billingPortalAction({
-        returnUrl: returnUrl || window.location.href,
+        returnUrl: window.location.href,
       })
+
       if (
         response &&
         typeof response === 'object' &&
@@ -201,106 +98,11 @@ function DashboardContent({
         window.location.href = response.data.url
       }
     } catch (err) {
-      logger.error(
-        'Failed to open billing portal',
-        err,
-        {
-          route: 'dashboard',
-          action: 'openBillingPortal',
-        },
-        {
-          tags: {
-            route: 'dashboard',
-            action: 'openBillingPortal',
-          },
-        },
-      )
+      logger.error('Failed to open billing portal', err, {
+        route: 'dashboard',
+        action: 'openBillingPortal',
+      })
     }
-  }
-
-  if (isCustomerLoading || isFetching) {
-    return (
-      <div className="flex flex-1 flex-col px-6 py-8 max-w-6xl mx-auto w-full">
-        <div className="mb-8">
-          <Skeleton className="h-10 w-48 mb-3" />
-          <Skeleton className="h-6 w-64" />
-        </div>
-
-        <div className="mb-6" />
-
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="col-span-full lg:col-span-2">
-            <CardHeader>
-              <Skeleton className="h-5 w-40" />
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-start gap-4">
-                <Skeleton className="h-16 w-16 rounded-full" />
-                <div className="flex-1 space-y-3">
-                  <div className="space-y-1">
-                    <Skeleton className="h-7 w-48" />
-                    <Skeleton className="h-5 w-64" />
-                  </div>
-                  <div className="flex gap-2">
-                    <Skeleton className="h-[22px] w-28 rounded-full" />
-                    <Skeleton className="h-[22px] w-24 rounded-full" />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-5 w-32" />
-              <Skeleton className="h-3.5 w-40" />
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-9 w-full rounded-md" />
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="col-span-full">
-            <CardHeader>
-              <Skeleton className="h-5 w-48" />
-              <Skeleton className="h-3.5 w-64" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between border-b pb-4">
-                  <div>
-                    <Skeleton className="h-5 w-28 mb-2" />
-                    <Skeleton className="h-4 w-40" />
-                  </div>
-                  <Skeleton className="h-6 w-16 rounded-full" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="col-span-full">
-            <CardHeader>
-              <Skeleton className="h-5 w-40" />
-              <Skeleton className="h-3.5 w-56" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Skeleton className="h-4 w-4 rounded" />
-                    <Skeleton className="h-5 w-20" />
-                  </div>
-                  <Skeleton className="h-4 w-16" />
-                </div>
-                <Skeleton className="h-2 w-full rounded-full" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -308,7 +110,7 @@ function DashboardContent({
       <div className="mb-8">
         <h1 className="text-4xl font-bold tracking-tight mb-3">Dashboard</h1>
         <p className="text-muted-foreground">
-          Welcome back, {userData.user?.name || 'User'}!
+          Welcome back, {user.name || 'User'}!
         </p>
       </div>
 
@@ -322,6 +124,7 @@ function DashboardContent({
       )}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Profile Card */}
         <Card className="col-span-full lg:col-span-2">
           <CardHeader>
             <CardTitle>Profile Information</CardTitle>
@@ -329,15 +132,12 @@ function DashboardContent({
           <CardContent>
             <div className="flex items-start gap-4">
               <Avatar className="h-16 w-16">
-                <AvatarImage
-                  src={userData.user?.image || undefined}
-                  alt={userData.user?.name ?? ''}
-                />
+                <AvatarImage src={user.image || undefined} alt={user.name} />
                 <AvatarFallback>
-                  {userData.user?.name
-                    ? userData.user.name
+                  {user.name
+                    ? user.name
                         .split(' ')
-                        .map((n: string) => n[0])
+                        .map((n) => n[0])
                         .join('')
                         .toUpperCase()
                     : 'U'}
@@ -345,20 +145,16 @@ function DashboardContent({
               </Avatar>
               <div className="flex-1 space-y-3">
                 <div>
-                  <div className="font-medium text-lg">
-                    {userData.user?.name}
-                  </div>
+                  <div className="font-medium text-lg">{user.name}</div>
                   <div className="text-sm text-muted-foreground">
-                    {userData.user?.email}
+                    {user.email}
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <Badge variant="secondary">
-                    {userData.user?.emailVerified
-                      ? 'Email Verified'
-                      : 'Email Unverified'}
+                    {user.emailVerified ? 'Email Verified' : 'Email Unverified'}
                   </Badge>
-                  {userData.user?.twoFactorEnabled && (
+                  {user.twoFactorEnabled && (
                     <Badge variant="outline">2FA Enabled</Badge>
                   )}
                 </div>
@@ -367,6 +163,7 @@ function DashboardContent({
           </CardContent>
         </Card>
 
+        {/* Quick Actions Card */}
         <Card>
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
@@ -376,7 +173,7 @@ function DashboardContent({
             <Button
               variant="outline"
               className="w-full justify-start"
-              onClick={() => openBillingPortal()}
+              onClick={openBillingPortal}
             >
               <CreditCard className="mr-2 h-4 w-4" />
               Billing Portal
@@ -390,19 +187,14 @@ function DashboardContent({
           </CardContent>
         </Card>
 
+        {/* Subscription Status Card */}
         <Card className="col-span-full">
           <CardHeader>
             <CardTitle>Subscription Status</CardTitle>
             <CardDescription>Your current plans and features</CardDescription>
           </CardHeader>
           <CardContent>
-            {isCustomerLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 2 }).map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
-                ))}
-              </div>
-            ) : customer && customer.products.length > 0 ? (
+            {customer && customer.products && customer.products.length > 0 ? (
               <div className="space-y-4">
                 {customer.products.map((product) => (
                   <div
@@ -443,20 +235,14 @@ function DashboardContent({
           </CardContent>
         </Card>
 
+        {/* Feature Usage Card */}
         <Card className="col-span-full">
           <CardHeader>
             <CardTitle>Feature Usage</CardTitle>
             <CardDescription>Track your feature consumption</CardDescription>
           </CardHeader>
           <CardContent>
-            {isCustomerLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
-                ))}
-              </div>
-            ) : customer?.features &&
-              Object.keys(customer.features).length > 0 ? (
+            {customer?.features && Object.keys(customer.features).length > 0 ? (
               <div className="space-y-4">
                 {Object.entries(customer.features).map(
                   ([featureId, feature]) => (
