@@ -15,6 +15,8 @@ const clientEnvSchema = z.object({
   DEV: z.boolean(),
 })
 
+export type ClientEnv = z.infer<typeof clientEnvSchema>
+
 const serverEnvSchema = z
   .object({
     SITE_URL: z.string().url('SITE_URL must be a valid URL'),
@@ -42,7 +44,9 @@ const serverEnvSchema = z
     },
   )
 
-export function validateClientEnv() {
+export type ServerEnv = z.infer<typeof serverEnvSchema>
+
+export function validateClientEnv(): ClientEnv {
   try {
     const env = clientEnvSchema.parse(import.meta.env)
     return env
@@ -59,7 +63,7 @@ export function validateClientEnv() {
   }
 }
 
-export function validateServerEnv() {
+export function validateServerEnv(): ServerEnv {
   try {
     const env = serverEnvSchema.parse(process.env)
     return env
@@ -75,9 +79,5 @@ export function validateServerEnv() {
     throw error
   }
 }
-
-export type ClientEnv = z.infer<typeof clientEnvSchema>
-
-export type ServerEnv = z.infer<typeof serverEnvSchema>
 
 export { clientEnvSchema, serverEnvSchema }

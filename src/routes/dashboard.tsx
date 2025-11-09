@@ -1,5 +1,5 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { useAction } from 'convex/react'
@@ -7,7 +7,7 @@ import { ArrowRight, CreditCard, Package, Zap } from 'lucide-react'
 import { useCustomer } from 'autumn-js/react'
 import { api } from '../../convex/_generated/api'
 import { logger } from '@/lib/logger'
-import { requireAuth } from '@/lib/auth-middleware'
+import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -18,20 +18,18 @@ import {
 } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
 import { FailedPaymentBanner } from '@/components/dashboard/FailedPaymentBanner'
 
 export const Route = createFileRoute('/dashboard')({
-  ssr: false,
-  beforeLoad: async ({ location }) => requireAuth(location),
   component: Dashboard,
 })
 
 function Dashboard() {
   const router = useRouter()
-  const { data: userData, isLoading: userLoading } = useQuery(
-    convexQuery(api.user.getUser, {}),
-  )
+  const { session, isLoading: authLoading } = useAuth()
+  const { data: userData } = useQuery(convexQuery(api.user.getUser, {}))
 
   const {
     customer,
@@ -39,46 +37,30 @@ function Dashboard() {
     refetch: refetchCustomer,
   } = useCustomer()
   const billingPortalAction = useAction(api.autumn.billingPortal)
+  const hasFetchedRef = useRef(false)
 
-  // State to track if we're still fetching customer data
-  const [isInitializing, setIsInitializing] = useState(true)
-  const hasAttemptedRefetch = useRef(false)
-
-  // Redirect to sign-in if user signs out while on this page
+  // Redirect to sign-in if not authenticated (client-side only)
   useEffect(() => {
-    if (!userLoading && !userData?.user) {
+    if (!authLoading && !session?.user) {
       router.navigate({ to: '/auth/sign-in' })
     }
-  }, [userData?.user, userLoading, router])
+  }, [session?.user, authLoading, router])
 
-  // Handle Autumn customer data initialization
+  // Refetch customer data once on mount
   useEffect(() => {
-    // Only run when we have user data
-    if (userData?.user && !userLoading) {
-      // If no customer data and haven't tried refetching yet
-      if (!customer && !customerLoading && !hasAttemptedRefetch.current) {
-        hasAttemptedRefetch.current = true
-        // Autumn customer not found, attempting refetch
-        refetchCustomer().finally(() => {
-          // Give it a moment to settle
-          setTimeout(() => setIsInitializing(false), 500)
-        })
-      } else if (customer || customerLoading) {
-        // We have customer data or it's loading
-        setIsInitializing(false)
-      } else {
-        // No customer data after refetch
-        setIsInitializing(false)
-      }
+    if (session?.user && !hasFetchedRef.current) {
+      hasFetchedRef.current = true
+      refetchCustomer()
     }
-  }, [userData?.user, userLoading, customer, customerLoading, refetchCustomer])
+  }, [session?.user, refetchCustomer])
 
-  // Show skeleton while loading user or initializing customer
-  if (userLoading || !userData?.user || isInitializing || customerLoading) {
+  // Show full skeleton during SSR or while auth is loading
+  if (typeof window === 'undefined' || authLoading || !session?.user) {
     return <DashboardSkeleton />
   }
 
-  const user = userData.user
+  // Use Convex user data if available (has 2FA), fall back to auth session
+  const user = userData?.user || session.user
 
   const openBillingPortal = async () => {
     try {
@@ -154,7 +136,7 @@ function Dashboard() {
                   <Badge variant="secondary">
                     {user.emailVerified ? 'Email Verified' : 'Email Unverified'}
                   </Badge>
-                  {user.twoFactorEnabled && (
+                  {'twoFactorEnabled' in user && user.twoFactorEnabled && (
                     <Badge variant="outline">2FA Enabled</Badge>
                   )}
                 </div>
@@ -194,7 +176,22 @@ function Dashboard() {
             <CardDescription>Your current plans and features</CardDescription>
           </CardHeader>
           <CardContent>
-            {customer && customer.products && customer.products.length > 0 ? (
+            {customerLoading || !customer ? (
+              <div className="space-y-4">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
+                  >
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-4 w-24" />
+                    </div>
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                  </div>
+                ))}
+              </div>
+            ) : customer.products && customer.products.length > 0 ? (
               <div className="space-y-4">
                 {customer.products.map((product) => (
                   <div
@@ -242,7 +239,23 @@ function Dashboard() {
             <CardDescription>Track your feature consumption</CardDescription>
           </CardHeader>
           <CardContent>
-            {customer?.features && Object.keys(customer.features).length > 0 ? (
+            {customerLoading || !customer ? (
+              <div className="space-y-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-4 rounded" />
+                        <Skeleton className="h-5 w-32" />
+                      </div>
+                      <Skeleton className="h-5 w-24" />
+                    </div>
+                    <Skeleton className="h-2 w-full rounded-full" />
+                  </div>
+                ))}
+              </div>
+            ) : customer.features &&
+              Object.keys(customer.features).length > 0 ? (
               <div className="space-y-4">
                 {Object.entries(customer.features).map(
                   ([featureId, feature]) => (

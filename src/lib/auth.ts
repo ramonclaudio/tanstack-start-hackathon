@@ -1,62 +1,136 @@
 import { createAuthClient } from 'better-auth/react'
 import { convexClient } from '@convex-dev/better-auth/client/plugins'
 import { logger } from './logger'
+import { validateClientEnv } from './env'
 
-// Better Auth endpoint segments (relative to baseURL)
+const clientEnv = validateClientEnv()
+
 const AUTH_PATHS = {
   SIGNIN: '/sign-in',
   SIGNUP: '/sign-up',
   SIGNOUT: '/sign-out',
 } as const
 
-const isAuthPath = (pathname: string): boolean =>
-  Object.values(AUTH_PATHS).some((path) => pathname.includes(path))
+type AuthPathKey = keyof typeof AUTH_PATHS
 
-// Get the base URL for auth - in dev it's localhost:3000, in prod it's the actual domain
-const getAuthBaseURL = () => {
-  if (typeof window !== 'undefined') {
-    // Client-side: use current origin
-    return `${window.location.origin}/api/auth`
+const isAuthPath = (pathname: string): AuthPathKey | null => {
+  for (const [key, path] of Object.entries(AUTH_PATHS)) {
+    if (pathname.includes(path)) {
+      return key as AuthPathKey
+    }
   }
-  // Server-side SSR: use localhost for development
-  return 'https://localhost:3000/api/auth'
+  return null
+}
+
+const getAuthBaseURL = (): string => {
+  // Client-side: use current origin
+  if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+    try {
+      const origin = window.location.origin
+      // Validate origin is a proper URL
+      new URL(origin)
+      return `${origin}/api/auth`
+    } catch (error) {
+      logger.security.error('Invalid window.location.origin', error)
+      throw new Error('Failed to determine auth base URL: invalid origin')
+    }
+  }
+
+  // Server-side: use VITE_PUBLIC_CONVEX_SITE_URL or fallback to dev default
+  const siteUrl = clientEnv.VITE_PUBLIC_CONVEX_SITE_URL
+  if (siteUrl) {
+    return `${siteUrl}/api/auth`
+  }
+
+  // Development fallback
+  if (clientEnv.DEV) {
+    return 'http://localhost:3000/api/auth'
+  }
+
+  throw new Error(
+    'Failed to determine auth base URL: VITE_PUBLIC_CONVEX_SITE_URL not set',
+  )
+}
+
+const logAuthResponse = async (
+  response: Response,
+  pathKey: AuthPathKey,
+): Promise<void> => {
+  try {
+    if (response.ok) {
+      const actions = {
+        SIGNIN: 'signed in',
+        SIGNUP: 'signed up',
+        SIGNOUT: 'signed out',
+      }
+      logger.auth.info(`User ${actions[pathKey]} successfully`)
+    } else {
+      // Clone response to read body without consuming it
+      const clone = response.clone()
+      let errorBody: unknown
+      try {
+        errorBody = await clone.json()
+      } catch {
+        errorBody = await clone.text()
+      }
+
+      const actions = {
+        SIGNIN: 'Sign in',
+        SIGNUP: 'Sign up',
+        SIGNOUT: 'Sign out',
+      }
+      logger.auth.warn(`${actions[pathKey]} failed`, {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorBody,
+      })
+    }
+  } catch (error) {
+    // Logging failed, don't break auth flow
+    logger.security.error('Failed to log auth response', error)
+  }
 }
 
 export const authClient = createAuthClient({
-  // Proxy Better Auth through our TanStack Start route handler
   baseURL: getAuthBaseURL(),
   plugins: [convexClient()],
   onRequest: (request: Request) => {
-    const url = new URL(request.url)
-    if (isAuthPath(url.pathname)) {
-      logger.auth.debug('Auth request initiated', {
-        method: request.method,
-        path: url.pathname,
-      })
+    try {
+      const url = new URL(request.url)
+      const pathKey = isAuthPath(url.pathname)
+      if (pathKey) {
+        logger.auth.debug('Auth request initiated', {
+          method: request.method,
+          path: url.pathname,
+          action: pathKey,
+        })
+      }
+    } catch (error) {
+      // Don't break auth flow if logging fails
+      logger.security.error('Failed to log auth request', error)
     }
   },
   onResponse: (response: Response) => {
-    const url = new URL(response.url)
-    if (url.pathname.includes(AUTH_PATHS.SIGNIN)) {
-      if (response.ok) {
-        logger.auth.info('User signed in successfully')
-      } else {
-        logger.auth.warn('Sign in failed', { status: response.status })
+    try {
+      const url = new URL(response.url)
+      const pathKey = isAuthPath(url.pathname)
+      if (pathKey) {
+        // Fire-and-forget async logging (don't await)
+        void logAuthResponse(response, pathKey)
       }
-    } else if (url.pathname.includes(AUTH_PATHS.SIGNUP)) {
-      if (response.ok) {
-        logger.auth.info('User signed up successfully')
-      } else {
-        logger.auth.warn('Sign up failed', { status: response.status })
-      }
-    } else if (url.pathname.includes(AUTH_PATHS.SIGNOUT)) {
-      if (response.ok) {
-        logger.auth.info('User signed out successfully')
-      }
+    } catch (error) {
+      // Don't break auth flow if logging fails
+      logger.security.error('Failed to process auth response', error)
     }
   },
   onError: (error: Error) => {
-    logger.auth.error('Auth error', error)
+    try {
+      logger.auth.error('Auth error', error)
+    } catch (logError) {
+      // Last resort: don't break auth flow even if error logging fails
+      // eslint-disable-next-line no-console
+      console.error('Critical: Failed to log auth error', logError, error)
+    }
   },
 })
 

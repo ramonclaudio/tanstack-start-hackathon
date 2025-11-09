@@ -26,7 +26,8 @@ export const Route = createFileRoute('/auth/sign-in')({
       redirect: search['redirect'] as string | undefined,
     }
   },
-  beforeLoad: async () => requireGuest('/dashboard'),
+  beforeLoad: async ({ location }) =>
+    requireGuest({ defaultRedirect: '/dashboard', location }),
   component: SignIn,
 })
 

@@ -12,11 +12,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { signOut, useSession } from '@/lib/auth'
+import { signOut } from '@/lib/auth'
+import { useAuth } from '@/lib/auth-context'
 
 export default function HeaderAuth() {
-  const { data: session, isPending } = useSession()
-  const loading = isPending
+  const { session, isLoading } = useAuth()
+  const loading = isLoading
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
