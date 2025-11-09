@@ -10,6 +10,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary'
 import Footer from '../components/layout/Footer'
 import Header from '../components/layout/Header'
 import { ThemeProvider } from '../components/theme/ThemeProvider'
+import { AuthProvider } from '../lib/auth-context'
 import { Button } from '../components/ui/button'
 import { Toaster } from '../components/ui/sonner'
 
@@ -73,25 +74,27 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="flex flex-col h-screen">
         <ThemeProvider>
-          <ErrorBoundary>
-            <Header />
-            <main className="flex-1 flex flex-col overflow-y-auto py-6">
-              {children}
-            </main>
-            <Footer />
-            <Toaster />
-            {import.meta.env.PROD ? null : (
-              <TanStackDevtools
-                config={{ position: 'bottom-left' }}
-                plugins={[
-                  {
-                    name: 'Tanstack Router',
-                    render: <TanStackRouterDevtoolsPanel />,
-                  },
-                ]}
-              />
-            )}
-          </ErrorBoundary>
+          <AuthProvider>
+            <ErrorBoundary>
+              <Header />
+              <main className="flex-1 flex flex-col overflow-y-auto py-6">
+                {children}
+              </main>
+              <Footer />
+              <Toaster />
+              {import.meta.env.PROD ? null : (
+                <TanStackDevtools
+                  config={{ position: 'bottom-left' }}
+                  plugins={[
+                    {
+                      name: 'Tanstack Router',
+                      render: <TanStackRouterDevtoolsPanel />,
+                    },
+                  ]}
+                />
+              )}
+            </ErrorBoundary>
+          </AuthProvider>
         </ThemeProvider>
         <Scripts />
       </body>
