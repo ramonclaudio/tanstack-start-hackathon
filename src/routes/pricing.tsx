@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useEffect, useRef } from 'react'
 import { z } from 'zod'
 import { Check } from 'lucide-react'
-import { usePricingTable } from 'autumn-js/react'
+import { useCustomer, usePricingTable } from 'autumn-js/react'
 import PricingTable from '@/components/pricing/PricingTable'
-import { useSession } from '@/lib/auth'
+import { useAuth } from '@/lib/auth-context'
 import {
   Accordion,
   AccordionContent,
@@ -21,12 +22,21 @@ export const Route = createFileRoute('/pricing')({
 })
 
 function PricingPage() {
-  const { data: session, isPending } = useSession()
+  const { session, isLoading: authLoading } = useAuth()
   const navigate = useNavigate()
   const search = Route.useSearch()
   const { isLoading: pricingLoading } = usePricingTable({})
+  const { customer, refetch: refetchCustomer } = useCustomer()
+  const hasFetchedRef = useRef(false)
 
-  const isLoading = [isPending, pricingLoading].some(Boolean)
+  useEffect(() => {
+    if (session?.user && !hasFetchedRef.current) {
+      hasFetchedRef.current = true
+      refetchCustomer()
+    }
+  }, [session?.user, refetchCustomer])
+
+  const isLoading = [authLoading, pricingLoading].some(Boolean)
 
   if (isLoading) {
     return (
@@ -101,6 +111,7 @@ function PricingPage() {
 
         <div className="mb-12">
           <PricingTable
+            customer={customer}
             initialInterval={search.interval}
             selectedPlan={search.plan}
             onIntervalChange={(interval) =>
