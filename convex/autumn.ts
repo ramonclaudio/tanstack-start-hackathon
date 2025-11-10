@@ -1,3 +1,4 @@
+import { ConvexError } from 'convex/values'
 import { Autumn } from '@useautumn/convex'
 import { components } from './_generated/api'
 import { authComponent } from './auth'
@@ -29,12 +30,13 @@ export const autumn = new Autumn(components.autumn, {
         },
       }
     } catch (error) {
-      // Handle unauthenticated state (expected failure)
+      // Better Auth throws Error with message 'Unauthenticated'
+      // This is expected when user is not logged in, return null
       if (error instanceof Error && error.message === 'Unauthenticated') {
         return null
       }
 
-      // Log and report unexpected errors
+      // Unexpected error - log and report
       autumnLogger.error('Autumn identify error', error)
 
       if (error instanceof Error) {
@@ -45,7 +47,12 @@ export const autumn = new Autumn(components.autumn, {
         })
       }
 
-      return null
+      // Re-throw as ConvexError so client gets structured error
+      throw new ConvexError({
+        code: 'AUTUMN_IDENTIFY_FAILED',
+        message: 'Failed to identify customer for billing',
+        error: error instanceof Error ? error.message : String(error),
+      })
     }
   },
 })

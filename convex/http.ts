@@ -1,6 +1,7 @@
 import { httpRouter } from 'convex/server'
 import { httpAction } from './_generated/server'
 import { authComponent, createAuth } from './auth'
+import { captureHttpError } from './lib/sentry'
 
 const http = httpRouter()
 
@@ -12,7 +13,8 @@ const ALLOWED_ORIGINS = [
 ].filter(Boolean) as Array<string>
 
 /**
- * CORS validation error with structured response
+ * CORS validation error
+ * Thrown when origin is not in allowlist
  */
 class CorsError extends Error {
   constructor(
@@ -66,96 +68,102 @@ authComponent.registerRoutes(http, createAuth)
 http.route({
   path: '/health',
   method: 'GET',
-  handler: httpAction(
-    // eslint-disable-next-line @typescript-eslint/require-await
-    async (_ctx, request) => {
-      const origin = request.headers.get('origin')
+  handler: httpAction(async (_ctx, request) => {
+    const origin = request.headers.get('origin')
 
-      try {
-        return new Response(
-          JSON.stringify({
-            status: 'healthy',
-            timestamp: Date.now(),
-            service: 'tanvex-api',
-          }),
-          {
-            status: 200,
-            headers: {
-              'Content-Type': 'application/json',
-              ...(origin ? corsHeaders(origin) : {}),
-            },
+    try {
+      return new Response(
+        JSON.stringify({
+          status: 'healthy',
+          timestamp: Date.now(),
+          service: 'tanvex-api',
+        }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            ...(origin ? corsHeaders(origin) : {}),
           },
+        },
+      )
+    } catch (error) {
+      if (error instanceof CorsError) {
+        // Report CORS errors to Sentry
+        await captureHttpError('CORS_ERROR', error.message, {
+          tags: { endpoint: '/health' },
+          extra: { origin: error.origin, allowed: ALLOWED_ORIGINS },
+          level: 'warning',
+        })
+
+        return errorResponse(
+          {
+            code: 'CORS_ERROR',
+            message: error.message,
+            details: { origin: error.origin, allowed: ALLOWED_ORIGINS },
+          },
+          403,
+          origin,
         )
-      } catch (error) {
-        if (error instanceof CorsError) {
-          return errorResponse(
-            {
-              code: 'CORS_ERROR',
-              message: error.message,
-              details: { origin: error.origin, allowed: ALLOWED_ORIGINS },
-            },
-            403,
-            origin,
-          )
-        }
-        throw error
       }
-    },
-  ),
+      throw error
+    }
+  }),
 })
 
 http.route({
   path: '/*',
   method: 'OPTIONS',
-  handler: httpAction(
-    // eslint-disable-next-line @typescript-eslint/require-await
-    async (_ctx, request) => {
-      const headers = request.headers
-      const origin = headers.get('origin')
+  handler: httpAction(async (_ctx, request) => {
+    const headers = request.headers
+    const origin = headers.get('origin')
 
-      try {
-        if (
-          origin &&
-          headers.get('Access-Control-Request-Method') &&
-          headers.get('Access-Control-Request-Headers')
-        ) {
-          return new Response(null, {
-            status: 204,
-            headers: corsHeaders(origin),
-          })
-        }
+    try {
+      if (
+        origin &&
+        headers.get('Access-Control-Request-Method') &&
+        headers.get('Access-Control-Request-Headers')
+      ) {
+        return new Response(null, {
+          status: 204,
+          headers: corsHeaders(origin),
+        })
+      }
+
+      return errorResponse(
+        {
+          code: 'INVALID_PREFLIGHT',
+          message: 'Invalid CORS pre-flight request',
+          details: {
+            hasOrigin: Boolean(origin),
+            hasMethod: Boolean(headers.get('Access-Control-Request-Method')),
+            hasHeaders: Boolean(headers.get('Access-Control-Request-Headers')),
+          },
+        },
+        400,
+        origin,
+      )
+    } catch (error) {
+      if (error instanceof CorsError) {
+        // Report CORS errors to Sentry
+        await captureHttpError('CORS_ERROR', error.message, {
+          tags: { endpoint: 'OPTIONS /*' },
+          extra: { origin: error.origin, allowed: ALLOWED_ORIGINS },
+          level: 'warning',
+        })
 
         return errorResponse(
           {
-            code: 'INVALID_PREFLIGHT',
-            message: 'Invalid CORS pre-flight request',
-            details: {
-              hasOrigin: Boolean(origin),
-              hasMethod: Boolean(headers.get('Access-Control-Request-Method')),
-              hasHeaders: Boolean(
-                headers.get('Access-Control-Request-Headers'),
-              ),
-            },
+            code: 'CORS_ERROR',
+            message: error.message,
+            details: { origin: error.origin, allowed: ALLOWED_ORIGINS },
           },
-          400,
+          403,
           origin,
         )
-      } catch (error) {
-        if (error instanceof CorsError) {
-          return errorResponse(
-            {
-              code: 'CORS_ERROR',
-              message: error.message,
-              details: { origin: error.origin, allowed: ALLOWED_ORIGINS },
-            },
-            403,
-            origin,
-          )
-        }
-        throw error
       }
-    },
-  ),
+      throw error
+    }
+  }),
 })
 
 export default http

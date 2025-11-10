@@ -82,6 +82,8 @@ export function getRouter(): AnyRouter {
       defaultPreload: 'intent',
       context: { queryClient },
       scrollRestoration: true,
+      // Default error component for all routes (can be overridden per-route)
+      defaultErrorComponent: ({ error }) => <ErrorBoundary error={error} />,
       Wrap: ({ children }) => (
         <ErrorBoundary variant="auth">
           <ConvexBetterAuthProvider client={convex} authClient={authClient}>

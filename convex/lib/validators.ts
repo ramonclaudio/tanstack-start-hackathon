@@ -1,5 +1,4 @@
-import { v } from 'convex/values'
-import { InvalidInputError, ValidationError } from './errors'
+import { ConvexError, v } from 'convex/values'
 
 /**
  * Common validation utilities for Convex functions
@@ -86,14 +85,19 @@ export function validateText(
   const trimmed = text.trim()
 
   if (trimmed.length < minLength) {
-    throw new ValidationError(`${fieldName} cannot be empty`, fieldName)
+    throw new ConvexError({
+      code: 'VALIDATION_ERROR',
+      message: `${fieldName} cannot be empty`,
+      field: fieldName,
+    })
   }
 
   if (trimmed.length > maxLength) {
-    throw new ValidationError(
-      `${fieldName} exceeds maximum length of ${maxLength} characters`,
-      fieldName,
-    )
+    throw new ConvexError({
+      code: 'VALIDATION_ERROR',
+      message: `${fieldName} exceeds maximum length of ${maxLength} characters`,
+      field: fieldName,
+    })
   }
 
   return trimmed
@@ -180,11 +184,12 @@ export function validateEmail(
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
   if (!emailRegex.test(trimmed)) {
-    throw new InvalidInputError(
-      `${fieldName} must be a valid email address`,
-      fieldName,
-      'invalid_format',
-    )
+    throw new ConvexError({
+      code: 'INVALID_INPUT',
+      message: `${fieldName} must be a valid email address`,
+      field: fieldName,
+      reason: 'invalid_format',
+    })
   }
 
   return trimmed
@@ -199,17 +204,23 @@ export function validateId(
   tableName: string,
 ): string | never {
   if (!id) {
-    throw new InvalidInputError(`${tableName} ID is required`, 'id', 'missing')
+    throw new ConvexError({
+      code: 'INVALID_INPUT',
+      message: `${tableName} ID is required`,
+      field: 'id',
+      reason: 'missing',
+    })
   }
 
   // Convex IDs follow pattern: tablename|randomstring
   const idRegex = new RegExp(`^${tableName}\\|`)
   if (!idRegex.test(id)) {
-    throw new InvalidInputError(
-      `Invalid ${tableName} ID format`,
-      'id',
-      'invalid_format',
-    )
+    throw new ConvexError({
+      code: 'INVALID_INPUT',
+      message: `Invalid ${tableName} ID format`,
+      field: 'id',
+      reason: 'invalid_format',
+    })
   }
 
   return id
@@ -230,27 +241,30 @@ export function validateNumber(
   const { min, max, fieldName = 'Value', integer = false } = options
 
   if (integer && !Number.isInteger(value)) {
-    throw new InvalidInputError(
-      `${fieldName} must be an integer`,
-      fieldName,
-      'not_integer',
-    )
+    throw new ConvexError({
+      code: 'INVALID_INPUT',
+      message: `${fieldName} must be an integer`,
+      field: fieldName,
+      reason: 'not_integer',
+    })
   }
 
   if (min !== undefined && value < min) {
-    throw new InvalidInputError(
-      `${fieldName} must be at least ${min}`,
-      fieldName,
-      'below_minimum',
-    )
+    throw new ConvexError({
+      code: 'INVALID_INPUT',
+      message: `${fieldName} must be at least ${min}`,
+      field: fieldName,
+      reason: 'below_minimum',
+    })
   }
 
   if (max !== undefined && value > max) {
-    throw new InvalidInputError(
-      `${fieldName} must be at most ${max}`,
-      fieldName,
-      'above_maximum',
-    )
+    throw new ConvexError({
+      code: 'INVALID_INPUT',
+      message: `${fieldName} must be at most ${max}`,
+      field: fieldName,
+      reason: 'above_maximum',
+    })
   }
 
   return value
@@ -270,19 +284,21 @@ export function validateArray<T>(
   const { minLength, maxLength, fieldName = 'Array' } = options
 
   if (minLength !== undefined && array.length < minLength) {
-    throw new InvalidInputError(
-      `${fieldName} must contain at least ${minLength} items`,
-      fieldName,
-      'too_few_items',
-    )
+    throw new ConvexError({
+      code: 'INVALID_INPUT',
+      message: `${fieldName} must contain at least ${minLength} items`,
+      field: fieldName,
+      reason: 'too_few_items',
+    })
   }
 
   if (maxLength !== undefined && array.length > maxLength) {
-    throw new InvalidInputError(
-      `${fieldName} must contain at most ${maxLength} items`,
-      fieldName,
-      'too_many_items',
-    )
+    throw new ConvexError({
+      code: 'INVALID_INPUT',
+      message: `${fieldName} must contain at most ${maxLength} items`,
+      field: fieldName,
+      reason: 'too_many_items',
+    })
   }
 
   return array
@@ -297,11 +313,12 @@ export function validateEnum<T extends string>(
   fieldName = 'Value',
 ): T | never {
   if (!allowedValues.includes(value as T)) {
-    throw new InvalidInputError(
-      `${fieldName} must be one of: ${allowedValues.join(', ')}`,
-      fieldName,
-      'invalid_enum',
-    )
+    throw new ConvexError({
+      code: 'INVALID_INPUT',
+      message: `${fieldName} must be one of: ${allowedValues.join(', ')}`,
+      field: fieldName,
+      reason: 'invalid_enum',
+    })
   }
 
   return value as T

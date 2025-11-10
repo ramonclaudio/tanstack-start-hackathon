@@ -1,103 +1,86 @@
-import { ConvexError } from 'convex/values'
+/**
+ * Error payload types for ConvexError
+ * Use these with: throw new ConvexError({ code: '...', ... })
+ *
+ * Per Convex docs: Don't extend ConvexError, use it directly with typed payloads
+ */
 
 /**
- * Thrown when authentication is required but not provided
- * Use this instead of checking error.message === 'Unauthenticated'
+ * Authentication required but not provided
+ * Use when user must be logged in
  */
-export class AuthenticationError extends ConvexError<{
-  code: string
-  message: string
-}> {
-  constructor(message = 'Authentication required') {
-    super({ code: 'UNAUTHENTICATED', message })
-  }
-}
-
-/**
- * Specific error for Better Auth unauthenticated state
- * Allows catching by type instead of fragile string matching
- */
-export class UnauthenticatedError extends ConvexError<{
+export type UnauthenticatedPayload = {
   code: 'UNAUTHENTICATED'
   message: string
-}> {
-  constructor(message = 'User is not authenticated') {
-    super({ code: 'UNAUTHENTICATED', message })
-  }
-}
-
-export class AuthorizationError extends ConvexError<{
-  code: string
-  message: string
-}> {
-  constructor(message = 'Unauthorized') {
-    super({ code: 'UNAUTHORIZED', message })
-  }
-}
-
-export class ValidationError extends ConvexError<{
-  code: string
-  message: string
-  field?: string
-}> {
-  constructor(message: string, field?: string) {
-    super({ code: 'VALIDATION_ERROR', message, field })
-  }
-}
-
-export class NotFoundError extends ConvexError<{
-  code: string
-  message: string
-  resource: string
-}> {
-  constructor(resource: string) {
-    super({ code: 'NOT_FOUND', message: `${resource} not found`, resource })
-  }
 }
 
 /**
- * Thrown when rate limiting is exceeded
+ * User lacks permission for resource
+ * Use when user is authenticated but unauthorized
  */
-export class RateLimitError extends ConvexError<{
+export type UnauthorizedPayload = {
+  code: 'UNAUTHORIZED'
+  message: string
+  resource?: string
+}
+
+/**
+ * Input validation failed
+ * Use for business logic validation (length, format, etc.)
+ */
+export type ValidationPayload = {
+  code: 'VALIDATION_ERROR'
+  message: string
+  field?: string
+}
+
+/**
+ * Resource not found in database
+ */
+export type NotFoundPayload = {
+  code: 'NOT_FOUND'
+  message: string
+  resource: string
+  id?: string
+}
+
+/**
+ * Rate limit exceeded
+ */
+export type RateLimitPayload = {
   code: 'RATE_LIMIT_EXCEEDED'
   message: string
   retryAfter?: number
-}> {
-  constructor(message = 'Rate limit exceeded', retryAfter?: number) {
-    super({ code: 'RATE_LIMIT_EXCEEDED', message, retryAfter })
-  }
 }
 
 /**
- * Thrown when query or mutation hits Convex resource limits
+ * Convex resource limits hit
  */
-export class ResourceLimitError extends ConvexError<{
+export type ResourceLimitPayload = {
   code: 'RESOURCE_LIMIT'
   message: string
   limit: string
   current?: number
-}> {
-  constructor(limit: string, message?: string, current?: number) {
-    super({
-      code: 'RESOURCE_LIMIT',
-      message: message ?? `Exceeded ${limit} limit`,
-      limit,
-      current,
-    })
-  }
 }
 
 /**
- * Thrown when input fails business logic validation
- * More specific than generic ValidationError
+ * Business logic validation failed
  */
-export class InvalidInputError extends ConvexError<{
+export type InvalidInputPayload = {
   code: 'INVALID_INPUT'
   message: string
   field?: string
   reason?: string
-}> {
-  constructor(message: string, field?: string, reason?: string) {
-    super({ code: 'INVALID_INPUT', message, field, reason })
-  }
 }
+
+/**
+ * Union of all error payloads for type checking
+ */
+export type ErrorPayload =
+  | UnauthenticatedPayload
+  | UnauthorizedPayload
+  | ValidationPayload
+  | NotFoundPayload
+  | RateLimitPayload
+  | ResourceLimitPayload
+  | InvalidInputPayload

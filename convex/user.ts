@@ -1,3 +1,4 @@
+import { ConvexError } from 'convex/values'
 import { query } from './_generated/server'
 import { authComponent } from './auth'
 import { userResponseValidator } from './lib/validators'
@@ -32,7 +33,8 @@ export const getUser = query({
         },
       }
     } catch (e) {
-      // Handle Better Auth unauthenticated state (expected failure)
+      // Better Auth throws Error with message 'Unauthenticated'
+      // This is expected when user is not logged in
       if (e instanceof Error && e.message === 'Unauthenticated') {
         return {
           authenticated: false as const,
@@ -40,7 +42,7 @@ export const getUser = query({
         }
       }
 
-      // Report unexpected errors to Sentry
+      // Unexpected error - report to Sentry
       if (e instanceof Error) {
         await captureException(e, {
           tags: { function: 'user.getUser' },
@@ -48,7 +50,12 @@ export const getUser = query({
         })
       }
 
-      throw e
+      // Re-throw as ConvexError with structured payload
+      throw new ConvexError({
+        code: 'USER_FETCH_FAILED',
+        message: 'Failed to fetch user information',
+        error: e instanceof Error ? e.message : String(e),
+      })
     }
   },
 })
