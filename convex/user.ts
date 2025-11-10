@@ -2,7 +2,6 @@ import { ConvexError } from 'convex/values'
 import { query } from './_generated/server'
 import { authComponent } from './auth'
 import { userResponseValidator } from './lib/validators'
-import { captureException } from './lib/sentry'
 import type { UserResponse } from './lib/types'
 
 export const getUser = query({
@@ -43,15 +42,13 @@ export const getUser = query({
         }
       }
 
-      // Unexpected error - report to Sentry (fire-and-forget, not transactional)
-      if (e instanceof Error) {
-        captureException(e, {
-          tags: { function: 'user.getUser' },
-          extra: { context: 'Failed to fetch authenticated user' },
-        }).catch(() => {
-          // Ignore Sentry failures - queries must be deterministic
-        })
-      }
+      // Log error to Convex console (Sentry picks this up via log streaming)
+      // DO NOT call captureException() in queries - breaks determinism
+      // eslint-disable-next-line no-console
+      console.error('[user.getUser] Unexpected error', {
+        error: e instanceof Error ? e.message : String(e),
+        stack: e instanceof Error ? e.stack : undefined,
+      })
 
       // Re-throw as ConvexError with structured payload
       throw new ConvexError({
