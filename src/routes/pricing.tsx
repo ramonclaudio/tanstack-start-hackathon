@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 import { z } from 'zod'
 import { Check } from 'lucide-react'
-import { useCustomer, usePricingTable } from 'autumn-js/react'
+import { useCustomer } from 'autumn-js/react'
 import PricingTable from '@/components/pricing/PricingTable'
 import { useAuth } from '@/lib/auth-context'
 import {
@@ -11,7 +11,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import { Skeleton } from '@/components/ui/skeleton'
 
 export const Route = createFileRoute('/pricing')({
   validateSearch: z.object({
@@ -22,10 +21,9 @@ export const Route = createFileRoute('/pricing')({
 })
 
 function PricingPage() {
-  const { session, isLoading: authLoading } = useAuth()
+  const { session } = useAuth()
   const navigate = useNavigate()
   const search = Route.useSearch()
-  const { isLoading: pricingLoading } = usePricingTable({})
   const { customer, refetch: refetchCustomer } = useCustomer()
   const hasFetchedRef = useRef(false)
 
@@ -35,66 +33,6 @@ function PricingPage() {
       refetchCustomer()
     }
   }, [session?.user, refetchCustomer])
-
-  const isLoading = [authLoading, pricingLoading].some(Boolean)
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-1 flex-col px-6 py-12">
-        <div className="mx-auto max-w-7xl w-full">
-          <div className="text-center mb-12">
-            <div className="text-center space-y-5">
-              <Skeleton className="h-9 w-80 mx-auto" />
-              <Skeleton className="h-5 w-full max-w-xl mx-auto" />
-            </div>
-          </div>
-          <div className="mb-12">
-            <PricingTable loading={true} />
-          </div>
-          <div className="mt-16 max-w-4xl mx-auto">
-            <div className="text-center mb-8">
-              <Skeleton className="h-8 w-48 mx-auto" />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="border rounded-lg p-6 bg-card">
-                  <div className="w-12 h-12 rounded-full bg-accent animate-pulse mb-4" />
-                  <Skeleton className="h-5 w-32 mb-2" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-3/4" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="mt-16 max-w-3xl mx-auto">
-            <div className="text-center mb-8">
-              <Skeleton className="h-8 w-64 mx-auto" />
-            </div>
-            <div className="space-y-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="border rounded-lg px-4 h-13.5 flex items-center justify-between"
-                >
-                  <Skeleton className="h-4 w-72" />
-                  <Skeleton className="h-4 w-4 rounded" />
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="mt-16 text-center border-t pt-12">
-            <div className="flex flex-col items-center gap-5">
-              <Skeleton className="h-4 w-64" />
-              <Skeleton className="h-4 w-56" />
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="flex flex-1 flex-col px-6 py-12">
