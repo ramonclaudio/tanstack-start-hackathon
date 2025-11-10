@@ -11,14 +11,13 @@ const ALLOWED_ORIGINS = [
   process.env['NEXT_PUBLIC_SITE_URL'],
 ].filter(Boolean) as Array<string>
 
-function corsHeaders(origin: string | null) {
-  const allowedOrigin =
-    origin && ALLOWED_ORIGINS.includes(origin)
-      ? origin
-      : ALLOWED_ORIGINS[0] || '*'
+function corsHeaders(origin: string | null): HeadersInit {
+  if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
+    throw new Error(`Blocked origin: ${origin || 'none'}`)
+  }
 
   return {
-    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
@@ -33,7 +32,9 @@ http.route({
   method: 'GET',
   handler: httpAction(
     // eslint-disable-next-line @typescript-eslint/require-await
-    async () => {
+    async (_ctx, request) => {
+      const origin = request.headers.get('origin')
+
       return new Response(
         JSON.stringify({
           status: 'healthy',
@@ -44,7 +45,7 @@ http.route({
           status: 200,
           headers: {
             'Content-Type': 'application/json',
-            ...corsHeaders(null),
+            ...(origin ? corsHeaders(origin) : {}),
           },
         },
       )
@@ -58,11 +59,21 @@ http.route({
   handler: httpAction(
     // eslint-disable-next-line @typescript-eslint/require-await
     async (_ctx, request) => {
-      const origin = request.headers.get('origin')
-      return new Response(null, {
-        status: 204,
-        headers: corsHeaders(origin),
-      })
+      const headers = request.headers
+      const origin = headers.get('origin')
+
+      if (
+        origin &&
+        headers.get('Access-Control-Request-Method') &&
+        headers.get('Access-Control-Request-Headers')
+      ) {
+        return new Response(null, {
+          status: 204,
+          headers: corsHeaders(origin),
+        })
+      }
+
+      return new Response('Invalid pre-flight request', { status: 400 })
     },
   ),
 })
