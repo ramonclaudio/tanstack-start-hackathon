@@ -1,4 +1,4 @@
-import { v } from 'convex/values'
+import { ConvexError, v } from 'convex/values'
 import { paginationOptsValidator } from 'convex/server'
 import { mutation, query } from './_generated/server'
 import {
@@ -6,7 +6,6 @@ import {
   taskValidator,
   validateText,
 } from './lib/validators'
-import { NotFoundError } from './lib/errors'
 
 /**
  * Query: Get paginated tasks
@@ -79,7 +78,12 @@ export const update = mutation({
     const existing = await ctx.db.get(args.id)
 
     if (!existing) {
-      throw new NotFoundError('Task')
+      throw new ConvexError({
+        code: 'NOT_FOUND',
+        message: 'Task not found',
+        resource: 'tasks',
+        id: args.id,
+      })
     }
 
     const updates: Partial<{
@@ -115,7 +119,12 @@ export const remove = mutation({
     const existing = await ctx.db.get(args.id)
 
     if (!existing) {
-      throw new NotFoundError('Task')
+      throw new ConvexError({
+        code: 'NOT_FOUND',
+        message: 'Task not found',
+        resource: 'tasks',
+        id: args.id,
+      })
     }
 
     await ctx.db.delete(args.id)
