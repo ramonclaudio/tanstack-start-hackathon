@@ -11,9 +11,22 @@ const ALLOWED_ORIGINS = [
   process.env['NEXT_PUBLIC_SITE_URL'],
 ].filter(Boolean) as Array<string>
 
+/**
+ * CORS validation error with structured response
+ */
+class CorsError extends Error {
+  constructor(
+    message: string,
+    public origin: string | null,
+  ) {
+    super(message)
+    this.name = 'CorsError'
+  }
+}
+
 function corsHeaders(origin: string | null): HeadersInit {
   if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
-    throw new Error(`Blocked origin: ${origin || 'none'}`)
+    throw new CorsError('Origin not allowed', origin)
   }
 
   return {
@@ -23,6 +36,29 @@ function corsHeaders(origin: string | null): HeadersInit {
     'Access-Control-Max-Age': '86400',
     Vary: 'Origin',
   }
+}
+
+/**
+ * Create structured error response
+ */
+function errorResponse(
+  error: {
+    code: string
+    message: string
+    details?: Record<string, unknown>
+  },
+  status: number,
+  origin?: string | null,
+): Response {
+  return new Response(JSON.stringify({ error }), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(origin && ALLOWED_ORIGINS.includes(origin)
+        ? corsHeaders(origin)
+        : {}),
+    },
+  })
 }
 
 authComponent.registerRoutes(http, createAuth)
@@ -35,20 +71,35 @@ http.route({
     async (_ctx, request) => {
       const origin = request.headers.get('origin')
 
-      return new Response(
-        JSON.stringify({
-          status: 'healthy',
-          timestamp: Date.now(),
-          service: 'tanvex-api',
-        }),
-        {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            ...(origin ? corsHeaders(origin) : {}),
+      try {
+        return new Response(
+          JSON.stringify({
+            status: 'healthy',
+            timestamp: Date.now(),
+            service: 'tanvex-api',
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              ...(origin ? corsHeaders(origin) : {}),
+            },
           },
-        },
-      )
+        )
+      } catch (error) {
+        if (error instanceof CorsError) {
+          return errorResponse(
+            {
+              code: 'CORS_ERROR',
+              message: error.message,
+              details: { origin: error.origin, allowed: ALLOWED_ORIGINS },
+            },
+            403,
+            origin,
+          )
+        }
+        throw error
+      }
     },
   ),
 })
@@ -62,18 +113,47 @@ http.route({
       const headers = request.headers
       const origin = headers.get('origin')
 
-      if (
-        origin &&
-        headers.get('Access-Control-Request-Method') &&
-        headers.get('Access-Control-Request-Headers')
-      ) {
-        return new Response(null, {
-          status: 204,
-          headers: corsHeaders(origin),
-        })
-      }
+      try {
+        if (
+          origin &&
+          headers.get('Access-Control-Request-Method') &&
+          headers.get('Access-Control-Request-Headers')
+        ) {
+          return new Response(null, {
+            status: 204,
+            headers: corsHeaders(origin),
+          })
+        }
 
-      return new Response('Invalid pre-flight request', { status: 400 })
+        return errorResponse(
+          {
+            code: 'INVALID_PREFLIGHT',
+            message: 'Invalid CORS pre-flight request',
+            details: {
+              hasOrigin: Boolean(origin),
+              hasMethod: Boolean(headers.get('Access-Control-Request-Method')),
+              hasHeaders: Boolean(
+                headers.get('Access-Control-Request-Headers'),
+              ),
+            },
+          },
+          400,
+          origin,
+        )
+      } catch (error) {
+        if (error instanceof CorsError) {
+          return errorResponse(
+            {
+              code: 'CORS_ERROR',
+              message: error.message,
+              details: { origin: error.origin, allowed: ALLOWED_ORIGINS },
+            },
+            403,
+            origin,
+          )
+        }
+        throw error
+      }
     },
   ),
 })
