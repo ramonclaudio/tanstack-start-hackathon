@@ -1,6 +1,7 @@
 import { Autumn } from '@useautumn/convex'
 import { components } from './_generated/api'
 import { authComponent } from './auth'
+import { autumnLogger } from './lib/logger'
 import type { GenericCtx } from '@convex-dev/better-auth'
 import type { DataModel } from './_generated/dataModel'
 
@@ -13,20 +14,25 @@ if (!process.env['AUTUMN_SECRET_KEY']) {
 export const autumn = new Autumn(components.autumn, {
   secretKey: process.env['AUTUMN_SECRET_KEY'],
   identify: async (ctx: GenericCtx<DataModel>) => {
-    // Get user from Better Auth through Convex
-    const user = await authComponent.getAuthUser(ctx).catch(() => null)
+    try {
+      const user = await authComponent.getAuthUser(ctx)
 
-    if (!user) return null
+      const userId = user.userId || user._id
+      if (!userId) return null
 
-    const userId = user._id || user.userId
-    if (!userId) return null
-
-    return {
-      customerId: userId,
-      customerData: {
-        name: user.name || '',
-        email: user.email || '',
-      },
+      return {
+        customerId: userId,
+        customerData: {
+          name: user.name ?? '',
+          email: user.email ?? '',
+        },
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Unauthenticated') {
+        return null
+      }
+      autumnLogger.error('Autumn identify error', error)
+      return null
     }
   },
 })
