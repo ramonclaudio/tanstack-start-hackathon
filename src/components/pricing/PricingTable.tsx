@@ -64,7 +64,7 @@ function getButtonText(
     case 'active':
       return updateable ? <p>Update Plan</p> : <p>Current Plan</p>
     case 'new':
-      return is_one_off ? <p>Purchase</p> : <p>Get started</p>
+      return is_one_off ? <p>Purchase</p> : <p>Get Started</p>
     case 'renew':
       return <p>Renew</p>
     case 'upgrade':
@@ -178,9 +178,9 @@ export default function PricingTable({
       <div className="flex items-center flex-col">
         <div className="mb-4">
           <div className="flex items-center space-x-2 justify-center">
-            <Skeleton className="h-4 w-14" />
-            <Skeleton className="h-6 w-10 rounded-full" />
-            <Skeleton className="h-4 w-14" />
+            <Skeleton className="h-[0.875rem] w-14" />
+            <Skeleton className="h-5 w-10 rounded-full" />
+            <Skeleton className="h-[0.875rem] w-14" />
           </div>
         </div>
         <div
