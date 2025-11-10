@@ -20,6 +20,8 @@ class ConvexLogger {
       timestamp: Date.now(),
     }
 
+    // Always use console.* for Convex log streaming integration
+    // Convex automatically captures console.error/warn/log for log streams
     if (isDevelopment) {
       const emoji = level === 'error' ? '❌' : level === 'warn' ? '⚠️' : 'ℹ️'
       const consoleMethod =
@@ -31,8 +33,10 @@ class ConvexLogger {
               console.warn
             : // eslint-disable-next-line no-console
               console.log
+      // Pretty format for development
       consoleMethod(`${emoji} [${this.module}] ${message}`, context || '')
     } else {
+      // Structured JSON for production (Convex log streams)
       const consoleMethod =
         level === 'error'
           ? // eslint-disable-next-line no-console
@@ -41,7 +45,7 @@ class ConvexLogger {
             ? // eslint-disable-next-line no-console
               console.warn
             : // eslint-disable-next-line no-console
-              console.error
+              console.log
       consoleMethod(JSON.stringify(log))
     }
   }
