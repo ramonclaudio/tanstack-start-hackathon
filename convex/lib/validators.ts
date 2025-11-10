@@ -8,26 +8,33 @@ import { ConvexError, v } from 'convex/values'
  */
 
 /**
+ * Timestamp validator for milliseconds since Unix epoch
+ * Use this for createdAt, updatedAt, etc. fields
+ * Note: Convex's _creationTime is auto-generated, use v.number() for custom timestamps
+ */
+export const timestampValidator = v.number()
+
+/**
  * Reusable validator for task documents
  */
 export const taskValidator = v.object({
   _id: v.id('tasks'),
-  _creationTime: v.number(),
+  _creationTime: timestampValidator,
   text: v.string(),
   completed: v.boolean(),
-  createdAt: v.number(),
-  updatedAt: v.number(),
 })
 
 /**
  * Reusable validator for user profile
+ * Note: id is a string representation of user._id, not a v.id() type
+ * This is intentional as UserProfile is a transformed view, not a raw document
  */
 export const userProfileValidator = v.object({
   id: v.string(),
   name: v.union(v.string(), v.null()),
   email: v.string(),
   image: v.union(v.string(), v.null()),
-  createdAt: v.number(),
+  createdAt: timestampValidator,
   emailVerified: v.boolean(),
   twoFactorEnabled: v.boolean(),
 })
