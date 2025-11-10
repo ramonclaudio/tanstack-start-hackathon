@@ -78,86 +78,70 @@ function TaskMutations() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 py-6 -mt-2">
       <div className="w-full max-w-2xl space-y-8">
-        {isLoading ? (
-          <>
-            <div className="text-center space-y-5">
-              <Skeleton className="h-10 w-80 mx-auto" />
-              <Skeleton className="h-5 w-full max-w-xl mx-auto" />
-            </div>
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <Skeleton className="flex-1 h-14 rounded-md" />
-                <Skeleton className="h-14 w-20 rounded-md" />
-              </div>
+        <div className="text-center space-y-2">
+          <h1 className="text-4xl font-bold tracking-tight">
+            Convex Tasks Demo
+          </h1>
+          <p className="text-muted-foreground">
+            Add and manage tasks with real-time updates using Convex
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              value={taskText}
+              onChange={(e) => setTaskText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  submitTask()
+                }
+              }}
+              placeholder="Enter a new item..."
+              className="flex-1 h-14"
+            />
+            <Button
+              disabled={taskText.trim().length === 0}
+              onClick={submitTask}
+              className="h-14 px-8"
+            >
+              Add
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <div className="space-y-2">
               {Array.from({ length: 3 }).map((_, i) => (
                 <Skeleton key={i} className="h-14 w-full rounded-lg" />
               ))}
             </div>
-          </>
-        ) : (
-          <>
-            <div className="text-center space-y-2">
-              <h1 className="text-4xl font-bold tracking-tight">
-                Convex Tasks Demo
-              </h1>
-              <p className="text-muted-foreground">
-                Add and manage tasks with real-time updates using Convex
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  value={taskText}
-                  onChange={(e) => setTaskText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      submitTask()
-                    }
-                  }}
-                  placeholder="Enter a new item..."
-                  className="flex-1 h-14"
-                />
-                <Button
-                  disabled={taskText.trim().length === 0}
-                  onClick={submitTask}
-                  className="h-14 px-8"
+          ) : tasks?.page?.length === 0 ? (
+            <p className="text-center text-muted-foreground">
+              No tasks yet. Add one above!
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {tasks?.page?.map((task: { _id: Id<'tasks'>; text: string }) => (
+                <li
+                  key={task._id}
+                  className="border rounded-lg p-4 bg-card text-card-foreground h-14 flex items-center justify-between gap-4"
                 >
-                  Add
-                </Button>
-              </div>
-
-              {tasks?.page?.length === 0 ? (
-                <p className="text-center text-muted-foreground">
-                  No tasks yet. Add one above!
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {tasks?.page?.map(
-                    (task: { _id: Id<'tasks'>; text: string }) => (
-                      <li
-                        key={task._id}
-                        className="border rounded-lg p-4 bg-card text-card-foreground h-14 flex items-center justify-between gap-4"
-                      >
-                        <span>{task.text}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => handleRemove(task._id)}
-                          className="shrink-0"
-                          aria-label="Delete item"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </li>
-                    ),
-                  )}
-                </ul>
-              )}
-            </div>
-          </>
-        )}
+                  <span>{task.text}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => handleRemove(task._id)}
+                    className="shrink-0"
+                    aria-label="Delete item"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   )

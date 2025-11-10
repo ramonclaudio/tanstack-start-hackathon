@@ -46,43 +46,45 @@ export function FailedPaymentBanner({
   }
 
   return (
-    <Card className="border-destructive/50 bg-destructive/10 relative">
-      <div className="flex items-start gap-4 p-4">
-        <AlertTriangle className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
-        <div className="flex-1 space-y-2">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h3 className="font-semibold text-sm text-destructive">
-                Payment Failed
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Your payment for{' '}
-                <strong>{failedPayment.name || 'your subscription'}</strong> has
-                failed. Please update your payment method to avoid service
-                interruption.
-              </p>
+    <div className="mb-4">
+      <Card className="border-destructive/50 bg-destructive/10 relative">
+        <div className="flex items-start gap-4 p-4">
+          <AlertTriangle className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
+          <div className="flex-1 space-y-2">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="font-semibold text-sm text-destructive">
+                  Payment Failed
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Your payment for{' '}
+                  <strong>{failedPayment.name || 'your subscription'}</strong>{' '}
+                  has failed. Please update your payment method to avoid service
+                  interruption.
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 shrink-0"
+                onClick={() => setDismissed(true)}
+              >
+                <X className="h-4 w-4" />
+                <span className="sr-only">Dismiss</span>
+              </Button>
             </div>
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 shrink-0"
-              onClick={() => setDismissed(true)}
+              size="sm"
+              variant="destructive"
+              onClick={handleUpdatePayment}
+              className="gap-2"
             >
-              <X className="h-4 w-4" />
-              <span className="sr-only">Dismiss</span>
+              <CreditCard className="w-4 h-4" />
+              Update Payment Method
             </Button>
           </div>
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={handleUpdatePayment}
-            className="gap-2"
-          >
-            <CreditCard className="w-4 h-4" />
-            Update Payment Method
-          </Button>
         </div>
-      </div>
-    </Card>
+      </Card>
+    </div>
   )
 }
