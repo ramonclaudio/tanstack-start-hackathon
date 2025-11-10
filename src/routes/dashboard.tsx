@@ -5,7 +5,9 @@ import { convexQuery } from '@convex-dev/react-query'
 import { useAction } from 'convex/react'
 import { ArrowRight, CreditCard, Package, Zap } from 'lucide-react'
 import { useCustomer } from 'autumn-js/react'
+import { ConvexError } from 'convex/values'
 import { api } from '../../convex/_generated/api'
+import type { ErrorComponentProps } from '@tanstack/react-router'
 import { logger } from '@/lib/logger'
 import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
@@ -24,7 +26,55 @@ import { FailedPaymentBanner } from '@/components/dashboard/FailedPaymentBanner'
 
 export const Route = createFileRoute('/dashboard')({
   component: Dashboard,
+  errorComponent: DashboardError,
 })
+
+function DashboardError({ error, reset }: ErrorComponentProps) {
+  const router = useRouter()
+
+  // Handle ConvexError with structured data
+  const isConvexError = error instanceof ConvexError
+  const errorData = isConvexError
+    ? (error.data as { code?: string; message?: string })
+    : null
+
+  // Redirect to login for auth errors
+  if (
+    errorData?.code === 'UNAUTHENTICATED' ||
+    errorData?.code === 'USER_FETCH_FAILED'
+  ) {
+    router.navigate({ to: '/auth/sign-in' })
+    return null
+  }
+
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center px-6">
+      <Card className="max-w-md w-full border-destructive/50">
+        <CardHeader>
+          <CardTitle className="text-destructive">Dashboard Error</CardTitle>
+          <CardDescription>
+            {errorData?.message || error.message || 'Failed to load dashboard'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {import.meta.env.DEV && errorData && (
+            <div className="p-2 bg-muted rounded text-xs font-mono">
+              Code: {errorData.code}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button onClick={reset} size="sm">
+              Retry
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/">Go Home</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
 
 function Dashboard() {
   const router = useRouter()
