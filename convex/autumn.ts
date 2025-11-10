@@ -2,6 +2,7 @@ import { Autumn } from '@useautumn/convex'
 import { components } from './_generated/api'
 import { authComponent } from './auth'
 import { autumnLogger } from './lib/logger'
+import { captureException } from './lib/sentry'
 import type { GenericCtx } from '@convex-dev/better-auth'
 import type { DataModel } from './_generated/dataModel'
 
@@ -28,10 +29,22 @@ export const autumn = new Autumn(components.autumn, {
         },
       }
     } catch (error) {
+      // Handle unauthenticated state (expected failure)
       if (error instanceof Error && error.message === 'Unauthenticated') {
         return null
       }
+
+      // Log and report unexpected errors
       autumnLogger.error('Autumn identify error', error)
+
+      if (error instanceof Error) {
+        await captureException(error, {
+          tags: { function: 'autumn.identify', service: 'billing' },
+          extra: { context: 'Failed to identify customer for Autumn billing' },
+          level: 'error',
+        })
+      }
+
       return null
     }
   },
