@@ -2,6 +2,16 @@ const isDevelopment = !process.env['VITE_CONVEX_URL']
 
 type LogContext = Record<string, unknown>
 
+/**
+ * Generate correlation ID for request tracking
+ * Format: timestamp-random (e.g., 1704067200000-a3f2)
+ */
+export function generateCorrelationId(): string {
+  const timestamp = Date.now()
+  const random = Math.random().toString(36).substring(2, 6)
+  return `${timestamp}-${random}`
+}
+
 class ConvexLogger {
   constructor(private module: string) {}
 
@@ -16,8 +26,8 @@ class ConvexLogger {
       level,
       module: this.module,
       message,
-      context,
       timestamp: Date.now(),
+      ...context,
     }
 
     // Always use console.* for Convex log streaming integration
@@ -62,6 +72,7 @@ class ConvexLogger {
     this.log('error', message, {
       ...context,
       error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
     })
   }
 
