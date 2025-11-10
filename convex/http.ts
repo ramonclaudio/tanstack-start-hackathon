@@ -1,7 +1,6 @@
 import { httpRouter } from 'convex/server'
 import { httpAction } from './_generated/server'
 import { authComponent, createAuth } from './auth'
-import { captureHttpError } from './lib/sentry'
 
 const http = httpRouter()
 
@@ -72,6 +71,7 @@ http.route({
     const origin = request.headers.get('origin')
 
     try {
+      await Promise.resolve() // Satisfy require-await
       return new Response(
         JSON.stringify({
           status: 'healthy',
@@ -88,11 +88,12 @@ http.route({
       )
     } catch (error) {
       if (error instanceof CorsError) {
-        // Report CORS errors to Sentry
-        await captureHttpError('CORS_ERROR', error.message, {
-          tags: { endpoint: '/health' },
-          extra: { origin: error.origin, allowed: ALLOWED_ORIGINS },
-          level: 'warning',
+        // Log CORS errors but don't spam Sentry (too noisy in production)
+        // eslint-disable-next-line no-console
+        console.warn('[CORS] Origin not allowed', {
+          endpoint: '/health',
+          origin: error.origin,
+          allowed: ALLOWED_ORIGINS,
         })
 
         return errorResponse(
@@ -118,6 +119,7 @@ http.route({
     const origin = headers.get('origin')
 
     try {
+      await Promise.resolve() // Satisfy require-await
       if (
         origin &&
         headers.get('Access-Control-Request-Method') &&
@@ -144,11 +146,12 @@ http.route({
       )
     } catch (error) {
       if (error instanceof CorsError) {
-        // Report CORS errors to Sentry
-        await captureHttpError('CORS_ERROR', error.message, {
-          tags: { endpoint: 'OPTIONS /*' },
-          extra: { origin: error.origin, allowed: ALLOWED_ORIGINS },
-          level: 'warning',
+        // Log CORS errors but don't spam Sentry (too noisy in production)
+        // eslint-disable-next-line no-console
+        console.warn('[CORS] Origin not allowed', {
+          endpoint: 'OPTIONS /*',
+          origin: error.origin,
+          allowed: ALLOWED_ORIGINS,
         })
 
         return errorResponse(

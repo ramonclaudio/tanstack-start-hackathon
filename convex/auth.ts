@@ -5,17 +5,24 @@ import { components } from './_generated/api'
 import type { DataModel } from './_generated/dataModel'
 import type { GenericCtx } from '@convex-dev/better-auth'
 
-const siteUrl = process.env['SITE_URL']
-if (!siteUrl) {
-  throw new Error(
-    'Missing required environment variable: SITE_URL\n' +
-      'Set it in:\n' +
-      '  Development: .env.local (SITE_URL=http://localhost:3000)\n' +
-      '  Production: Convex Dashboard → Settings → Environment Variables',
-  )
-}
-
 export const authComponent = createClient<DataModel>(components.betterAuth)
+
+/**
+ * Validate and return SITE_URL environment variable
+ * Throws only when actually needed (not on import during codegen)
+ */
+function getSiteUrl(): string {
+  const siteUrl = process.env['SITE_URL']
+  if (!siteUrl) {
+    throw new Error(
+      'Missing required environment variable: SITE_URL\n' +
+        'Set it in:\n' +
+        '  Development: .env.local (SITE_URL=http://localhost:3000)\n' +
+        '  Production: Convex Dashboard → Settings → Environment Variables',
+    )
+  }
+  return siteUrl
+}
 
 export const createAuth = (
   ctx: GenericCtx<DataModel>,
@@ -25,7 +32,7 @@ export const createAuth = (
     logger: {
       disabled: optionsOnly,
     },
-    baseURL: siteUrl,
+    baseURL: getSiteUrl(),
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,

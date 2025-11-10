@@ -65,7 +65,6 @@
  */
 
 import path from 'node:path'
-import * as Sentry from '@sentry/bun'
 import { validateServerEnv } from './src/lib/env'
 import { createLogger } from './src/lib/logger'
 
@@ -77,17 +76,30 @@ serverLogger.info('Server environment validated', {
   port: env.PORT,
 })
 
+// Lazy load Sentry only if DSN is configured
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+let Sentry: typeof import('@sentry/bun') | null = null
 if (env.SENTRY_DSN) {
   serverLogger.info('Initializing Sentry for server-side error tracking', {
     environment: env.NODE_ENV,
     tracesSampleRate: env.NODE_ENV === 'production' ? 0.1 : 1.0,
   })
-  Sentry.init({
-    dsn: env.SENTRY_DSN,
-    environment: env.NODE_ENV,
-    tracesSampleRate: env.NODE_ENV === 'production' ? 0.1 : 1.0,
-    sendDefaultPii: false,
-  })
+
+  import('@sentry/bun')
+    .then((module) => {
+      Sentry = module
+      Sentry.init({
+        dsn: env.SENTRY_DSN,
+        environment: env.NODE_ENV,
+        tracesSampleRate: env.NODE_ENV === 'production' ? 0.1 : 1.0,
+        sendDefaultPii: false,
+      })
+    })
+    .catch((error) => {
+      serverLogger.warn('Failed to initialize Sentry - continuing without it', {
+        error: error instanceof Error ? error.message : String(error),
+      })
+    })
 }
 
 const SERVER_PORT = Number(env.PORT)
@@ -348,7 +360,7 @@ async function initializeStaticRoutes(
       } catch (error: unknown) {
         if (error instanceof Error && error.name !== 'EISDIR') {
           log.error(`Failed to load ${filepath}: ${error.message}`)
-          Sentry.captureException(error, {
+          Sentry?.captureException(error, {
             extra: { filepath, relativePath },
           })
         }
@@ -512,14 +524,14 @@ async function initializeServer() {
         } catch (error) {
           log.error(`Server handler error: ${String(error)}`)
 
-          Sentry.withScope((scope) => {
+          Sentry?.withScope((scope) => {
             scope.setContext('request', {
               method: req.method,
               url: urlObj.pathname + urlObj.search,
               timestamp: Date.now(),
               userAgent: req.headers.get('user-agent') || undefined,
             })
-            Sentry.captureException(error)
+            Sentry?.captureException(error)
           })
 
           return new Response('Internal Server Error', { status: 500 })
@@ -531,14 +543,14 @@ async function initializeServer() {
       log.error(
         `Uncaught server error: ${error instanceof Error ? error.message : String(error)}`,
       )
-      Sentry.captureException(error)
+      Sentry?.captureException(error)
       return new Response('Internal Server Error', { status: 500 })
     },
   })
 
   log.success(`Server listening on http://localhost:${String(server.port)}`)
 
-  Sentry.addBreadcrumb({
+  Sentry?.addBreadcrumb({
     category: 'server',
     message: 'Server initialized successfully',
     level: 'info',

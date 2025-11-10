@@ -16,7 +16,6 @@ import type * as lib_logger from "../lib/logger.js";
 import type * as lib_sentry from "../lib/sentry.js";
 import type * as lib_types from "../lib/types.js";
 import type * as lib_validators from "../lib/validators.js";
-import type * as migrations_removeTaskUpdatedAt from "../migrations/removeTaskUpdatedAt.js";
 import type * as tasks from "../tasks.js";
 import type * as user from "../user.js";
 
@@ -43,7 +42,6 @@ declare const fullApi: ApiFromModules<{
   "lib/sentry": typeof lib_sentry;
   "lib/types": typeof lib_types;
   "lib/validators": typeof lib_validators;
-  "migrations/removeTaskUpdatedAt": typeof migrations_removeTaskUpdatedAt;
   tasks: typeof tasks;
   user: typeof user;
 }>;

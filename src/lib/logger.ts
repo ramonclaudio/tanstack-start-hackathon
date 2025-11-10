@@ -1,10 +1,23 @@
 /* eslint-disable no-console */
 
-import * as Sentry from '@sentry/tanstackstart-react'
 import { validateClientEnv } from './env'
 
 const clientEnv = validateClientEnv()
 const isDev = clientEnv.DEV
+const isSentryEnabled = Boolean(clientEnv.VITE_SENTRY_DSN)
+
+// Lazy load Sentry only if DSN is configured
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+let Sentry: typeof import('@sentry/tanstackstart-react') | null = null
+if (isSentryEnabled) {
+  import('@sentry/tanstackstart-react')
+    .then((module) => {
+      Sentry = module
+    })
+    .catch(() => {
+      // Sentry not available - continue without it
+    })
+}
 
 type LogContext = Record<string, unknown>
 
@@ -52,7 +65,7 @@ class SimpleLogger {
     message: string,
     context?: LogContext,
   ) {
-    if (isDev) return
+    if (isDev || !Sentry) return
 
     try {
       Sentry.addBreadcrumb({
@@ -87,7 +100,7 @@ class SimpleLogger {
 
     this.addBreadcrumb(sentryLevel, message, context)
 
-    if (!isDev && level === 'error') {
+    if (!isDev && level === 'error' && Sentry) {
       try {
         Sentry.captureMessage(message, 'error')
         Sentry.setContext(this.module, enrichedContext)
@@ -119,7 +132,7 @@ class SimpleLogger {
 
     this.log('error', message, errorContext)
 
-    if (error instanceof Error && !isDev) {
+    if (error instanceof Error && !isDev && Sentry) {
       try {
         Sentry.captureException(error, {
           tags: sentryOptions?.tags,

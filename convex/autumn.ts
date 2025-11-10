@@ -3,18 +3,27 @@ import { Autumn } from '@useautumn/convex'
 import { components } from './_generated/api'
 import { authComponent } from './auth'
 import { autumnLogger } from './lib/logger'
-import { captureException } from './lib/sentry'
 import type { GenericCtx } from '@convex-dev/better-auth'
 import type { DataModel } from './_generated/dataModel'
 
-if (!process.env['AUTUMN_SECRET_KEY']) {
-  throw new Error(
-    'AUTUMN_SECRET_KEY is required. Get your key from https://app.useautumn.com/sandbox/dev',
-  )
+/**
+ * Validate and return AUTUMN_SECRET_KEY
+ * Throws only when actually needed (not on import during codegen)
+ */
+function getAutumnSecretKey(): string {
+  const key = process.env['AUTUMN_SECRET_KEY']
+  if (!key) {
+    throw new Error(
+      'AUTUMN_SECRET_KEY is required. Get your key from https://app.useautumn.com/sandbox/dev',
+    )
+  }
+  return key
 }
 
 export const autumn = new Autumn(components.autumn, {
-  secretKey: process.env['AUTUMN_SECRET_KEY'],
+  get secretKey() {
+    return getAutumnSecretKey()
+  },
   identify: async (ctx: GenericCtx<DataModel>) => {
     try {
       const user = await authComponent.getAuthUser(ctx)
@@ -37,18 +46,11 @@ export const autumn = new Autumn(components.autumn, {
         return null
       }
 
-      // Unexpected error - log and report
-      autumnLogger.error('Autumn identify error', error)
-
-      if (error instanceof Error) {
-        captureException(error, {
-          tags: { function: 'autumn.identify', service: 'billing' },
-          extra: { context: 'Failed to identify customer for Autumn billing' },
-          level: 'error',
-        }).catch(() => {
-          // Ignore Sentry failures - identify must be deterministic
-        })
-      }
+      // Unexpected error - log only (no async Sentry in identify callback)
+      autumnLogger.error('Autumn identify error', error, {
+        function: 'autumn.identify',
+        service: 'billing',
+      })
 
       // Re-throw as ConvexError so client gets structured error
       throw new ConvexError({

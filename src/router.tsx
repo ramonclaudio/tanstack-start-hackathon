@@ -5,7 +5,6 @@ import { ConvexQueryClient } from '@convex-dev/react-query'
 import { ConvexReactClient } from 'convex/react'
 import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react'
 import { AutumnProvider } from 'autumn-js/react'
-import * as Sentry from '@sentry/tanstackstart-react'
 import { api } from '../convex/_generated/api'
 import { routeTree } from './routeTree.gen'
 import { authClient } from './lib/auth'
@@ -97,6 +96,7 @@ export function getRouter(): AnyRouter {
     queryClient,
   )
 
+  // Initialize Sentry if DSN is configured
   if (
     isClient &&
     env.PROD &&
@@ -108,16 +108,24 @@ export function getRouter(): AnyRouter {
       tracesSampleRate: 0.1,
     })
 
-    Sentry.init({
-      dsn: env.VITE_SENTRY_DSN,
-      environment: env.MODE,
-      integrations: [Sentry.tanstackRouterBrowserTracingIntegration(router)],
-      tracesSampleRate: 0.1,
-      sendDefaultPii: false,
-    })
-    ;(
-      window as Window & { __sentryInitialized?: boolean }
-    ).__sentryInitialized = true
+    import('@sentry/tanstackstart-react')
+      .then((Sentry) => {
+        Sentry.init({
+          dsn: env.VITE_SENTRY_DSN,
+          environment: env.MODE,
+          integrations: [
+            Sentry.tanstackRouterBrowserTracingIntegration(router),
+          ],
+          tracesSampleRate: 0.1,
+          sendDefaultPii: false,
+        })
+        ;(
+          window as Window & { __sentryInitialized?: boolean }
+        ).__sentryInitialized = true
+      })
+      .catch(() => {
+        logger.app.warn('Failed to initialize Sentry - continuing without it')
+      })
   }
 
   return router
