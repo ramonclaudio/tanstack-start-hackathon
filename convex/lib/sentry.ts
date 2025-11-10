@@ -1,6 +1,10 @@
 /**
- * Sentry integration for Convex error reporting
- * Handles exception reporting for production monitoring
+ * Sentry error reporting for Convex (works on free plan)
+ *
+ * Convex Pro has built-in Sentry integration via Dashboard.
+ * This implementation works for ALL plans (including free/self-hosted).
+ *
+ * Uses Sentry's ingestion endpoint directly - no SDK required.
  */
 
 import { ConvexError } from 'convex/values'
@@ -8,122 +12,77 @@ import { ConvexError } from 'convex/values'
 const SENTRY_DSN = process.env['SENTRY_DSN']
 const IS_PRODUCTION = Boolean(process.env['VITE_CONVEX_URL'])
 
-interface SentryEvent {
-  message: string
-  level: 'error' | 'warning' | 'info'
-  tags?: Record<string, string>
-  extra?: Record<string, unknown>
-  error?: Error
-}
-
 /**
- * Report exception to Sentry
- * Only reports in production to avoid wasting quota
- * Falls back to console.error in development
+ * Report exception to Sentry (MUTATIONS/ACTIONS only)
+ * Logs to console + sends to Sentry if DSN configured
+ *
+ * DO NOT call from queries - breaks determinism
  */
 export async function captureException(
   error: Error,
   context?: {
     tags?: Record<string, string>
     extra?: Record<string, unknown>
-    level?: 'error' | 'warning'
+    correlationId?: string
+    functionName?: string
   },
 ): Promise<void> {
-  // Extract ConvexError.data if present for structured logging
   const errorData =
-    error instanceof ConvexError ? { convexErrorData: error.data } : {}
+    error instanceof ConvexError && typeof error.data === 'object'
+      ? error.data
+      : {}
 
-  // Always log to Convex console for native log streaming
+  // Always log to console (Convex native log streaming)
   // eslint-disable-next-line no-console
-  console.error('[Sentry]', error.message, {
-    error: error.stack,
-    ...errorData,
+  console.error('[Exception]', error.message, {
+    error_type: error.name,
+    error_message: error.message,
+    stack: error.stack,
+    correlation_id: context?.correlationId,
+    function: context?.functionName,
+    convex_error_data: errorData,
+    ...context?.tags,
     ...context?.extra,
   })
 
-  // Skip Sentry reporting in development to save quota
-  if (!IS_PRODUCTION) {
-    // eslint-disable-next-line no-console
-    console.warn(
-      '[Sentry] Skipping report (development mode). Error logged above.',
-    )
-    return
-  }
-
-  if (!SENTRY_DSN) {
-    // eslint-disable-next-line no-console
-    console.warn(
-      'SENTRY_DSN not configured. Set it in Convex environment variables.',
-    )
+  // Skip Sentry in development
+  if (!IS_PRODUCTION || !SENTRY_DSN) {
     return
   }
 
   try {
-    const event: SentryEvent = {
+    await sendToSentry({
+      level: 'error',
       message: error.message,
-      level: context?.level ?? 'error',
+      exception: {
+        type: error.name,
+        value: error.message,
+        stacktrace: error.stack,
+      },
       tags: {
+        func: context?.functionName || 'unknown',
         environment: IS_PRODUCTION ? 'production' : 'development',
-        // Add error code as tag for ConvexError
-        ...(error instanceof ConvexError &&
-        typeof error.data === 'object' &&
-        error.data !== null &&
-        'code' in error.data
-          ? { error_code: String(error.data.code) }
+        ...(errorData && typeof errorData === 'object' && 'code' in errorData
+          ? { error_code: String(errorData.code) }
           : {}),
         ...context?.tags,
       },
       extra: {
+        correlation_id: context?.correlationId,
+        convex_error_data: errorData,
         ...context?.extra,
-        // Include full ConvexError payload in extra data
-        ...errorData,
       },
-      error,
-    }
-
-    // Send to Sentry via HTTP (Convex doesn't support Sentry SDK directly)
-    const response = await fetch(
-      `https://sentry.io/api/0/projects/${extractProjectId(SENTRY_DSN)}/events/`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Sentry-Auth': buildSentryAuth(SENTRY_DSN),
-        },
-        body: JSON.stringify({
-          message: event.message,
-          level: event.level,
-          tags: event.tags,
-          extra: event.extra,
-          exception: {
-            values: [
-              {
-                type: error.name,
-                value: error.message,
-                stacktrace: error.stack
-                  ? { frames: parseStackTrace(error.stack) }
-                  : undefined,
-              },
-            ],
-          },
-        }),
-      },
-    )
-
-    if (!response.ok) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to send event to Sentry:', response.statusText)
-    }
+    })
   } catch (sentryError) {
-    // Don't let Sentry errors break application logic
+    // Don't let Sentry failures break app logic
     // eslint-disable-next-line no-console
-    console.error('Sentry reporting failed:', sentryError)
+    console.error('[Sentry] Failed to send exception:', sentryError)
   }
 }
 
 /**
- * Report HTTP-level errors to Sentry
- * Used for errors that don't throw exceptions (CORS, etc.)
+ * Log HTTP errors (rate limits, server errors)
+ * DO NOT use for CORS (too noisy)
  */
 export async function captureHttpError(
   errorCode: string,
@@ -131,84 +90,153 @@ export async function captureHttpError(
   context?: {
     tags?: Record<string, string>
     extra?: Record<string, unknown>
-    level?: 'error' | 'warning' | 'info'
+    correlationId?: string
   },
 ): Promise<void> {
-  // Log to Convex console
   // eslint-disable-next-line no-console
-  console.error(`[Sentry HTTP] ${errorCode}: ${message}`, context?.extra)
+  console.error('[HTTP Error]', {
+    error_code: errorCode,
+    message,
+    correlation_id: context?.correlationId,
+    ...context?.tags,
+    ...context?.extra,
+  })
 
-  if (!IS_PRODUCTION || !SENTRY_DSN) return
+  if (!IS_PRODUCTION || !SENTRY_DSN) {
+    return
+  }
 
   try {
-    const response = await fetch(
-      `https://sentry.io/api/0/projects/${extractProjectId(SENTRY_DSN)}/events/`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Sentry-Auth': buildSentryAuth(SENTRY_DSN),
-        },
-        body: JSON.stringify({
-          message: `[${errorCode}] ${message}`,
-          level: context?.level ?? 'error',
-          tags: {
-            environment: IS_PRODUCTION ? 'production' : 'development',
-            error_code: errorCode,
-            error_type: 'http',
-            ...context?.tags,
-          },
-          extra: context?.extra,
-        }),
+    await sendToSentry({
+      level: 'error',
+      message: `[${errorCode}] ${message}`,
+      tags: {
+        error_code: errorCode,
+        error_type: 'http',
+        environment: IS_PRODUCTION ? 'production' : 'development',
+        ...context?.tags,
       },
-    )
-
-    if (!response.ok) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to send HTTP error to Sentry:', response.statusText)
-    }
+      extra: {
+        correlation_id: context?.correlationId,
+        ...context?.extra,
+      },
+    })
   } catch (sentryError) {
     // eslint-disable-next-line no-console
-    console.error('Sentry HTTP error reporting failed:', sentryError)
+    console.error('[Sentry] Failed to send HTTP error:', sentryError)
   }
 }
 
 /**
- * Extract project ID from Sentry DSN
+ * Send event to Sentry ingestion endpoint
+ * Uses envelope format (required for ingestion API)
  */
-function extractProjectId(dsn: string): string {
-  const match = dsn.match(/\/(\d+)$/)
-  if (!match?.[1]) {
-    throw new Error('Invalid Sentry DSN: missing project ID')
+async function sendToSentry(event: {
+  level: 'error' | 'warning' | 'info'
+  message: string
+  exception?: {
+    type: string
+    value: string
+    stacktrace?: string
   }
-  return match[1]
+  tags?: Record<string, string>
+  extra?: Record<string, unknown>
+}): Promise<void> {
+  if (!SENTRY_DSN) return
+
+  const dsnUrl = new URL(SENTRY_DSN)
+  const projectId = dsnUrl.pathname.split('/').filter(Boolean).pop()
+  const publicKey = dsnUrl.username
+
+  if (!projectId || !publicKey) {
+    throw new Error('Invalid Sentry DSN format')
+  }
+
+  const timestamp = Date.now() / 1000
+  const eventId = generateEventId()
+
+  // Sentry envelope format
+  const envelopeHeaders = JSON.stringify({
+    event_id: eventId,
+    sent_at: new Date().toISOString(),
+  })
+
+  const itemHeaders = JSON.stringify({
+    type: 'event',
+    content_type: 'application/json',
+  })
+
+  const eventPayload = JSON.stringify({
+    event_id: eventId,
+    timestamp,
+    platform: 'node',
+    level: event.level,
+    message: event.message,
+    server_name: 'convex',
+    tags: event.tags,
+    extra: event.extra,
+    ...(event.exception && {
+      exception: {
+        values: [
+          {
+            type: event.exception.type,
+            value: event.exception.value,
+            stacktrace: event.exception.stacktrace
+              ? parseStackTrace(event.exception.stacktrace)
+              : undefined,
+          },
+        ],
+      },
+    }),
+  })
+
+  const envelope = `${envelopeHeaders}\n${itemHeaders}\n${eventPayload}`
+
+  const response = await fetch(
+    `${dsnUrl.protocol}//${dsnUrl.host}/api/${projectId}/envelope/`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-sentry-envelope',
+        'X-Sentry-Auth': `Sentry sentry_version=7, sentry_key=${publicKey}, sentry_timestamp=${timestamp}`,
+      },
+      body: envelope,
+    },
+  )
+
+  if (!response.ok) {
+    const body = await response.text()
+    throw new Error(`Sentry API error: ${response.status} ${body}`)
+  }
 }
 
 /**
- * Build Sentry auth header
+ * Generate UUID for Sentry event ID
  */
-function buildSentryAuth(dsn: string): string {
-  const publicKey = dsn.match(/\/\/(.+?)@/)?.[1] ?? ''
-  return `Sentry sentry_version=7, sentry_key=${publicKey}`
+function generateEventId(): string {
+  return 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'.replace(/x/g, () =>
+    ((Math.random() * 16) | 0).toString(16),
+  )
 }
 
 /**
- * Parse stack trace into Sentry format
+ * Parse stack trace into Sentry frame format
  */
-function parseStackTrace(stack: string): Array<{
-  filename: string
-  function: string
-  lineno?: number
-}> {
-  return stack
+function parseStackTrace(stack: string): {
+  frames: Array<{ filename: string; function: string; lineno?: number }>
+} {
+  const frames = stack
     .split('\n')
     .slice(1)
     .map((line) => {
       const match = line.match(/at (.+?) \((.+?):(\d+)/)
       return {
-        function: match?.[1] ?? 'unknown',
-        filename: match?.[2] ?? 'unknown',
+        function: match?.[1]?.trim() || 'unknown',
+        filename: match?.[2]?.trim() || 'unknown',
         lineno: match?.[3] ? parseInt(match[3], 10) : undefined,
       }
     })
+    .filter((frame) => frame.filename !== 'unknown')
+
+  return { frames }
 }
