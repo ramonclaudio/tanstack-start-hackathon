@@ -3,6 +3,8 @@
  * Handles exception reporting for production monitoring
  */
 
+import { ConvexError } from 'convex/values'
+
 const SENTRY_DSN = process.env['SENTRY_DSN']
 const IS_PRODUCTION = Boolean(process.env['VITE_CONVEX_URL'])
 
@@ -27,10 +29,15 @@ export async function captureException(
     level?: 'error' | 'warning'
   },
 ): Promise<void> {
+  // Extract ConvexError.data if present for structured logging
+  const errorData =
+    error instanceof ConvexError ? { convexErrorData: error.data } : {}
+
   // Always log to Convex console for native log streaming
   // eslint-disable-next-line no-console
   console.error('[Sentry]', error.message, {
     error: error.stack,
+    ...errorData,
     ...context?.extra,
   })
 
@@ -57,9 +64,20 @@ export async function captureException(
       level: context?.level ?? 'error',
       tags: {
         environment: IS_PRODUCTION ? 'production' : 'development',
+        // Add error code as tag for ConvexError
+        ...(error instanceof ConvexError &&
+        typeof error.data === 'object' &&
+        error.data !== null &&
+        'code' in error.data
+          ? { error_code: String(error.data.code) }
+          : {}),
         ...context?.tags,
       },
-      extra: context?.extra,
+      extra: {
+        ...context?.extra,
+        // Include full ConvexError payload in extra data
+        ...errorData,
+      },
       error,
     }
 
@@ -100,6 +118,58 @@ export async function captureException(
     // Don't let Sentry errors break application logic
     // eslint-disable-next-line no-console
     console.error('Sentry reporting failed:', sentryError)
+  }
+}
+
+/**
+ * Report HTTP-level errors to Sentry
+ * Used for errors that don't throw exceptions (CORS, etc.)
+ */
+export async function captureHttpError(
+  errorCode: string,
+  message: string,
+  context?: {
+    tags?: Record<string, string>
+    extra?: Record<string, unknown>
+    level?: 'error' | 'warning' | 'info'
+  },
+): Promise<void> {
+  // Log to Convex console
+  // eslint-disable-next-line no-console
+  console.error(`[Sentry HTTP] ${errorCode}: ${message}`, context?.extra)
+
+  if (!IS_PRODUCTION || !SENTRY_DSN) return
+
+  try {
+    const response = await fetch(
+      `https://sentry.io/api/0/projects/${extractProjectId(SENTRY_DSN)}/events/`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Sentry-Auth': buildSentryAuth(SENTRY_DSN),
+        },
+        body: JSON.stringify({
+          message: `[${errorCode}] ${message}`,
+          level: context?.level ?? 'error',
+          tags: {
+            environment: IS_PRODUCTION ? 'production' : 'development',
+            error_code: errorCode,
+            error_type: 'http',
+            ...context?.tags,
+          },
+          extra: context?.extra,
+        }),
+      },
+    )
+
+    if (!response.ok) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to send HTTP error to Sentry:', response.statusText)
+    }
+  } catch (sentryError) {
+    // eslint-disable-next-line no-console
+    console.error('Sentry HTTP error reporting failed:', sentryError)
   }
 }
 
