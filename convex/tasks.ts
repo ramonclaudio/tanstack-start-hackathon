@@ -1,7 +1,11 @@
 import { v } from 'convex/values'
 import { paginationOptsValidator } from 'convex/server'
 import { mutation, query } from './_generated/server'
-import { validateText } from './lib/validators'
+import {
+  paginationResultValidator,
+  taskValidator,
+  validateText,
+} from './lib/validators'
 import { NotFoundError } from './lib/errors'
 
 /**
@@ -13,6 +17,7 @@ export const list = query({
     paginationOpts: paginationOptsValidator,
     completed: v.optional(v.boolean()),
   },
+  returns: paginationResultValidator(taskValidator),
   handler: async (ctx, args) => {
     let q = ctx.db.query('tasks')
 
@@ -32,6 +37,7 @@ export const list = query({
  */
 export const get = query({
   args: { id: v.id('tasks') },
+  returns: v.union(taskValidator, v.null()),
   handler: async (ctx, args) => {
     return await ctx.db.get(args.id)
   },
@@ -42,6 +48,7 @@ export const get = query({
  */
 export const create = mutation({
   args: { text: v.string() },
+  returns: v.id('tasks'),
   handler: async (ctx, args) => {
     const text = validateText(args.text, {
       fieldName: 'Task text',
@@ -67,6 +74,7 @@ export const update = mutation({
     text: v.optional(v.string()),
     completed: v.optional(v.boolean()),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const existing = await ctx.db.get(args.id)
 
@@ -102,6 +110,7 @@ export const update = mutation({
  */
 export const remove = mutation({
   args: { id: v.id('tasks') },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const existing = await ctx.db.get(args.id)
 
