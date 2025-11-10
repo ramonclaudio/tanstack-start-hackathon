@@ -24,15 +24,6 @@ function PricingPage() {
   const { session } = useAuth()
   const navigate = useNavigate()
   const search = Route.useSearch()
-  const { customer, refetch: refetchCustomer } = useCustomer()
-  const hasFetchedRef = useRef(false)
-
-  useEffect(() => {
-    if (session?.user && !hasFetchedRef.current) {
-      hasFetchedRef.current = true
-      refetchCustomer()
-    }
-  }, [session?.user, refetchCustomer])
 
   return (
     <div className="flex flex-1 flex-col px-6 py-12">
@@ -48,28 +39,47 @@ function PricingPage() {
         </div>
 
         <div className="mb-12">
-          <PricingTable
-            customer={customer}
-            initialInterval={search.interval}
-            selectedPlan={search.plan}
-            onIntervalChange={(interval) =>
-              navigate({
-                to: '/pricing',
-                search: (prev: typeof search) => ({ ...prev, interval }),
-                replace: true,
-              })
-            }
-            onSelectPlan={(planId) =>
-              navigate({
-                to: '/pricing',
-                search: (prev: typeof search) => ({ ...prev, plan: planId }),
-                replace: true,
-              })
-            }
-            onPlanChanged={() => {
-              // Autumn handles data refresh automatically
-            }}
-          />
+          {session?.user ? (
+            <AuthenticatedPricingTable
+              initialInterval={search.interval}
+              selectedPlan={search.plan}
+              onIntervalChange={(interval) =>
+                navigate({
+                  to: '/pricing',
+                  search: (prev: typeof search) => ({ ...prev, interval }),
+                  replace: true,
+                })
+              }
+              onSelectPlan={(planId) =>
+                navigate({
+                  to: '/pricing',
+                  search: (prev: typeof search) => ({ ...prev, plan: planId }),
+                  replace: true,
+                })
+              }
+            />
+          ) : (
+            <PricingTable
+              customer={null}
+              initialInterval={search.interval}
+              selectedPlan={search.plan}
+              onIntervalChange={(interval) =>
+                navigate({
+                  to: '/pricing',
+                  search: (prev: typeof search) => ({ ...prev, interval }),
+                  replace: true,
+                })
+              }
+              onSelectPlan={(planId) =>
+                navigate({
+                  to: '/pricing',
+                  search: (prev: typeof search) => ({ ...prev, plan: planId }),
+                  replace: true,
+                })
+              }
+              onPlanChanged={() => {}}
+            />
+          )}
         </div>
 
         <div className="mt-16 max-w-4xl mx-auto">
@@ -211,5 +221,40 @@ function PricingPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+function AuthenticatedPricingTable({
+  initialInterval,
+  selectedPlan,
+  onIntervalChange,
+  onSelectPlan,
+}: {
+  initialInterval?: 'month' | 'year'
+  selectedPlan?: string
+  onIntervalChange: (interval: 'month' | 'year') => void
+  onSelectPlan: (planId: string) => void
+}) {
+  const { session } = useAuth()
+  const { customer, refetch: refetchCustomer } = useCustomer()
+  const hasFetchedRef = useRef(false)
+
+  // Refetch customer data once on mount
+  useEffect(() => {
+    if (session?.user && !hasFetchedRef.current) {
+      hasFetchedRef.current = true
+      refetchCustomer()
+    }
+  }, [session?.user, refetchCustomer])
+
+  return (
+    <PricingTable
+      customer={customer}
+      initialInterval={initialInterval}
+      selectedPlan={selectedPlan}
+      onIntervalChange={onIntervalChange}
+      onSelectPlan={onSelectPlan}
+      onPlanChanged={() => {}}
+    />
   )
 }

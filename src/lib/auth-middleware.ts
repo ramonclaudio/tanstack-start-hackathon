@@ -178,9 +178,7 @@ export async function requireGuest(options?: {
       throw redirect({ to: safeRedirect })
     }
 
-    logger.auth.debug('Guest access check passed', {
-      location: locationHref,
-    })
+    // Guest access allowed (no log needed - expected behavior)
   } catch (error) {
     // If it's already a redirect, re-throw
     if (error && typeof error === 'object' && 'to' in error) {

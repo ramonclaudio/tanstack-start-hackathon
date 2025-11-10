@@ -1,9 +1,11 @@
 import { query } from './_generated/server'
 import { authComponent } from './auth'
+import { userResponseValidator } from './lib/validators'
 import type { UserResponse } from './lib/types'
 
 export const getUser = query({
   args: {},
+  returns: userResponseValidator,
   handler: async (ctx): Promise<UserResponse> => {
     try {
       const user = await authComponent.getAuthUser(ctx)

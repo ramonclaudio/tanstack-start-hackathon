@@ -1,17 +1,77 @@
 import { v } from 'convex/values'
 import { ValidationError } from './errors'
-import type { Validator } from 'convex/values'
 
 /**
  * Common validation utilities for Convex functions
+ *
+ * These validators handle BUSINESS LOGIC, not type checking.
+ * Use Convex's built-in validators (v.string(), v.number(), etc.) for type validation.
  */
 
-export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-export const URL_REGEX = /^https?:\/\/.+/
+/**
+ * Reusable validator for task documents
+ */
+export const taskValidator = v.object({
+  _id: v.id('tasks'),
+  _creationTime: v.number(),
+  text: v.string(),
+  completed: v.boolean(),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+})
 
 /**
- * Validates and sanitizes text input
- * Throws ValidationError if invalid
+ * Reusable validator for user profile
+ */
+export const userProfileValidator = v.object({
+  id: v.string(),
+  name: v.union(v.string(), v.null()),
+  email: v.string(),
+  image: v.union(v.string(), v.null()),
+  createdAt: v.number(),
+  emailVerified: v.boolean(),
+  twoFactorEnabled: v.boolean(),
+})
+
+/**
+ * Reusable validator for user response (authenticated or not)
+ */
+export const userResponseValidator = v.union(
+  v.object({
+    authenticated: v.literal(true),
+    user: userProfileValidator,
+  }),
+  v.object({
+    authenticated: v.literal(false),
+    user: v.null(),
+  }),
+)
+
+/**
+ * Reusable validator for Convex pagination results
+ * Use this to validate any paginated query response
+ */
+export const paginationResultValidator = (
+  itemValidator: ReturnType<typeof v.object>,
+) =>
+  v.object({
+    page: v.array(itemValidator),
+    isDone: v.boolean(),
+    continueCursor: v.string(),
+    splitCursor: v.optional(v.union(v.string(), v.null())),
+    pageStatus: v.optional(
+      v.union(
+        v.literal('SplitRequired'),
+        v.literal('SplitRecommended'),
+        v.literal('FullPageSelected'),
+        v.null(),
+      ),
+    ),
+  })
+
+/**
+ * Business logic: Validates and sanitizes text input
+ * Use this for length limits and trimming, NOT for type checking
  */
 export function validateText(
   text: string,
@@ -37,55 +97,4 @@ export function validateText(
   }
 
   return trimmed
-}
-
-/**
- * Validates email format
- */
-export function validateEmail(email: string): string {
-  const trimmed = email.trim().toLowerCase()
-
-  if (!EMAIL_REGEX.test(trimmed)) {
-    throw new ValidationError('Invalid email format', 'email')
-  }
-
-  return trimmed
-}
-
-/**
- * Validates URL format
- */
-export function validateUrl(url: string): string {
-  const trimmed = url.trim()
-
-  if (!URL_REGEX.test(trimmed)) {
-    throw new ValidationError('Invalid URL format', 'url')
-  }
-
-  return trimmed
-}
-
-/**
- * Common validator patterns for reuse
- */
-export const validators = {
-  email: v.string(),
-  url: v.string(),
-  shortText: v.string(), // 1-500 chars
-  longText: v.string(), // 1-10000 chars
-  timestamp: v.number(),
-  positiveInt: v.number(),
-} satisfies Record<string, Validator<any, any, any>>
-
-/**
- * Validates pagination options
- */
-export function validatePaginationOpts(opts: {
-  numItems: number
-  cursor: string | null
-}) {
-  if (opts.numItems < 1 || opts.numItems > 100) {
-    throw new ValidationError('numItems must be between 1 and 100', 'numItems')
-  }
-  return opts
 }
