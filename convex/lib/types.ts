@@ -8,7 +8,7 @@ export type AuthUser = Awaited<ReturnType<typeof authComponent.getAuthUser>>
 
 export type UserProfile = {
   id: string
-  name: string
+  name: string | null
   email: string
   image: string | null
   createdAt: number
