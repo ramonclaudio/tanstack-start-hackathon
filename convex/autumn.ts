@@ -19,7 +19,8 @@ export const autumn = new Autumn(components.autumn, {
     try {
       const user = await authComponent.getAuthUser(ctx)
 
-      const userId = user.userId || user._id
+      // Always use document ID (_id) as the canonical user identifier
+      const userId = user._id
       if (!userId) return null
 
       return {
@@ -40,10 +41,12 @@ export const autumn = new Autumn(components.autumn, {
       autumnLogger.error('Autumn identify error', error)
 
       if (error instanceof Error) {
-        await captureException(error, {
+        captureException(error, {
           tags: { function: 'autumn.identify', service: 'billing' },
           extra: { context: 'Failed to identify customer for Autumn billing' },
           level: 'error',
+        }).catch(() => {
+          // Ignore Sentry failures - identify must be deterministic
         })
       }
 

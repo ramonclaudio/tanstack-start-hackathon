@@ -12,7 +12,8 @@ export const getUser = query({
     try {
       const user = await authComponent.getAuthUser(ctx)
 
-      const id = user.userId || user._id
+      // Always use document ID (_id) as the canonical user identifier
+      const id = user._id
       if (!id) {
         return {
           authenticated: false as const,
@@ -42,11 +43,13 @@ export const getUser = query({
         }
       }
 
-      // Unexpected error - report to Sentry
+      // Unexpected error - report to Sentry (fire-and-forget, not transactional)
       if (e instanceof Error) {
-        await captureException(e, {
+        captureException(e, {
           tags: { function: 'user.getUser' },
           extra: { context: 'Failed to fetch authenticated user' },
+        }).catch(() => {
+          // Ignore Sentry failures - queries must be deterministic
         })
       }
 

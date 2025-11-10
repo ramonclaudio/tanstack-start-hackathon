@@ -41,7 +41,6 @@ export type NotFoundPayload = {
   code: 'NOT_FOUND'
   message: string
   resource: string
-  id?: string
 }
 
 /**

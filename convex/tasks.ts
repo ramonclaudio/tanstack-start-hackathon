@@ -18,14 +18,15 @@ export const list = query({
   },
   returns: paginationResultValidator(taskValidator),
   handler: async (ctx, args) => {
-    let q = ctx.db.query('tasks')
-
-    // Filter by completion status if specified
-    if (args.completed !== undefined) {
-      q = q.filter((filter) =>
-        filter.eq(filter.field('completed'), args.completed),
-      )
-    }
+    // Use index when filtering by completion status
+    const q =
+      args.completed !== undefined
+        ? ctx.db
+            .query('tasks')
+            .withIndex('by_completed', (idx) =>
+              idx.eq('completed', args.completed!),
+            )
+        : ctx.db.query('tasks')
 
     return await q.order('desc').paginate(args.paginationOpts)
   },
@@ -54,12 +55,9 @@ export const create = mutation({
       maxLength: 500,
     })
 
-    const now = Date.now()
     return await ctx.db.insert('tasks', {
       text,
       completed: false,
-      createdAt: now,
-      updatedAt: now,
     })
   },
 })
@@ -75,24 +73,11 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const existing = await ctx.db.get(args.id)
-
-    if (!existing) {
-      throw new ConvexError({
-        code: 'NOT_FOUND',
-        message: 'Task not found',
-        resource: 'tasks',
-        id: args.id,
-      })
-    }
-
+    // Fast-fail input validation before db operations
     const updates: Partial<{
       text: string
       completed: boolean
-      updatedAt: number
-    }> = {
-      updatedAt: Date.now(),
-    }
+    }> = {}
 
     if (args.text !== undefined) {
       updates.text = validateText(args.text, {
@@ -105,7 +90,19 @@ export const update = mutation({
       updates.completed = args.completed
     }
 
+    // Now check existence (slower db call)
+    const existing = await ctx.db.get(args.id)
+
+    if (!existing) {
+      throw new ConvexError({
+        code: 'NOT_FOUND',
+        message: 'Task not found',
+        resource: 'tasks',
+      })
+    }
+
     await ctx.db.patch(args.id, updates)
+    return null
   },
 })
 
@@ -123,10 +120,10 @@ export const remove = mutation({
         code: 'NOT_FOUND',
         message: 'Task not found',
         resource: 'tasks',
-        id: args.id,
       })
     }
 
     await ctx.db.delete(args.id)
+    return null
   },
 })
