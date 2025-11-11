@@ -24,8 +24,7 @@ export const getUser = query({
         authenticated: true as const,
         user: {
           id,
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          name: user.name ?? null,
+          name: user.name,
           email: user.email,
 
           image: user.image ?? null,

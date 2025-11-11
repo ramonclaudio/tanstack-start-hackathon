@@ -31,7 +31,7 @@ export const taskValidator = v.object({
  */
 export const userProfileValidator = v.object({
   id: v.string(),
-  name: v.union(v.string(), v.null()),
+  name: v.string(),
   email: v.string(),
   image: v.union(v.string(), v.null()),
   createdAt: timestampValidator,

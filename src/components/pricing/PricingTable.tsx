@@ -462,7 +462,7 @@ export const PricingCard = ({
         primary_text: 'Free',
         secondary_text: undefined,
       }
-    : (itemsList[0].display ?? {
+    : (itemsList[0]?.display ?? {
         primary_text: '',
         secondary_text: undefined,
       })
