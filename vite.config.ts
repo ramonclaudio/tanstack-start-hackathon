@@ -6,6 +6,7 @@ import viteReact from '@vitejs/plugin-react'
 import viteTsConfigPaths from 'vite-tsconfig-paths'
 import tailwindcss from '@tailwindcss/vite'
 import { sentryVitePlugin } from '@sentry/vite-plugin'
+import netlify from '@netlify/vite-plugin-tanstack-start'
 
 const getHttpsConfig = () => {
   const keyPath = path.resolve(__dirname, 'certificates/localhost-key.pem')
@@ -28,6 +29,7 @@ const config = defineConfig({
     }),
     tailwindcss(),
     tanstackStart(),
+    netlify(),
     viteReact(),
     ...(process.env['NODE_ENV'] === 'production' &&
     process.env['SENTRY_AUTH_TOKEN']
