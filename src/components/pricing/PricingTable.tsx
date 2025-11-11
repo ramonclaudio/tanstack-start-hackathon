@@ -297,7 +297,8 @@ export default function PricingTable({
                 isCurrentPlan={isActiveOrTrial}
                 buttonProps={{
                   disabled: session?.user
-                    ? (isActiveOrTrial && !product.properties.updateable) ||
+                    ? (isActiveOrTrial &&
+                        product.properties.updateable === false) ||
                       isScheduled
                     : false,
 
