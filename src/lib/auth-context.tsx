@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const sessionData = session ?? null
 
   useEffect(() => {
-    if (isError && error) {
+    if (isError) {
       logger.auth.error('Session fetch failed', error, {
         status: error.status,
         statusText: error.statusText,
@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else if (!isLoading) {
       logger.auth.debug('Session state updated', {
         authenticated: sessionData !== null,
-        userId: sessionData?.user?.id,
+        userId: sessionData?.user.id,
       })
     }
   }, [sessionData, isLoading, isError, error])

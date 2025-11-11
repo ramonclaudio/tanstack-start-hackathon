@@ -67,7 +67,7 @@ export const getNextTheme = createClientOnlyFn(
         ? ['auto', 'light', 'dark']
         : ['auto', 'dark', 'light']
     const nextTheme = order[(order.indexOf(current) + 1) % order.length]
-    return nextTheme ?? 'auto'
+    return nextTheme
   },
 )
 
@@ -80,9 +80,7 @@ export const themeDetectorScript = (function () {
     } catch {}
     let dark = false
     try {
-      dark =
-        window.matchMedia &&
-        window.matchMedia('(prefers-color-scheme: dark)').matches
+      dark = window.matchMedia('(prefers-color-scheme: dark)').matches
     } catch {}
     const resolved = t === 'auto' ? (dark ? 'dark' : 'light') : t
     const c = document.documentElement.classList
