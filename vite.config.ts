@@ -44,21 +44,6 @@ const config = defineConfig({
         ]
       : []),
   ],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
-  },
-  build: {
-    sourcemap: true,
-    chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      onwarn(warning, warn) {
-        if (warning.code === 'UNUSED_EXTERNAL_IMPORT') return
-        warn(warning)
-      },
-    },
-  },
   server: {
     https: getHttpsConfig(),
   },
