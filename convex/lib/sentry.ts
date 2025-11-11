@@ -11,6 +11,7 @@ import { ConvexError } from 'convex/values'
 
 const SENTRY_DSN = process.env['SENTRY_DSN']
 const IS_PRODUCTION = !!process.env['VITE_CONVEX_URL']
+const ENVIRONMENT = IS_PRODUCTION ? 'production' : 'development'
 
 /**
  * Report exception to Sentry (MUTATIONS/ACTIONS only)
@@ -61,9 +62,7 @@ export async function captureException(
       },
       tags: {
         func: context?.functionName || 'unknown',
-        environment: process.env['VITE_CONVEX_URL']
-          ? 'production'
-          : 'development',
+        environment: ENVIRONMENT,
         ...(errorData && typeof errorData === 'object' && 'code' in errorData
           ? { error_code: String(errorData.code) }
           : {}),
