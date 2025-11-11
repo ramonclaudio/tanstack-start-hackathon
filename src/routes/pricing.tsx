@@ -205,20 +205,6 @@ function PricingPage() {
           </Accordion>
         </div>
 
-        <div className="mt-16 text-center border-t pt-12">
-          <p className="text-muted-foreground mb-4">
-            Still have questions? We're here to help.
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Contact us at{' '}
-            <a
-              href={`mailto:${import.meta.env['VITE_SUPPORT_EMAIL'] || 'support@tanvex.dev'}`}
-              className="text-primary hover:underline font-medium"
-            >
-              {import.meta.env['VITE_SUPPORT_EMAIL'] || 'support@tanvex.dev'}
-            </a>
-          </p>
-        </div>
       </div>
     </div>
   )
