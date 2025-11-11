@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query'
 import { ConvexError } from 'convex/values'
 import { toast } from 'sonner'
@@ -13,11 +13,45 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { logger } from '@/lib/logger'
 
 export const Route = createFileRoute('/demo')({
+  // Prefetch tasks during SSR and on link hover
+  loader: async (opts) => {
+    await opts.context.queryClient.ensureQueryData(
+      convexQuery(api.tasks.list, {
+        paginationOpts: { numItems: 50, cursor: null },
+      }),
+    )
+  },
   component: TaskMutations,
+  pendingComponent: () => (
+    <div className="flex flex-1 flex-col items-center justify-center px-6 py-6 -mt-2">
+      <div className="w-full max-w-2xl space-y-8">
+        <div className="text-center space-y-2">
+          <h1 className="text-4xl font-bold tracking-tight">
+            Convex Tasks Demo
+          </h1>
+          <p className="text-muted-foreground">
+            Add and manage tasks with real-time updates using Convex
+          </p>
+        </div>
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            <Skeleton className="flex-1 h-14" />
+            <Skeleton className="h-14 w-20" />
+          </div>
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-14 w-full rounded-lg" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  ),
 })
 
 function TaskMutations() {
-  const { data: tasks, isLoading } = useQuery(
+  // useSuspenseQuery: Data already loaded via loader, suspends during SSR
+  const { data: tasks } = useSuspenseQuery(
     convexQuery(api.tasks.list, {
       paginationOpts: { numItems: 50, cursor: null },
     }),
@@ -110,13 +144,7 @@ function TaskMutations() {
             </Button>
           </div>
 
-          {isLoading ? (
-            <div className="space-y-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-14 w-full rounded-lg" />
-              ))}
-            </div>
-          ) : tasks?.page?.length === 0 ? (
+          {tasks?.page?.length === 0 ? (
             <p className="text-center text-muted-foreground">
               No tasks yet. Add one above!
             </p>
