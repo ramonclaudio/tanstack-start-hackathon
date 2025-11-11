@@ -1,12 +1,12 @@
-import { useEffect, useRef } from 'react'
 import { Link } from '@tanstack/react-router'
 import { ArrowRight, CreditCard, Package, Zap } from 'lucide-react'
-import { useCustomer } from 'autumn-js/react'
-import { useAction } from 'convex/react'
+import { useQuery } from '@tanstack/react-query'
+import { convexQuery } from '@convex-dev/react-query'
+import { useAction, useConvex } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { FailedPaymentBanner } from './FailedPaymentBanner'
+import type { Customer as AutumnCustomer } from 'autumn-js'
 import { logger } from '@/lib/logger'
-import { useAuth } from '@/lib/auth-context'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,27 +19,48 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 
 /**
- * Client-only component for Autumn billing data.
- * Handles customer data fetching and billing portal integration.
- * Must be wrapped in ClientOnly to prevent SSR hydration mismatch.
+ * Type definitions for Autumn API response wrapper
+ */
+
+type AutumnResponse = {
+  data: AutumnCustomer | null
+  error?: { code: string; message: string }
+}
+
+/**
+ * Autumn billing section with client-side data fetching.
+ *
+ * ARCHITECTURE NOTE:
+ * Autumn requires authenticated Convex context (via authComponent.getAuthUser).
+ * During SSR, auth context isn't available (session is in cookies, Convex uses WebSockets).
+ * Therefore, this component fetches client-side after mount when auth is ready.
+ *
+ * Uses Convex user query as gate to ensure WebSocket auth is synced before fetching Autumn data.
+ * This prevents race conditions without retry logic.
  */
 export function AutumnBillingSection() {
-  const { session } = useAuth()
-  const {
-    customer,
-    isLoading: customerLoading,
-    refetch: refetchCustomer,
-  } = useCustomer()
-  const billingPortalAction = useAction(api.autumn.billingPortal)
-  const hasFetchedRef = useRef(false)
+  const convex = useConvex()
 
-  // Refetch customer data once on mount
-  useEffect(() => {
-    if (session?.user && !hasFetchedRef.current) {
-      hasFetchedRef.current = true
-      refetchCustomer()
-    }
-  }, [session?.user, refetchCustomer])
+  // Use Convex user query as auth sync gate (SSR-prefetched in loader)
+  const { data: convexUser } = useQuery(convexQuery(api.user.getUser, {}))
+
+  // Only fetch Autumn data after Convex auth is fully synced
+  const { data: customerData, isLoading: customerLoading } =
+    useQuery<AutumnResponse>({
+      queryKey: ['autumn', 'customer', convexUser?.user?.id],
+      queryFn: async () => {
+        return (await convex.action(
+          api.autumn.getCustomer,
+          {},
+        )) as AutumnResponse
+      },
+      enabled: !!convexUser?.user, // Wait for Convex auth, not just cookie session
+      staleTime: 60000, // Cache for 1min to reduce refetches
+    })
+  const billingPortalAction = useAction(api.autumn.billingPortal)
+
+  const customer = customerData?.data ?? null
+  const isLoadingCustomer = !convexUser?.user || customerLoading
 
   const openBillingPortal = async () => {
     try {
@@ -104,17 +125,15 @@ export function AutumnBillingSection() {
           <CardDescription>Your current plans and features</CardDescription>
         </CardHeader>
         <CardContent>
-          {customerLoading || !customer ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
-                <div>
-                  <Skeleton className="h-5 w-28 mb-2" />
-                  <Skeleton className="h-4 w-40" />
-                </div>
-                <Skeleton className="h-6 w-16 rounded-full" />
+          {isLoadingCustomer ? (
+            <div className="flex items-center justify-between">
+              <div>
+                <Skeleton className="h-5 w-28 mb-2" />
+                <Skeleton className="h-4 w-40" />
               </div>
+              <Skeleton className="h-6 w-16 rounded-full" />
             </div>
-          ) : customer.products && customer.products.length > 0 ? (
+          ) : customer?.products && customer.products.length > 0 ? (
             <div className="space-y-4">
               {customer.products.map((product) => (
                 <div
@@ -160,7 +179,7 @@ export function AutumnBillingSection() {
           <CardDescription>Track your feature consumption</CardDescription>
         </CardHeader>
         <CardContent>
-          {customerLoading || !customer ? (
+          {isLoadingCustomer ? (
             <div className="space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -173,7 +192,8 @@ export function AutumnBillingSection() {
                 <Skeleton className="h-2 w-full rounded-full" />
               </div>
             </div>
-          ) : customer.features && Object.keys(customer.features).length > 0 ? (
+          ) : customer?.features &&
+            Object.keys(customer.features).length > 0 ? (
             <div className="space-y-4">
               {Object.entries(customer.features).map(([featureId, feature]) => (
                 <div key={featureId} className="space-y-2">

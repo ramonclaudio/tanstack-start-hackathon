@@ -233,11 +233,25 @@ export default function CheckoutDialog(params: CheckoutDialogProps) {
               })
 
               try {
-                await attachAction({
+                const response = await attachAction({
                   productId: checkoutResult.product.id,
                   ...(params.checkoutParams || {}),
                   options,
                 })
+
+                // Redirect to Stripe checkout if URL is returned
+                if (
+                  response &&
+                  typeof response === 'object' &&
+                  'data' in response &&
+                  response.data &&
+                  typeof response.data === 'object' &&
+                  'url' in response.data &&
+                  typeof response.data.url === 'string'
+                ) {
+                  window.location.href = response.data.url
+                  return
+                }
               } catch (e) {
                 logger.error(
                   'Attach product failed',

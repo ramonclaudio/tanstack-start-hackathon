@@ -178,20 +178,20 @@ export default function PricingTable({
       <div className="flex items-center flex-col">
         <div className="mb-4">
           <div className="flex items-center space-x-2 justify-center">
-            <Skeleton className="h-[0.875rem] w-14" />
+            <Skeleton className="h-3.5 w-14" />
             <Skeleton className="h-5 w-10 rounded-full" />
-            <Skeleton className="h-[0.875rem] w-14" />
+            <Skeleton className="h-3.5 w-14" />
           </div>
         </div>
         <div
           className={cn(
-            'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))] w-full gap-2',
+            'grid grid-cols-1 lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))] w-full gap-2',
           )}
         >
           {Array.from({ length: skeletonCount }).map((_, i) => (
             <div
               key={i}
-              className="w-full h-full py-6 border rounded-lg shadow-sm max-w-xl"
+              className="w-full h-full py-6 border rounded-lg shadow-sm lg:max-w-xl"
             >
               <div className="flex flex-col h-full">
                 <div className="pb-4">
@@ -205,8 +205,8 @@ export default function PricingTable({
                 <div className="px-6 mb-6">
                   <Skeleton className="h-4 w-52" />
                 </div>
-                <div className="px-6 mt-auto">
-                  <Skeleton className="h-10 w-full" />
+                <div className="px-6 mt-auto pt-0.5">
+                  <Skeleton className="h-9.5 w-full rounded-lg" />
                 </div>
               </div>
             </div>
@@ -240,6 +240,17 @@ export default function PricingTable({
     try {
       const response = await prepareCheckout({ productId: product.id })
       if (response && 'data' in response && response.data) {
+        // Check if response contains Stripe checkout URL (new customer without payment method)
+        if (
+          typeof response.data === 'object' &&
+          'url' in response.data &&
+          typeof response.data.url === 'string'
+        ) {
+          window.location.href = response.data.url
+          return
+        }
+
+        // Otherwise open checkout dialog (existing customer with payment method)
         setCheckoutResult(response.data)
         setOpen(true)
       }
@@ -283,10 +294,6 @@ export default function PricingTable({
                 key={index}
                 productId={product.id}
                 isCurrentPlan={isActiveOrTrial}
-                className={cn(
-                  selectedPlan === product.id && 'border-primary/60',
-                  isActiveOrTrial && 'border-2 border-primary',
-                )}
                 buttonProps={{
                   disabled: session?.user
                     ? (isActiveOrTrial && !product.properties?.updateable) ||
@@ -399,7 +406,7 @@ export const PricingTableContainer = ({
         )}
         <div
           className={cn(
-            'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))] w-full gap-2',
+            'grid grid-cols-1 lg:grid-cols-[repeat(auto-fit,minmax(200px,1fr))] w-full gap-2',
             className,
           )}
         >
@@ -499,7 +506,7 @@ export const PricingCard = ({
   return (
     <div
       className={cn(
-        ' w-full h-full py-6 text-foreground border rounded-lg shadow-sm max-w-xl',
+        ' w-full h-full py-6 text-foreground border rounded-lg shadow-sm lg:max-w-xl',
         isRecommended &&
           'lg:-translate-y-6 lg:shadow-lg dark:shadow-zinc-800/80 lg:h-[calc(100%+48px)] bg-secondary/40',
         className,

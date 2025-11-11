@@ -1,9 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { User } from 'lucide-react'
-import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Skeleton } from '@/components/ui/skeleton'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,55 +14,34 @@ import { signOut } from '@/lib/auth'
 import { useAuth } from '@/lib/auth-context'
 
 export default function HeaderAuth() {
-  const { session, isLoading } = useAuth()
-  const loading = isLoading
-  const [mounted, setMounted] = useState(false)
+  const { session } = useAuth()
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // During SSR or before mount, render a placeholder button to avoid hydration mismatch
-  if (!mounted) {
-    return (
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8 rounded-full"
-        aria-label="User menu"
-      >
-        <User className="h-5 w-5" />
-      </Button>
-    )
-  }
-
-  // After mount, render the full dropdown
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-full"
+        >
           {session?.user ? (
-            loading ? (
-              <Skeleton className="h-8 w-8 rounded-full" />
-            ) : (
-              <Avatar className="h-8 w-8">
-                <AvatarImage
-                  src={session.user.image || ''}
-                  alt={session.user.name || ''}
-                />
-                <AvatarFallback>
-                  {session.user.name
-                    ? session.user.name.charAt(0).toUpperCase()
-                    : 'U'}
-                </AvatarFallback>
-              </Avatar>
-            )
+            <Avatar className="h-8 w-8">
+              <AvatarImage
+                src={session.user.image || ''}
+                alt={session.user.name || ''}
+              />
+              <AvatarFallback>
+                {session.user.name
+                  ? session.user.name.charAt(0).toUpperCase()
+                  : 'U'}
+              </AvatarFallback>
+            </Avatar>
           ) : (
             <User className="h-5 w-5" />
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
+      <DropdownMenuContent className="w-56" align="end">
         {session?.user ? (
           <>
             <DropdownMenuLabel className="font-normal">
