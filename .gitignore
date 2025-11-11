@@ -8,10 +8,12 @@ dist-ssr
 .vinxi
 .nitro
 .tanstack
+.wrangler
 
 # Environment
 .env
 .env*.local
+*.local
 
 # Convex
 .convex

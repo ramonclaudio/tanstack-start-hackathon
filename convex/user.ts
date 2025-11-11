@@ -24,8 +24,9 @@ export const getUser = query({
         authenticated: true as const,
         user: {
           id,
-          name: user.name ?? null,
+          name: user.name,
           email: user.email,
+
           image: user.image ?? null,
           createdAt: user.createdAt,
           emailVerified: Boolean(user.emailVerified),
@@ -44,7 +45,7 @@ export const getUser = query({
 
       // Log error to Convex console (Sentry picks this up via log streaming)
       // DO NOT call captureException() in queries - breaks determinism
-      // eslint-disable-next-line no-console
+
       console.error('[user.getUser] Unexpected error', {
         error: e instanceof Error ? e.message : String(e),
         stack: e instanceof Error ? e.stack : undefined,

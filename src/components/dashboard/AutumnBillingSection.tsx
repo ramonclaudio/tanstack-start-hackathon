@@ -69,7 +69,6 @@ export function AutumnBillingSection() {
       })
 
       if (
-        response &&
         typeof response === 'object' &&
         'data' in response &&
         response.data &&

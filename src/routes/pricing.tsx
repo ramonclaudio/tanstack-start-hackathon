@@ -204,7 +204,6 @@ function PricingPage() {
             </AccordionItem>
           </Accordion>
         </div>
-
       </div>
     </div>
   )

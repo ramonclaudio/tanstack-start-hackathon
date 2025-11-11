@@ -10,7 +10,8 @@
 import { ConvexError } from 'convex/values'
 
 const SENTRY_DSN = process.env['SENTRY_DSN']
-const IS_PRODUCTION = Boolean(process.env['VITE_CONVEX_URL'])
+const IS_PRODUCTION = !!process.env['VITE_CONVEX_URL']
+const ENVIRONMENT = IS_PRODUCTION ? 'production' : 'development'
 
 /**
  * Report exception to Sentry (MUTATIONS/ACTIONS only)
@@ -33,7 +34,7 @@ export async function captureException(
       : {}
 
   // Always log to console (Convex native log streaming)
-  // eslint-disable-next-line no-console
+
   console.error('[Exception]', error.message, {
     error_type: error.name,
     error_message: error.message,
@@ -61,7 +62,7 @@ export async function captureException(
       },
       tags: {
         func: context?.functionName || 'unknown',
-        environment: IS_PRODUCTION ? 'production' : 'development',
+        environment: ENVIRONMENT,
         ...(errorData && typeof errorData === 'object' && 'code' in errorData
           ? { error_code: String(errorData.code) }
           : {}),
@@ -75,7 +76,7 @@ export async function captureException(
     })
   } catch (sentryError) {
     // Don't let Sentry failures break app logic
-    // eslint-disable-next-line no-console
+
     console.error('[Sentry] Failed to send exception:', sentryError)
   }
 }
@@ -93,7 +94,6 @@ export async function captureHttpError(
     correlationId?: string
   },
 ): Promise<void> {
-  // eslint-disable-next-line no-console
   console.error('[HTTP Error]', {
     error_code: errorCode,
     message,
@@ -113,6 +113,7 @@ export async function captureHttpError(
       tags: {
         error_code: errorCode,
         error_type: 'http',
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         environment: IS_PRODUCTION ? 'production' : 'development',
         ...context?.tags,
       },
@@ -122,7 +123,6 @@ export async function captureHttpError(
       },
     })
   } catch (sentryError) {
-    // eslint-disable-next-line no-console
     console.error('[Sentry] Failed to send HTTP error:', sentryError)
   }
 }

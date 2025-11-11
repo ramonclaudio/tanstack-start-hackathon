@@ -241,7 +241,6 @@ export default function CheckoutDialog(params: CheckoutDialogProps) {
 
                 // Redirect to Stripe checkout if URL is returned
                 if (
-                  response &&
                   typeof response === 'object' &&
                   'data' in response &&
                   response.data &&
@@ -507,7 +506,7 @@ const PrepaidItem = ({
         productId: checkoutResult.product.id,
         options: newOptions,
       })
-      if (response && 'data' in response && response.data) {
+      if ('data' in response && response.data) {
         setCheckoutResult(response.data)
       }
     } catch (error) {

@@ -128,7 +128,7 @@ export const authClient = createAuthClient({
       logger.auth.error('Auth error', error)
     } catch (logError) {
       // Last resort: don't break auth flow even if error logging fails
-      // eslint-disable-next-line no-console
+
       console.error('Critical: Failed to log auth error', logError, error)
     }
   },

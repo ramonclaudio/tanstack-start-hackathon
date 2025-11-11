@@ -71,7 +71,7 @@ function TaskMutations() {
       } catch (error) {
         const errorMessage =
           error instanceof ConvexError
-            ? (error.data as { message?: string })?.message ||
+            ? (error.data as { message?: string }).message ||
               'Failed to create task'
             : 'An unexpected error occurred'
 
@@ -93,7 +93,7 @@ function TaskMutations() {
       } catch (error) {
         const errorMessage =
           error instanceof ConvexError
-            ? (error.data as { message?: string })?.message ||
+            ? (error.data as { message?: string }).message ||
               'Failed to delete task'
             : 'An unexpected error occurred'
 
@@ -144,13 +144,13 @@ function TaskMutations() {
             </Button>
           </div>
 
-          {tasks?.page?.length === 0 ? (
+          {tasks.page.length === 0 ? (
             <p className="text-center text-muted-foreground">
               No tasks yet. Add one above!
             </p>
           ) : (
             <ul className="space-y-2">
-              {tasks?.page?.map((task: { _id: Id<'tasks'>; text: string }) => (
+              {tasks.page.map((task: { _id: Id<'tasks'>; text: string }) => (
                 <li
                   key={task._id}
                   className="border rounded-lg p-4 bg-card text-card-foreground h-14 flex items-center justify-between gap-4"

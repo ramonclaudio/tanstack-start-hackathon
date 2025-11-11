@@ -36,26 +36,20 @@ class ConvexLogger {
       const emoji = level === 'error' ? '❌' : level === 'warn' ? '⚠️' : 'ℹ️'
       const consoleMethod =
         level === 'error'
-          ? // eslint-disable-next-line no-console
-            console.error
+          ? console.error
           : level === 'warn'
-            ? // eslint-disable-next-line no-console
-              console.warn
-            : // eslint-disable-next-line no-console
-              console.log
+            ? console.warn
+            : console.log
       // Pretty format for development
       consoleMethod(`${emoji} [${this.module}] ${message}`, context || '')
     } else {
       // Structured JSON for production (Convex log streams)
       const consoleMethod =
         level === 'error'
-          ? // eslint-disable-next-line no-console
-            console.error
+          ? console.error
           : level === 'warn'
-            ? // eslint-disable-next-line no-console
-              console.warn
-            : // eslint-disable-next-line no-console
-              console.log
+            ? console.warn
+            : console.log
       consoleMethod(JSON.stringify(log))
     }
   }

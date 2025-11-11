@@ -31,7 +31,7 @@ export const taskValidator = v.object({
  */
 export const userProfileValidator = v.object({
   id: v.string(),
-  name: v.union(v.string(), v.null()),
+  name: v.string(),
   email: v.string(),
   image: v.union(v.string(), v.null()),
   createdAt: timestampValidator,
@@ -133,24 +133,20 @@ export function trackDbCall(estimatedDocs = 1): void {
   docsScannedEstimate += estimatedDocs
 
   if (dbCallCount >= QUERY_LIMITS.DB_CALLS_ERROR) {
-    // eslint-disable-next-line no-console
     console.error(
       `[Query Limits] Critical: ${dbCallCount} database calls (limit: 4096)`,
     )
   } else if (dbCallCount >= QUERY_LIMITS.DB_CALLS_WARN) {
-    // eslint-disable-next-line no-console
     console.warn(
       `[Query Limits] Warning: ${dbCallCount} database calls approaching limit (4096)`,
     )
   }
 
   if (docsScannedEstimate >= QUERY_LIMITS.DOCS_SCANNED_ERROR) {
-    // eslint-disable-next-line no-console
     console.error(
       `[Query Limits] Critical: ~${docsScannedEstimate} docs scanned (limit: 16384)`,
     )
   } else if (docsScannedEstimate >= QUERY_LIMITS.DOCS_SCANNED_WARN) {
-    // eslint-disable-next-line no-console
     console.warn(
       `[Query Limits] Warning: ~${docsScannedEstimate} docs scanned approaching limit (16384)`,
     )

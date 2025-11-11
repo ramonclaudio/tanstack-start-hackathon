@@ -31,13 +31,13 @@ export const autumn = new Autumn(components.autumn, {
 
       // Always use document ID (_id) as the canonical user identifier
       const userId = user._id
-      if (!userId) return null
+      if (!userId || !user.email) return null
 
       return {
         customerId: userId,
         customerData: {
-          name: user.name ?? '',
-          email: user.email ?? '',
+          name: user.name || '',
+          email: user.email,
         },
       }
     } catch (error) {

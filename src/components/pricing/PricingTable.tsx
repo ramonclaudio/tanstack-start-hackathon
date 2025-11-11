@@ -119,12 +119,12 @@ export default function PricingTable({
   const error = productsProp ? null : hook.error
 
   const safeProducts = Array.isArray(products) ? products : []
-  const filtered = safeProducts.filter((p) => !p?.is_add_on)
+  const filtered = safeProducts.filter((p) => !p.is_add_on)
   const displayProducts = filtered.length > 0 ? filtered : safeProducts
   const intervals = Array.from(
     new Set(
       displayProducts
-        .map((p) => p?.properties?.interval_group)
+        .map((p) => p.properties.interval_group)
         .filter((i) => !!i),
     ),
   )
@@ -132,7 +132,7 @@ export default function PricingTable({
 
   const filteredAndSortedProducts = React.useMemo(() => {
     const intervalFilter = (product: Product | ProductLike) => {
-      const group = product.properties?.interval_group
+      const group = product.properties.interval_group
       if (!group || !multiInterval) {
         return true
       }
@@ -239,7 +239,7 @@ export default function PricingTable({
     }
     try {
       const response = await prepareCheckout({ productId: product.id })
-      if (response && 'data' in response && response.data) {
+      if ('data' in response && response.data) {
         // Check if response contains Stripe checkout URL (new customer without payment method)
         if (
           typeof response.data === 'object' &&
@@ -282,6 +282,7 @@ export default function PricingTable({
           setIsAnnualToggle={setIsAnnual}
           multiInterval={multiInterval}
           isAuthenticated={!!session?.user}
+          selectedPlan={selectedPlan}
           onIntervalToggle={(val) => onIntervalChange?.(val ? 'year' : 'month')}
         >
           {filteredAndSortedProducts.map((product, index) => {
@@ -296,7 +297,8 @@ export default function PricingTable({
                 isCurrentPlan={isActiveOrTrial}
                 buttonProps={{
                   disabled: session?.user
-                    ? (isActiveOrTrial && !product.properties?.updateable) ||
+                    ? (isActiveOrTrial &&
+                        product.properties.updateable === false) ||
                       isScheduled
                     : false,
 
@@ -334,6 +336,7 @@ const PricingTableContext = createContext<{
   products: Array<Product | ProductLike>
   showFeatures: boolean
   isAuthenticated: boolean
+  selectedPlan?: string
 } | null>(null)
 
 export const usePricingTableContext = (componentName: string) => {
@@ -356,6 +359,7 @@ export const PricingTableContainer = ({
   multiInterval,
   onIntervalToggle,
   isAuthenticated,
+  selectedPlan,
 }: {
   children?: React.ReactNode
   products?: Array<Product | ProductLike>
@@ -366,6 +370,7 @@ export const PricingTableContainer = ({
   multiInterval: boolean
   onIntervalToggle?: (isAnnual: boolean) => void
   isAuthenticated: boolean
+  selectedPlan?: string
 }) => {
   if (!products) {
     throw new Error('products is required in <PricingTable />')
@@ -384,6 +389,7 @@ export const PricingTableContainer = ({
         products,
         showFeatures,
         isAuthenticated,
+        selectedPlan,
       }}
     >
       <div
@@ -430,8 +436,10 @@ export const PricingCard = ({
   buttonProps,
   isCurrentPlan = false,
 }: PricingCardProps) => {
-  const { products, showFeatures, isAuthenticated } =
+  const { products, showFeatures, isAuthenticated, selectedPlan } =
     usePricingTableContext('PricingCard')
+
+  const isSelected = selectedPlan === productId
 
   const product = products.find((p) => p.id === productId)
 
@@ -448,7 +456,7 @@ export const PricingCard = ({
   )
 
   const isRecommended = productDisplay?.recommend_text ? true : false
-  const isFree = Boolean(product.properties?.is_free)
+  const isFree = Boolean(product.properties.is_free)
   const itemsList = Array.isArray(product.items) ? product.items : []
   const mainPriceDisplay = isFree
     ? {
@@ -509,6 +517,7 @@ export const PricingCard = ({
         ' w-full h-full py-6 text-foreground border rounded-lg shadow-sm lg:max-w-xl',
         isRecommended &&
           'lg:-translate-y-6 lg:shadow-lg dark:shadow-zinc-800/80 lg:h-[calc(100%+48px)] bg-secondary/40',
+        isSelected && 'border',
         className,
       )}
     >

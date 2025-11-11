@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 import { validateClientEnv } from './env'
 
 const clientEnv = validateClientEnv()

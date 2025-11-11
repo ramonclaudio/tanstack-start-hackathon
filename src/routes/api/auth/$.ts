@@ -13,8 +13,8 @@ const HTTP2_FORBIDDEN_HEADERS = [
 async function handleAuthRequest(request: Request) {
   // Use the PUBLIC env var for client-side access in Tanstack Start
   const convexSiteUrl =
-    import.meta.env?.['VITE_PUBLIC_CONVEX_SITE_URL'] ||
-    import.meta.env?.['VITE_CONVEX_SITE_URL']
+    import.meta.env['VITE_PUBLIC_CONVEX_SITE_URL'] ||
+    import.meta.env['VITE_CONVEX_SITE_URL']
 
   if (!convexSiteUrl) {
     throw new Error(
