@@ -19,11 +19,7 @@ export default function HeaderAuth() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 rounded-full"
-        >
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
           {session?.user ? (
             <Avatar className="h-8 w-8">
               <AvatarImage

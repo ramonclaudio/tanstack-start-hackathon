@@ -16,9 +16,7 @@ export function FailedPaymentBanner({
 
   if (!customer || dismissed) return null
 
-  const failedPayment = customer.products
-    ? customer.products.find((p) => p.status === 'past_due')
-    : undefined
+  const failedPayment = customer.products.find((p) => p.status === 'past_due')
 
   if (!failedPayment) return null
 
