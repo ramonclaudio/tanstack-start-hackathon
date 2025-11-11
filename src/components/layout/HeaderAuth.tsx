@@ -22,7 +22,7 @@ export default function HeaderAuth() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 rounded-full focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="h-8 w-8 rounded-full"
         >
           {session?.user ? (
             <Avatar className="h-8 w-8">
