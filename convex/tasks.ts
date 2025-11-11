@@ -44,7 +44,6 @@ export const list = query({
       const metrics = getQueryMetrics()
 
       if (metrics.dbCalls > 10) {
-        // eslint-disable-next-line no-console
         console.warn('[Performance] High db call count detected', {
           correlationId,
           function: 'tasks.list',
@@ -54,7 +53,6 @@ export const list = query({
 
       return result
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('[Query Error]', {
         correlationId,
         function: 'tasks.list',
@@ -81,7 +79,6 @@ export const get = query({
       const result = await ctx.db.get(args.id)
       return result
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('[Query Error]', {
         correlationId,
         function: 'tasks.get',
@@ -114,7 +111,6 @@ export const create = mutation({
 
       return taskId
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('[Mutation Error]', {
         correlationId,
         function: 'tasks.create',
@@ -170,7 +166,6 @@ export const update = mutation({
       await ctx.db.patch(args.id, updates)
       return null
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('[Mutation Error]', {
         correlationId,
         function: 'tasks.update',
@@ -204,7 +199,6 @@ export const remove = mutation({
       await ctx.db.delete(args.id)
       return null
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('[Mutation Error]', {
         correlationId,
         function: 'tasks.remove',

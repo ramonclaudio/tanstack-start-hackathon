@@ -89,7 +89,7 @@ http.route({
     } catch (error) {
       if (error instanceof CorsError) {
         // Log CORS errors but don't spam Sentry (too noisy in production)
-        // eslint-disable-next-line no-console
+
         console.warn('[CORS] Origin not allowed', {
           endpoint: '/health',
           origin: error.origin,
@@ -147,7 +147,7 @@ http.route({
     } catch (error) {
       if (error instanceof CorsError) {
         // Log CORS errors but don't spam Sentry (too noisy in production)
-        // eslint-disable-next-line no-console
+
         console.warn('[CORS] Origin not allowed', {
           endpoint: 'OPTIONS /*',
           origin: error.origin,

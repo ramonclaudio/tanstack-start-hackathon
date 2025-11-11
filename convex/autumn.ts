@@ -36,8 +36,8 @@ export const autumn = new Autumn(components.autumn, {
       return {
         customerId: userId,
         customerData: {
-          name: user.name ?? '',
-          email: user.email ?? '',
+          name: user.name || '',
+          email: user.email,
         },
       }
     } catch (error) {
