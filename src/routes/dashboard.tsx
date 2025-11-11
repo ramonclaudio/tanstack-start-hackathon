@@ -6,7 +6,6 @@ import { ConvexError } from 'convex/values'
 import { api } from '../../convex/_generated/api'
 import type { ErrorComponentProps } from '@tanstack/react-router'
 import { useAuth } from '@/lib/auth-context'
-import { ClientOnly } from '@/components/ClientOnly'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -17,11 +16,17 @@ import {
 } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton'
 import { AutumnBillingSection } from '@/components/dashboard/AutumnBillingSection'
 
 export const Route = createFileRoute('/dashboard')({
+  // Prefetch Convex user data during SSR
+  // Autumn billing data fetches client-side after auth loads (requires authenticated context)
+  loader: async (opts) => {
+    await opts.context.queryClient.ensureQueryData(
+      convexQuery(api.user.getUser, {}),
+    )
+  },
   component: Dashboard,
   errorComponent: DashboardError,
 })
@@ -145,41 +150,8 @@ function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Autumn Billing Section - Client Only to prevent hydration mismatch */}
-        <ClientOnly
-          fallback={
-            <>
-              {/* Skeleton placeholders for billing cards */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                </CardContent>
-              </Card>
-              <Card className="col-span-full">
-                <CardHeader>
-                  <CardTitle>Subscription Status</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-20 w-full" />
-                </CardContent>
-              </Card>
-              <Card className="col-span-full">
-                <CardHeader>
-                  <CardTitle>Feature Usage</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-20 w-full" />
-                </CardContent>
-              </Card>
-            </>
-          }
-        >
-          <AutumnBillingSection />
-        </ClientOnly>
+        {/* Autumn Billing Section - SSR-safe with loader prefetch */}
+        <AutumnBillingSection />
       </div>
     </div>
   )
