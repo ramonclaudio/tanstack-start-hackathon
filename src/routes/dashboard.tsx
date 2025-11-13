@@ -59,13 +59,11 @@ function DashboardError({ error, reset }: ErrorComponentProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {(process.env.NODE_ENV === 'development' ||
-            process.env.NODE_ENV === 'dev') &&
-            errorData && (
-              <div className="p-2 bg-muted rounded text-xs font-mono">
-                Code: {errorData.code}
-              </div>
-            )}
+          {process.env.NODE_ENV === 'development' && errorData && (
+            <div className="p-2 bg-muted rounded text-xs font-mono">
+              Code: {errorData.code}
+            </div>
+          )}
           <div className="flex gap-2">
             <Button onClick={reset} size="sm">
               Retry

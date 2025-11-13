@@ -17,8 +17,7 @@ export function getRouter(): AnyRouter {
   const isClient = typeof window !== 'undefined'
 
   const env = validateClientEnv()
-  const isProduction =
-    process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'prod'
+  const isProduction = process.env.NODE_ENV === 'production'
 
   if (isClient) {
     logger.app.info('Environment validated', {

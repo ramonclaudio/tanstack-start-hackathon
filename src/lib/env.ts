@@ -14,7 +14,7 @@ export type ClientEnv = z.infer<typeof clientEnvSchema>
 
 const serverEnvSchema = z
   .object({
-    NODE_ENV: z.enum(['development', 'production', 'test', 'dev', 'prod']),
+    NODE_ENV: z.enum(['development', 'production', 'test']),
     GITHUB_CLIENT_ID: z.string().optional(),
     GITHUB_CLIENT_SECRET: z.string().optional(),
     DEV_GITHUB_CLIENT_ID: z.string().optional(),
@@ -93,15 +93,8 @@ export { clientEnvSchema, serverEnvSchema }
  */
 export function getSiteUrl(): string {
   const env = validateClientEnv()
-  const isProduction =
-    process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'prod'
-  const isDevelopment =
-    process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'dev'
-  return isProduction
-    ? env.VITE_SITE_URL
-    : isDevelopment
-      ? env.VITE_DEV_SITE_URL
-      : env.VITE_DEV_SITE_URL
+  const isProduction = process.env.NODE_ENV === 'production'
+  return isProduction ? env.VITE_SITE_URL : env.VITE_DEV_SITE_URL
 }
 
 /**
@@ -113,10 +106,7 @@ export function getGithubCredentials(): {
   clientSecret?: string
 } {
   const serverEnv = validateServerEnv()
-  const isProduction =
-    process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'prod'
-  const isDevelopment =
-    process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'dev'
+  const isProduction = process.env.NODE_ENV === 'production'
 
   if (isProduction) {
     return {
@@ -125,14 +115,7 @@ export function getGithubCredentials(): {
     }
   }
 
-  if (isDevelopment) {
-    return {
-      clientId: serverEnv.DEV_GITHUB_CLIENT_ID,
-      clientSecret: serverEnv.DEV_GITHUB_CLIENT_SECRET,
-    }
-  }
-
-  // Default to dev credentials for unknown environments
+  // Development/test: use dev credentials
   return {
     clientId: serverEnv.DEV_GITHUB_CLIENT_ID,
     clientSecret: serverEnv.DEV_GITHUB_CLIENT_SECRET,
