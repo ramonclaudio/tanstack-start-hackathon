@@ -1,9 +1,7 @@
 import { createAuthClient } from 'better-auth/react'
 import { convexClient } from '@convex-dev/better-auth/client/plugins'
 import { logger } from './logger'
-import { validateClientEnv } from './env'
-
-const clientEnv = validateClientEnv()
+import { getSiteUrl } from './env'
 
 const AUTH_PATHS = {
   SIGNIN: '/sign-in',
@@ -36,20 +34,16 @@ const getAuthBaseURL = (): string => {
     }
   }
 
-  // Server-side: use VITE_PUBLIC_CONVEX_SITE_URL or fallback to dev default
-  const siteUrl = clientEnv.VITE_PUBLIC_CONVEX_SITE_URL
-  if (siteUrl) {
+  // Server-side: use environment-based SITE_URL
+  try {
+    const siteUrl = getSiteUrl()
     return `${siteUrl}/api/auth`
+  } catch (error) {
+    logger.security.error('Failed to get SITE_URL', error)
+    throw new Error(
+      'Failed to determine auth base URL: SITE_URL not configured',
+    )
   }
-
-  // Development fallback
-  if (clientEnv.DEV) {
-    return 'http://localhost:3000/api/auth'
-  }
-
-  throw new Error(
-    'Failed to determine auth base URL: VITE_PUBLIC_CONVEX_SITE_URL not set',
-  )
 }
 
 const logAuthResponse = async (
