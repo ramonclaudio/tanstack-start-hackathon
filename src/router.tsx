@@ -17,24 +17,26 @@ export function getRouter(): AnyRouter {
   const isClient = typeof window !== 'undefined'
 
   const env = validateClientEnv()
+  const isProduction =
+    process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'prod'
 
   if (isClient) {
     logger.app.info('Environment validated', {
-      mode: env.MODE,
-      hasSentry: !!env.VITE_SENTRY_DSN,
+      mode: process.env.NODE_ENV,
+      hasSentry: !!env.SENTRY_DSN,
     })
   }
 
   // Construct Convex client with optional auth expectation
   // For protected routes, expectAuth prevents flicker by pausing queries until auth loads
-  const convex = new ConvexReactClient(env.VITE_CONVEX_URL, {
+  const convex = new ConvexReactClient(env.CONVEX_URL, {
     // Only expect auth if we're on a protected route
     expectAuth: false, // We'll handle auth state in individual components
   })
   const convexQueryClient = new ConvexQueryClient(convex)
 
   if (isClient) {
-    logger.api.info('Convex client initialized', { url: env.VITE_CONVEX_URL })
+    logger.api.info('Convex client initialized', { url: env.CONVEX_URL })
   }
 
   const queryClient = new QueryClient({
@@ -99,20 +101,20 @@ export function getRouter(): AnyRouter {
   // Initialize Sentry if DSN is configured
   if (
     isClient &&
-    env.PROD &&
-    env.VITE_SENTRY_DSN &&
+    isProduction &&
+    env.SENTRY_DSN &&
     !(window as Window & { __sentryInitialized?: boolean }).__sentryInitialized
   ) {
     logger.app.info('Initializing Sentry for error tracking', {
-      environment: env.MODE,
+      environment: process.env.NODE_ENV,
       tracesSampleRate: 0.1,
     })
 
     import('@sentry/tanstackstart-react')
       .then((Sentry) => {
         Sentry.init({
-          dsn: env.VITE_SENTRY_DSN,
-          environment: env.MODE,
+          dsn: env.SENTRY_DSN,
+          environment: process.env.NODE_ENV,
           integrations: [
             Sentry.tanstackRouterBrowserTracingIntegration(router),
           ],
