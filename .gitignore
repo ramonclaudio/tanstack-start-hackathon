@@ -46,3 +46,6 @@ coverage
 # Misc
 certificates
 dev
+
+# Local Netlify folder
+.netlify
