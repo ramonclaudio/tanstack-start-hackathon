@@ -4,11 +4,19 @@ import { authComponent, createAuth } from './auth'
 
 const http = httpRouter()
 
+const getSiteUrl = (): string | undefined => {
+  const deployment = process.env['CONVEX_DEPLOYMENT']
+  const isProduction = deployment?.startsWith('prod:') ?? false
+  return isProduction
+    ? process.env['VITE_SITE_URL']
+    : process.env['VITE_DEV_SITE_URL']
+}
+
 const ALLOWED_ORIGINS = [
   'http://localhost:3000',
   'http://localhost:3001',
-  process.env['SITE_URL'],
-  process.env['NEXT_PUBLIC_SITE_URL'],
+  'https://localhost:3000',
+  getSiteUrl(),
 ].filter(Boolean) as Array<string>
 
 /**
