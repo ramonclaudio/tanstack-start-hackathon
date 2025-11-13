@@ -23,7 +23,14 @@ const getHttpsConfig = () => {
 }
 
 const config = defineConfig({
-  envPrefix: ['VITE_', 'CONVEX_', 'SENTRY_DSN', 'SENTRY_ORG', 'SENTRY_PROJECT'],
+  envPrefix: [
+    'VITE_',
+    'CONVEX_URL',
+    'CONVEX_SITE_URL',
+    'SENTRY_DSN',
+    'SENTRY_ORG',
+    'SENTRY_PROJECT',
+  ],
   plugins: [
     viteTsConfigPaths({
       projects: ['./tsconfig.json'],
