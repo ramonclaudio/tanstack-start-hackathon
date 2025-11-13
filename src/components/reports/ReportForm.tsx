@@ -97,6 +97,12 @@ export function ReportForm() {
       ) {
         throw new Error('Please select a report template')
       }
+      if (
+        state.coderabbitFormData.promptTemplate === 'Custom' &&
+        !state.coderabbitFormData.customPrompt.trim()
+      ) {
+        throw new Error('Please provide a custom prompt')
+      }
       const payload = getCodeRabbitReportPayload(state.coderabbitFormData)
       const reportId = await generateCodeRabbitReport({
         from: format(state.fromDate, 'yyyy-MM-dd'),
@@ -234,7 +240,9 @@ export function ReportForm() {
               !state.fromDate ||
               !state.toDate ||
               !state.coderabbitFormData.promptTemplate ||
-              state.coderabbitFormData.promptTemplate === 'Select template'
+              state.coderabbitFormData.promptTemplate === 'Select template' ||
+              (state.coderabbitFormData.promptTemplate === 'Custom' &&
+                !state.coderabbitFormData.customPrompt.trim())
             }
             className="w-full h-12 text-base font-semibold"
             size="lg"
