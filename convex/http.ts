@@ -33,8 +33,25 @@ class CorsError extends Error {
   }
 }
 
+/**
+ * Check if origin is allowed
+ * Allows: exact matches in ALLOWED_ORIGINS + *.netlify.app preview deploys
+ */
+function isOriginAllowed(origin: string | null): boolean {
+  if (!origin) return false
+  if (ALLOWED_ORIGINS.includes(origin)) return true
+
+  // Allow Netlify preview/deploy URLs (e.g., https://sage-starburst-d15a22.netlify.app)
+  try {
+    const url = new URL(origin)
+    return url.hostname.endsWith('.netlify.app') && url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 function corsHeaders(origin: string | null): HeadersInit {
-  if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
+  if (!isOriginAllowed(origin)) {
     throw new CorsError('Origin not allowed', origin)
   }
 
@@ -63,9 +80,7 @@ function errorResponse(
     status,
     headers: {
       'Content-Type': 'application/json',
-      ...(origin && ALLOWED_ORIGINS.includes(origin)
-        ? corsHeaders(origin)
-        : {}),
+      ...(origin && isOriginAllowed(origin) ? corsHeaders(origin) : {}),
     },
   })
 }
