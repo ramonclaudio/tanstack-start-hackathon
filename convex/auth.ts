@@ -94,7 +94,8 @@ export const createAuth = (
   const githubClientSecret = getGithubClientSecret()
 
   console.log('[Auth Config] Better Auth initialization:', {
-    NODE_ENV: process.env['NODE_ENV'],
+    CONVEX_DEPLOYMENT: process.env['CONVEX_DEPLOYMENT'],
+    isProduction: isProductionDeployment(),
     baseURL: siteUrl,
     githubClientId: githubClientId,
     hasGithubClientSecret: !!githubClientSecret,
