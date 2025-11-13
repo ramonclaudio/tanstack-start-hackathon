@@ -17,11 +17,10 @@ export function getRouter(): AnyRouter {
   const isClient = typeof window !== 'undefined'
 
   const env = validateClientEnv()
-  const isProduction = process.env.NODE_ENV === 'production'
 
   if (isClient) {
     logger.app.info('Environment validated', {
-      mode: process.env.NODE_ENV,
+      mode: import.meta.env.MODE,
       hasSentry: !!env.SENTRY_DSN,
     })
   }
@@ -100,12 +99,12 @@ export function getRouter(): AnyRouter {
   // Initialize Sentry if DSN is configured
   if (
     isClient &&
-    isProduction &&
+    import.meta.env.PROD &&
     env.SENTRY_DSN &&
     !(window as Window & { __sentryInitialized?: boolean }).__sentryInitialized
   ) {
     logger.app.info('Initializing Sentry for error tracking', {
-      environment: process.env.NODE_ENV,
+      environment: import.meta.env.MODE,
       tracesSampleRate: 0.1,
     })
 
@@ -113,7 +112,7 @@ export function getRouter(): AnyRouter {
       .then((Sentry) => {
         Sentry.init({
           dsn: env.SENTRY_DSN,
-          environment: process.env.NODE_ENV,
+          environment: import.meta.env.MODE,
           integrations: [
             Sentry.tanstackRouterBrowserTracingIntegration(router),
           ],

@@ -93,8 +93,7 @@ export { clientEnvSchema, serverEnvSchema }
  */
 export function getSiteUrl(): string {
   const env = validateClientEnv()
-  const isProduction = process.env.NODE_ENV === 'production'
-  return isProduction ? env.VITE_SITE_URL : env.VITE_DEV_SITE_URL
+  return import.meta.env.PROD ? env.VITE_SITE_URL : env.VITE_DEV_SITE_URL
 }
 
 /**
@@ -106,9 +105,8 @@ export function getGithubCredentials(): {
   clientSecret?: string
 } {
   const serverEnv = validateServerEnv()
-  const isProduction = process.env.NODE_ENV === 'production'
 
-  if (isProduction) {
+  if (import.meta.env.PROD) {
     return {
       clientId: serverEnv.GITHUB_CLIENT_ID,
       clientSecret: serverEnv.GITHUB_CLIENT_SECRET,

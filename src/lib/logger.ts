@@ -1,7 +1,7 @@
 import { validateClientEnv } from './env'
 
 const clientEnv = validateClientEnv()
-const isDev = process.env.NODE_ENV === 'development'
+const isDev = import.meta.env.DEV
 const isSentryEnabled = Boolean(clientEnv.SENTRY_DSN)
 
 // Lazy load Sentry only if DSN is configured

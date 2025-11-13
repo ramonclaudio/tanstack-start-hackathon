@@ -59,7 +59,7 @@ function DashboardError({ error, reset }: ErrorComponentProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {process.env.NODE_ENV === 'development' && errorData && (
+          {import.meta.env.DEV && errorData && (
             <div className="p-2 bg-muted rounded text-xs font-mono">
               Code: {errorData.code}
             </div>
