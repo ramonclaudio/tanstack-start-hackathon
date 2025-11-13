@@ -27,6 +27,10 @@ const isProduction = () => {
   return deployment?.startsWith('prod:') ?? false
 }
 
+const isNetlifyBuild = () => {
+  return process.env['NETLIFY'] === 'true'
+}
+
 const config = defineConfig({
   envPrefix: [
     'VITE_',
@@ -42,7 +46,7 @@ const config = defineConfig({
     }),
     tailwindcss(),
     tanstackStart(),
-    ...(isProduction() ? [netlify()] : []),
+    ...(isNetlifyBuild() ? [netlify()] : []),
     viteReact(),
     ...(isProduction() && process.env['SENTRY_AUTH_TOKEN']
       ? [
