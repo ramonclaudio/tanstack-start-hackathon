@@ -55,8 +55,9 @@ function corsHeaders(origin: string | null): HeadersInit {
     throw new CorsError('Origin not allowed', origin)
   }
 
+  // At this point origin is guaranteed to be a valid string by isOriginAllowed
   return {
-    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Origin': origin as string,
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
