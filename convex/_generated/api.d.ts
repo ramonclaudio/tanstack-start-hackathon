@@ -10,7 +10,11 @@
 
 import type * as auth from "../auth.js";
 import type * as autumn from "../autumn.js";
+import type * as coderabbit from "../coderabbit.js";
+import type * as crons from "../crons.js";
 import type * as http from "../http.js";
+import type * as lib_coderabbitClient from "../lib/coderabbitClient.js";
+import type * as lib_coderabbitValidators from "../lib/coderabbitValidators.js";
 import type * as lib_errors from "../lib/errors.js";
 import type * as lib_logger from "../lib/logger.js";
 import type * as lib_sentry from "../lib/sentry.js";
@@ -25,18 +29,14 @@ import type {
   FunctionReference,
 } from "convex/server";
 
-/**
- * A utility for referencing Convex functions in your app's API.
- *
- * Usage:
- * ```js
- * const myFunctionReference = api.myModule.myFunction;
- * ```
- */
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   autumn: typeof autumn;
+  coderabbit: typeof coderabbit;
+  crons: typeof crons;
   http: typeof http;
+  "lib/coderabbitClient": typeof lib_coderabbitClient;
+  "lib/coderabbitValidators": typeof lib_coderabbitValidators;
   "lib/errors": typeof lib_errors;
   "lib/logger": typeof lib_logger;
   "lib/sentry": typeof lib_sentry;
@@ -45,14 +45,30 @@ declare const fullApi: ApiFromModules<{
   tasks: typeof tasks;
   user: typeof user;
 }>;
-declare const fullApiWithMounts: typeof fullApi;
 
+/**
+ * A utility for referencing Convex functions in your app's public API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = api.myModule.myFunction;
+ * ```
+ */
 export declare const api: FilterApi<
-  typeof fullApiWithMounts,
+  typeof fullApi,
   FunctionReference<any, "public">
 >;
+
+/**
+ * A utility for referencing Convex functions in your app's internal API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = internal.myModule.myFunction;
+ * ```
+ */
 export declare const internal: FilterApi<
-  typeof fullApiWithMounts,
+  typeof fullApi,
   FunctionReference<any, "internal">
 >;
 

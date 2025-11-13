@@ -1,8 +1,8 @@
 import { validateClientEnv } from './env'
 
 const clientEnv = validateClientEnv()
-const isDev = clientEnv.DEV
-const isSentryEnabled = Boolean(clientEnv.VITE_SENTRY_DSN)
+const isDev = import.meta.env.DEV
+const isSentryEnabled = Boolean(clientEnv.SENTRY_DSN)
 
 // Lazy load Sentry only if DSN is configured
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports

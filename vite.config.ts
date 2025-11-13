@@ -23,13 +23,21 @@ const getHttpsConfig = () => {
 }
 
 const config = defineConfig({
+  envPrefix: [
+    'VITE_',
+    'CONVEX_URL',
+    'CONVEX_SITE_URL',
+    'SENTRY_DSN',
+    'SENTRY_ORG',
+    'SENTRY_PROJECT',
+  ],
   plugins: [
     viteTsConfigPaths({
       projects: ['./tsconfig.json'],
     }),
     tailwindcss(),
     tanstackStart(),
-    netlify(),
+    ...(process.env['NODE_ENV'] === 'production' ? [netlify()] : []),
     viteReact(),
     ...(process.env['NODE_ENV'] === 'production' &&
     process.env['SENTRY_AUTH_TOKEN']
