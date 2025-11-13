@@ -1,4 +1,6 @@
-const isDevelopment = !process.env['CONVEX_URL']
+const isDevelopment = !(
+  process.env['CONVEX_DEPLOYMENT']?.startsWith('prod:') ?? false
+)
 
 type LogContext = Record<string, unknown>
 
