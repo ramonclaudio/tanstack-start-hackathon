@@ -1,4 +1,4 @@
-const isDevelopment = !process.env['VITE_CONVEX_URL']
+const isDevelopment = !process.env['CONVEX_URL']
 
 type LogContext = Record<string, unknown>
 
@@ -91,5 +91,6 @@ class ConvexLogger {
 
 export const authLogger = new ConvexLogger('Auth')
 export const autumnLogger = new ConvexLogger('Autumn')
+export const coderabbitLogger = new ConvexLogger('CodeRabbit')
 
 export default ConvexLogger
