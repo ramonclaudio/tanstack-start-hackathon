@@ -157,9 +157,15 @@ export async function requireGuest(options?: {
 
     if (error) {
       // Session fetch error, but guest access is allowed
-      logger.auth.debug('Guest access check: session fetch error (allowing)', {
-        status: error.status,
-      })
+      // Suppress 429 rate limit logs during development hot reloads
+      if (error.status !== 429) {
+        logger.auth.debug(
+          'Guest access check: session fetch error (allowing)',
+          {
+            status: error.status,
+          },
+        )
+      }
       return
     }
 
