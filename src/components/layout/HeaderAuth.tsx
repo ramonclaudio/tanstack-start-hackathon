@@ -57,6 +57,11 @@ export default function HeaderAuth() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
+              <Link to="/reports" className="cursor-pointer">
+                Reports
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
               <Link to="/pricing" className="cursor-pointer">
                 Billing
               </Link>
