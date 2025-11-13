@@ -128,13 +128,15 @@ export class ErrorBoundary extends Component<Props, State> {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {import.meta.env.DEV && error && (
-              <div className="p-3 bg-muted rounded-md">
-                <p className="text-sm font-mono text-muted-foreground break-all">
-                  {this.getErrorMessage(error)}
-                </p>
-              </div>
-            )}
+            {(process.env.NODE_ENV === 'development' ||
+              process.env.NODE_ENV === 'dev') &&
+              error && (
+                <div className="p-3 bg-muted rounded-md">
+                  <p className="text-sm font-mono text-muted-foreground break-all">
+                    {this.getErrorMessage(error)}
+                  </p>
+                </div>
+              )}
             <div className="flex gap-3">
               <Button onClick={this.handleReset} className="flex-1">
                 Reload Application
