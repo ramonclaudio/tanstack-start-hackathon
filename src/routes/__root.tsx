@@ -82,7 +82,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               </main>
               <Footer />
               <Toaster />
-              {import.meta.env.PROD ? null : (
+              {process.env.NODE_ENV === 'production' ||
+              process.env.NODE_ENV === 'prod' ? null : (
                 <TanStackDevtools
                   config={{ position: 'bottom-left' }}
                   plugins={[
