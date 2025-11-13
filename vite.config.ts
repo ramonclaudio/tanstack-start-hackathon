@@ -22,6 +22,11 @@ const getHttpsConfig = () => {
   return undefined
 }
 
+const isProduction = () => {
+  const deployment = process.env['CONVEX_DEPLOYMENT']
+  return deployment?.startsWith('prod:') ?? false
+}
+
 const config = defineConfig({
   envPrefix: [
     'VITE_',
@@ -37,10 +42,9 @@ const config = defineConfig({
     }),
     tailwindcss(),
     tanstackStart(),
-    ...(process.env['NODE_ENV'] === 'production' ? [netlify()] : []),
+    ...(isProduction() ? [netlify()] : []),
     viteReact(),
-    ...(process.env['NODE_ENV'] === 'production' &&
-    process.env['SENTRY_AUTH_TOKEN']
+    ...(isProduction() && process.env['SENTRY_AUTH_TOKEN']
       ? [
           sentryVitePlugin({
             org: process.env['SENTRY_ORG'],

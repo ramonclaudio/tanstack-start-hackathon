@@ -14,7 +14,6 @@ export type ClientEnv = z.infer<typeof clientEnvSchema>
 
 const serverEnvSchema = z
   .object({
-    NODE_ENV: z.enum(['development', 'production', 'test']),
     GITHUB_CLIENT_ID: z.string().optional(),
     GITHUB_CLIENT_SECRET: z.string().optional(),
     DEV_GITHUB_CLIENT_ID: z.string().optional(),
@@ -88,7 +87,7 @@ export function validateServerEnv(): ServerEnv {
 export { clientEnvSchema, serverEnvSchema }
 
 /**
- * Get the correct SITE_URL based on NODE_ENV
+ * Get the correct SITE_URL based on CONVEX_DEPLOYMENT
  * Returns VITE_SITE_URL in production, VITE_DEV_SITE_URL otherwise
  */
 export function getSiteUrl(): string {
@@ -97,7 +96,7 @@ export function getSiteUrl(): string {
 }
 
 /**
- * Get the correct GitHub credentials based on NODE_ENV
+ * Get the correct GitHub credentials based on CONVEX_DEPLOYMENT
  * Returns production credentials in production, dev credentials otherwise
  */
 export function getGithubCredentials(): {
