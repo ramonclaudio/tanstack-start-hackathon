@@ -10,7 +10,7 @@
 import { ConvexError } from 'convex/values'
 
 const SENTRY_DSN = process.env['SENTRY_DSN']
-const IS_PRODUCTION = !!process.env['VITE_CONVEX_URL']
+const IS_PRODUCTION = !!process.env['CONVEX_URL']
 const ENVIRONMENT = IS_PRODUCTION ? 'production' : 'development'
 
 /**
