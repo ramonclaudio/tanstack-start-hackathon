@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 const clientEnvSchema = z.object({
-  VITE_DEV_SITE_URL: z.string().url('VITE_DEV_SITE_URL must be a valid URL'),
+  VITE_DEV_SITE_URL: z.string().url('VITE_DEV_SITE_URL must be a valid URL').optional(),
   VITE_SITE_URL: z.string().url('VITE_SITE_URL must be a valid URL'),
   CONVEX_URL: z.string().url('CONVEX_URL must be a valid URL'),
   CONVEX_SITE_URL: z.string().url('CONVEX_SITE_URL must be a valid URL'),
@@ -92,7 +92,7 @@ export { clientEnvSchema, serverEnvSchema }
  */
 export function getSiteUrl(): string {
   const env = validateClientEnv()
-  return import.meta.env.PROD ? env.VITE_SITE_URL : env.VITE_DEV_SITE_URL
+  return import.meta.env.PROD ? env.VITE_SITE_URL : (env.VITE_DEV_SITE_URL ?? env.VITE_SITE_URL)
 }
 
 /**
