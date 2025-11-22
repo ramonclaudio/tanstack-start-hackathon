@@ -5,7 +5,7 @@
 
 | Location | Purpose | What differs dev→prod |
 |----------|---------|:---------------------:|
-| **Convex Dashboard** | Backend runtime | URL + GitHub credentials |
+| **Convex Dashboard** | Backend runtime | Site URL (+ optional GitHub OAuth) |
 | **.env.local** | Local client build | Auto-filled by CLI |
 | **Netlify** | Prod client build | Uses prod values only |
 
@@ -18,43 +18,45 @@ Set at: https://dashboard.convex.dev → deployment → Settings → Environment
 ### Development Deployment
 
 ```bash
-# Auto-switched based on CONVEX_DEPLOYMENT prefix
-CONVEX_DEPLOYMENT=dev:your-id
-VITE_DEV_SITE_URL=https://localhost:3000
-DEV_GITHUB_CLIENT_ID=<dev OAuth app>
-DEV_GITHUB_CLIENT_SECRET=<dev OAuth secret>
-
-# Same in both dev/prod
+# Required
 BETTER_AUTH_SECRET=<openssl rand -base64 32>
 AUTUMN_SECRET_KEY=<from https://app.useautumn.com>
-SENTRY_DSN=<from https://sentry.io>
-SENTRY_AUTH_TOKEN=<for source maps>
-SENTRY_ORG=<org slug>
-SENTRY_PROJECT=<project slug>
-CODERABBIT_API_KEY=<optional, requires Pro>
+VITE_DEV_SITE_URL=https://localhost:3000
+
+# Optional - GitHub OAuth
+# DEV_GITHUB_CLIENT_ID=<dev OAuth app>
+# DEV_GITHUB_CLIENT_SECRET=<dev OAuth secret>
+
+# Optional - Monitoring
+# SENTRY_DSN=<from https://sentry.io>
+# SENTRY_AUTH_TOKEN=<for source maps>
+# SENTRY_ORG=<org slug>
+# SENTRY_PROJECT=<project slug>
+# CODERABBIT_API_KEY=<requires Pro subscription>
 ```
 
 ### Production Deployment
 
 ```bash
-# Auto-switched based on CONVEX_DEPLOYMENT prefix
-CONVEX_DEPLOYMENT=prod:your-id
-VITE_SITE_URL=https://your-domain.netlify.app
-GITHUB_CLIENT_ID=<prod OAuth app>
-GITHUB_CLIENT_SECRET=<prod OAuth secret>
-
-# Same as dev (copy from above)
+# Required
 BETTER_AUTH_SECRET=<same as dev>
 AUTUMN_SECRET_KEY=<same as dev>
-SENTRY_DSN=<same as dev>
-SENTRY_AUTH_TOKEN=<same as dev>
-SENTRY_ORG=<same as dev>
-SENTRY_PROJECT=<same as dev>
-CODERABBIT_API_KEY=<same as dev>
+VITE_SITE_URL=https://your-domain.netlify.app
+
+# Optional - GitHub OAuth
+# GITHUB_CLIENT_ID=<prod OAuth app>
+# GITHUB_CLIENT_SECRET=<prod OAuth secret>
+
+# Optional - Monitoring
+# SENTRY_DSN=<same as dev>
+# SENTRY_AUTH_TOKEN=<same as dev>
+# SENTRY_ORG=<same as dev>
+# SENTRY_PROJECT=<same as dev>
+# CODERABBIT_API_KEY=<same as dev>
 ```
 
 > [!NOTE]
-> **Why separate OAuth apps?**
+> **Why separate OAuth apps?** (if using GitHub OAuth)
 > Callback URLs differ between dev (`localhost:3000`) and prod (`your-domain.netlify.app`). Using separate apps with `DEV_*` prefix avoids manual URL changes.
 
 ---
@@ -77,22 +79,22 @@ SENTRY_DSN=<for client-side error tracking>
 Set at: https://app.netlify.com → Site → Environment Variables
 
 ```bash
-# Deployment config
+# Required - Deployment config
 VITE_SITE_URL=https://your-domain.netlify.app
 CONVEX_DEPLOYMENT=prod:your-id
 CONVEX_URL=https://your-deployment.convex.cloud
 CONVEX_SITE_URL=https://your-deployment.convex.site
 CONVEX_NETLIFY_PROD_DEPLOY_KEY=<from Convex Dashboard>
 
-# OAuth (use PROD credentials, NOT DEV_*)
-GITHUB_CLIENT_ID=<prod app>
-GITHUB_CLIENT_SECRET=<prod secret>
+# Optional - GitHub OAuth (use PROD credentials, NOT DEV_*)
+# GITHUB_CLIENT_ID=<prod app>
+# GITHUB_CLIENT_SECRET=<prod secret>
 
-# Optional monitoring
-SENTRY_DSN=<optional>
-SENTRY_AUTH_TOKEN=<optional>
-SENTRY_ORG=<optional>
-SENTRY_PROJECT=<optional>
+# Optional - Monitoring
+# SENTRY_DSN=<optional>
+# SENTRY_AUTH_TOKEN=<optional>
+# SENTRY_ORG=<optional>
+# SENTRY_PROJECT=<optional>
 ```
 
 ---
@@ -124,7 +126,7 @@ SENTRY_PROJECT=<optional>
 ## Common Mistakes
 
 > [!WARNING]
-> **Using `DEV_GITHUB_CLIENT_ID` in production:**
+> **Using `DEV_GITHUB_CLIENT_ID` in production:** (if using GitHub OAuth)
 > - Production must use `GITHUB_CLIENT_ID` (no `DEV_` prefix)
 > - Netlify should never have `DEV_*` variables
 
