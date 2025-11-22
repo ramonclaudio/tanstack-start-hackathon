@@ -24,6 +24,9 @@ SaaS starter with TanStack Start + Convex real-time backend, Better Auth, Autumn
 **Monitoring:**
 - [Sentry](https://sentry.io) - Error tracking and performance monitoring
 
+**Deployment:**
+- [Netlify](https://netlify.com) - Edge hosting with auto-deploys
+
 **Developer Experience:**
 - [TypeScript](https://typescriptlang.org) - Type safety
 - [Vite](https://vitejs.dev) - Lightning-fast build tool
@@ -181,13 +184,13 @@ bun run check        # Lint + format + typecheck
 bun run test         # Run tests
 ```
 
-**Deploy:**
+**Deploy to Netlify:**
 ```bash
-bunx convex deploy   # Backend
-git push origin main # Frontend (Netlify auto-deploys)
+bunx convex deploy   # Deploy backend to Convex
+git push origin main # Deploy frontend to Netlify (auto-deploys on push)
 ```
 
-See [docs/SETUP.md](docs/SETUP.md) for production deployment instructions.
+See [docs/SETUP.md](docs/SETUP.md) for complete production deployment guide.
 
 ---
 
