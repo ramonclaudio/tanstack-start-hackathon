@@ -2,11 +2,14 @@
 
 Optional third-party service configurations.
 
+> [!NOTE]
+> All integrations in this document are **optional**. The base application works with email/password authentication only.
+
 ---
 
 ## GitHub OAuth
 
-Enables "Sign in with GitHub" authentication.
+**Optional** - Enables "Sign in with GitHub" as an alternative to email/password.
 
 ### Why Two OAuth Apps?
 

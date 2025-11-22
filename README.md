@@ -43,21 +43,8 @@ SaaS starter with TanStack Start + Convex real-time backend, Better Auth, Autumn
 - [Bun](https://bun.sh) installed
 - [Convex account](https://convex.dev) (free tier available)
 - [Autumn account](https://useautumn.com) for Stripe integration
-- **GitHub OAuth app** (required for authentication)
 
-### 1. Create GitHub OAuth App
-
-> [!IMPORTANT]
-> Required for authentication. Create at https://github.com/settings/developers
-
-**Development OAuth App:**
-- Application name: `Tanvex (Dev)`
-- Homepage URL: `https://localhost:3000`
-- Callback URL: `https://localhost:3000/api/auth/callback/github`
-
-Save your **Client ID** and **Client Secret** for step 3.
-
-### 2. Install HTTPS Certificates
+### 1. Install HTTPS Certificates
 
 > [!WARNING]
 > Better Auth requires HTTPS in development.
@@ -70,7 +57,7 @@ mkcert -key-file certificates/localhost-key.pem -cert-file certificates/localhos
 
 See [docs/SETUP.md](docs/SETUP.md) for Linux/Windows instructions.
 
-### 3. Install and Configure
+### 2. Install and Configure
 
 ```bash
 # Clone and install
@@ -82,7 +69,7 @@ bun install
 bunx convex dev
 ```
 
-### 4. Set Environment Variables
+### 3. Set Environment Variables
 
 **In [Convex Dashboard](https://dashboard.convex.dev) → Settings → Environment Variables:**
 
@@ -91,27 +78,23 @@ bunx convex dev
 BETTER_AUTH_SECRET=<openssl rand -base64 32>
 AUTUMN_SECRET_KEY=<from https://app.useautumn.com>
 VITE_DEV_SITE_URL=https://localhost:3000
-
-# GitHub OAuth (from step 1)
-DEV_GITHUB_CLIENT_ID=<your dev client id>
-DEV_GITHUB_CLIENT_SECRET=<your dev client secret>
 ```
 
 See [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) for complete variable reference.
 
-### 5. Start Development
+### 4. Start Development
 
 ```bash
 bun run dev  # Opens https://localhost:3000
 ```
 
-**Optional integrations:** CodeRabbit AI reports, Sentry monitoring - see [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)
+**Optional integrations:** GitHub OAuth, CodeRabbit AI reports, Sentry monitoring - see [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)
 
 ---
 
 ## Features
 
-- **Authentication** - Email/password + GitHub OAuth with session management
+- **Authentication** - Email/password with optional GitHub OAuth
 - **Billing** - Multi-tier subscriptions (Free/Starter/Pro) with Stripe
 - **Real-time DB** - Live data sync via Convex WebSocket
 - **Dark Mode** - System preference detection + localStorage persistence
@@ -211,7 +194,7 @@ See [docs/SETUP.md](docs/SETUP.md) for complete production deployment guide.
 |---------|----------|
 | Convex deployment not found | Run `bunx convex dev` to initialize |
 | Better Auth errors | Verify `BETTER_AUTH_SECRET` in Convex Dashboard |
-| GitHub OAuth fails | Check callback URL and use `DEV_GITHUB_CLIENT_ID` prefix |
+| GitHub OAuth fails | Optional feature - set `DEV_GITHUB_CLIENT_ID` if needed |
 | HTTPS certificate errors | Run `mkcert -install` and regenerate certificates |
 
 Full troubleshooting: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
