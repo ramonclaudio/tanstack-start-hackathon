@@ -228,7 +228,7 @@ Contributions welcome! Please open an issue first to discuss changes.
 
 ## License
 
-MIT © [Ramon Claudio](https://github.com/Ramon Claudio)
+MIT © [Ramon Claudio](https://github.com/ramonclaudio)
 
 ---
 
