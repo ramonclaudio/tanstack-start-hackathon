@@ -23,16 +23,16 @@
   ],
   "private": false,
   "type": "module",
-  "author": "RMNCLDYO",
+  "author": "Ramon Claudio",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/RMNCLDYO/tanvex"
+    "url": "https://github.com/ramonclaudio/tanvex"
   },
   "bugs": {
-    "url": "https://github.com/RMNCLDYO/tanvex/issues"
+    "url": "https://github.com/ramonclaudio/tanvex/issues"
   },
-  "homepage": "https://github.com/RMNCLDYO/tanvex#readme",
+  "homepage": "https://github.com/ramonclaudio/tanvex#readme",
   "scripts": {
     "dev": "vite dev --port 3000",
     "dev:convex": "bunx convex dev",

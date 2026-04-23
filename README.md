@@ -1,6 +1,6 @@
 # Tanvex
 
-[![Use this template](https://img.shields.io/badge/use%20this-template-blue?logo=github)](https://github.com/RMNCLDYO/tanvex/generate)
+[![Use this template](https://img.shields.io/badge/use%20this-template-blue?logo=github)](https://github.com/ramonclaudio/tanvex/generate)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 SaaS starter with TanStack Start + Convex real-time backend, Better Auth, Autumn billing, and Sentry monitoring.
@@ -61,7 +61,7 @@ See [docs/SETUP.md](docs/SETUP.md) for Linux/Windows instructions.
 
 ```bash
 # Clone and install
-git clone https://github.com/RMNCLDYO/tanvex.git
+git clone https://github.com/ramonclaudio/tanvex.git
 cd tanvex
 bun install
 
@@ -228,7 +228,7 @@ Contributions welcome! Please open an issue first to discuss changes.
 
 ## License
 
-MIT © [RMNCLDYO](https://github.com/RMNCLDYO)
+MIT © [Ramon Claudio](https://github.com/Ramon Claudio)
 
 ---
 
